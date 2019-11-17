@@ -2,6 +2,18 @@
 
 using namespace std;
 
+//move to util.
+template<typename T>
+void diff(vector<T> const& a,vector<T> const& b){
+	if(a.size()!=b.size()) nyi
+	for(auto [a1,b1]:zip(a,b)){
+		if(a1!=b1){
+			cout<<"a:"<<a1<<"\n";
+			cout<<"b:"<<b1<<"\n";
+		}
+	}
+}
+
 Table_type read(DB db,string name){
 	auto q=query(db,"DESCRIBE "+name);
 	Table_type r;
@@ -12,7 +24,7 @@ Table_type read(DB db,string name){
 		auto type=*elem[1];
 		auto primary=*elem[3];
 		//PRINT(primary);
-		r[name]=make_pair(type,primary=="PRI");
+		r|=make_pair(name,make_pair(type,primary=="PRI"));
 	}
 	return r;
 }
@@ -22,6 +34,7 @@ using Table_name=string;
 void check_table(DB db,Table_name name,Table_type type){
 	auto r=read(db,name);
 	if(r!=type){
+		cout<<"Table mismatch:"<<name<<"\n";
 		PRINT(r);
 		PRINT(type);
 		diff(r,type);
@@ -286,5 +299,11 @@ Request parse_query(string s){
 	X(Error)
 	#undef X
 	return Error{"Unparsable request"};
+}
+
+string link(Request req,string body){
+	stringstream ss;
+	ss<<"<a href=\"?"<<to_query(req)<<"\">"<<body<<"</a>";
+	return ss.str();
 }
 

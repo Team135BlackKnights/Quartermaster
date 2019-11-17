@@ -6,11 +6,181 @@ using namespace std;
 
 #include "queries.h"
 
-string link(Request req,string body){
+//TODO: Move to util
+template<typename Func,typename T>
+vector<T> filter(Func f,vector<T> v){
+	vector<T> r;
+	for(auto elem:v){
+		if(f(elem)) r|=elem;
+	}
+	return r;
+}
+
+template<typename T>
+vector<T> convert(vector<vector<optional<string>>> in){
+	return mapf(
+		[](auto x){
+			assert(x.size()==1);
+			return parse((T*)0,*x[0]);
+		},
+		in
+	);
+}
+
+template<typename A,typename B>
+vector<pair<A,B>> convert(vector<vector<optional<string>>> in){
+	return mapf(
+		[](auto x){
+			assert(x.size());
+	       		return make_pair(
+				parse((A*)nullptr,*x[0]),
+				parse((B*)nullptr,*x[1])
+			);
+		},
+		in
+	);
+}
+
+template<typename A,typename B,typename C>
+vector<tuple<A,B,C>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row){
+			assert(row.size()==3);
+			return make_tuple(
+				parse((A*)0,*row[0]),
+				parse((B*)0,*row[1]),
+				parse((C*)0,*row[2])
+			);
+		},
+		a
+	);
+}
+
+template<typename T>
+vector<T> q1(DB db,string query_string){
+	auto q=query(db,query_string);
+	//PRINT(q);
+	return convert<T>(q);
+}
+
+template<typename A,typename B>
+vector<pair<A,B>> q2(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<A,B>(q);
+}
+
+template<typename A,typename B,typename C>
+vector<tuple<A,B,C>> q3(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<A,B,C>(q);
+}
+
+template<typename T>
+vector<optional<T>> operator|=(vector<optional<T>>,T)nyi
+
+template<typename T>
+string pretty_td(DB,T t){
+	return td(as_string(t));
+}
+
+string subsystem_name(DB db,Subsystem_id id){
+	auto q=q1<string>(
+		db,
+		"SELECT name "
+		"FROM subsystem_info "
+		"WHERE (id) IN "
+			"(SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+as_string(id)+") "
+			"AND valid"
+	);
+	if(q.size()==0) return "No subsystem name found";
+	if(q.size()>1){
+		PRINT(id);
+		PRINT(q);
+		nyi
+	}
+	assert(q.size()==1);
+	return q[0];
+}
+
+string pretty_td(DB db,Subsystem_id a){
+	return td(link(Subsystem_editor{a},subsystem_name(db,a)));
+}
+
+string part_name(DB db,Part_id id){
+	auto q=q1<string>(
+		db,
+		"SELECT name "
+		"FROM part_info "
+		"WHERE (name,edit_date) IN "
+			"(SELECT name,MAX(edit_date) FROM part_info WHERE part_id="+as_string(id)+") "
+			"AND valid"
+	);
+	//if(q.empty()) return "what?";
+	//PRINT(q);
+	assert(q.size()==1);
+	return q[0];
+}
+
+string pretty_td(DB db, Part_id a){
+	return td(link(Part_editor{a},part_name(db,a)));
+}
+
+template<typename A,typename B,typename C>
+string as_table(DB db,vector<string> labels,vector<tuple<A,B,C>> const& a){
 	stringstream ss;
-	ss<<"<a href=\"?"<<to_query(req)<<"\">"<<body<<"</a>";
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		//ss<<td("aux");
+		ss<<pretty_td(db,get<0>(row));
+		ss<<pretty_td(db,get<1>(row));
+		ss<<pretty_td(db,get<2>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
 	return ss.str();
 }
+
+template<typename A,typename B>
+string as_table(vector<string> labels,vector<pair<A,B>> const&){
+	nyi
+}
+
+string as_table(vector<string> labels,vector<vector<std::string>> in){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<"<tr>";
+	ss<<join("",mapf(th,labels));
+	ss<<"</tr>";
+	for(auto row:in){
+		ss<<"<tr>";
+		for(auto item:row){
+			ss<<td(as_string(item));
+		}
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+string as_table(vector<string> labels,vector<vector<std::optional<string>>> in){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<"<tr>";
+	ss<<join("",mapf(th,labels));
+	ss<<"</tr>";
+	for(auto row:in){
+		ss<<"<tr>";
+		for(auto item:row){
+			ss<<td(as_string(item));
+		}
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
 
 string title_end(){ return "1425 Parts System"; }
 
@@ -101,9 +271,30 @@ vector<int> get_ids(DB db,Table_name table){
 	return r;
 }
 
+string show_current_subsystems(DB db){
+	auto q=q2<Subsystem_id,string>(
+		db,
+                "SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"
+	);
+	return as_table(
+		{"subsystem_id","name"},
+		mapf(
+			[](auto x){
+				vector<string> r;
+				r|=as_string(x.first);
+				r|=link(Subsystem_editor{x.first},x.second);
+				return r;
+			},
+			q
+		)
+	);
+}
+
 string inner(Subsystems const& a,DB db){
 	return make_page(
 		"Subsystems",
+		show_current_subsystems(db)/*+
+		h2("Debug info")+
 		[=](){
 			stringstream ss;
 			for(auto id:get_ids(db,"subsystem")){
@@ -112,7 +303,7 @@ string inner(Subsystems const& a,DB db){
 			return ss.str();
 		}()+
 		show_table(db,"subsystem")+
-		show_table(db,"subsystem_info")
+		show_table(db,"subsystem_info")*/
 	);
 }
 
@@ -147,6 +338,18 @@ string inner(Subsystem_new const&,DB db){
 	return inner_new<Subsystem_editor>(db,"subsystem");
 }
 
+string parts_of_subsystem(DB db,Subsystem_id id){
+	auto q=q3<Part_id,Subsystem_id,string>(
+		db,
+		"SELECT part_id,subsystem,name "
+		"FROM part_info "
+		"WHERE (part_id,subsystem,edit_date) IN "
+			"(SELECT part_id,subsystem,MAX(edit_date) FROM part_info GROUP BY part_id) "
+			"AND valid AND subsystem="+as_string(id)
+	);
+	return as_table(db,{"part_id","subsystem","name"},q);
+}
+
 string inner(Subsystem_editor const& a,DB db){
 	auto q=query(
 		db,
@@ -169,7 +372,7 @@ string inner(Subsystem_editor const& a,DB db){
 		"Subsystem editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
-		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+to_string(a.id)+"\">"
+		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+as_string(a.id)+"\">"
 		"<br>Name:<input type=\"text\" name=\"name\" value=\""+name+"\">"+
 		"<br>Valid:<input type=\"checkbox\" name=\"valid\" "+
 			[=](){ if(valid) return "checked=on"; return ""; }()+"\">"+
@@ -179,7 +382,7 @@ string inner(Subsystem_editor const& a,DB db){
 		+make_table(
 			{"edit_date","edit_user","id","name","subsystem_id","valid"},
 			query(db,"SELECT * FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
-		)
+		)+parts_of_subsystem(db,a.id)
 	);
 }
 
@@ -207,9 +410,63 @@ string inner(Part_new const& a,DB db){
 	return inner_new<Part_editor>(db,"part");
 }
 
+vector<pair<Id,string>> current_subsystems(DB db){
+	auto q=query(db,"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid");
+	vector<pair<Id,string>> r;
+	for(auto row:q){
+		r|=make_pair(stoi(*row[0]),*row[1]);
+	}
+	return r;
+}
+
+string subsystem_name(DB db,Id subsystem_id){
+	//query(db,"SELECT name FROM subsystem_info");
+	//query(db,"SELECT subsystem_part_id,name FROM part_info WHERE (part_id,edit_date) IN (SELECT part_id,MAX(edit_date) FROM part_info GROUP BY part_id) AND valid"
+	//auto q=query(db,"SELECT * FROM ");
+	auto f=filter(
+		[=](auto x){ return x.first==subsystem_id; },
+		current_subsystems(db)
+	);
+	if(f.empty()){
+		return "Not found ("+as_string(subsystem_id)+")";
+	}
+	assert(f.size()==1);
+	return f[0].second;
+}
+
+string show_current_parts(DB db){
+	auto q1=query(
+		db,
+		"SELECT * "
+		"FROM part_info "
+		"WHERE (part_id,subsystem,edit_date) IN (SELECT part_id,subsystem,MAX(edit_date) FROM part_info GROUP BY part_id) AND valid"
+	);
+	/*auto q1=q3<Part_id,Subsystem_id,string>(
+		db,
+		"SELECT part_id,subsystem,name FROM part_info WHERE (part_id,subsystem,edit_date) IN (SELECT part_id,subsystem,MAX(edit_date) FROM part_info GROUP BY part_id) AND valid"
+	);*/
+	return as_table({"part_id","subsystem_id","name"},q1);
+	//auto q1=convert<Id,Id,string>(q);
+	/*return as_table(
+		{"part_id","subsystem_id","name"},
+		mapf(
+			[&](auto x){
+				vector<string> r;
+				r|=as_string(get<0>(x));
+				r|=link(Subsystem_editor{get<1>(x)},subsystem_name(db,get<1>(x)));
+				r|=link(Part_editor{get<0>(x)},as_string(get<2>(x)));
+				return r;
+			},
+			q1
+		)
+	);*/
+}
+
+
 string inner(Parts const&,DB db){
 	return make_page(
 		"Parts",
+		show_current_parts(db)+
 		[=](){
 			stringstream ss;
 			for(auto id:get_ids(db,"part")){
@@ -255,7 +512,7 @@ string inner(Part_editor const& a,DB db){
 		area_cap+" editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
-		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+to_string(a.id)+"\">"
+		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"
 		#define X(A,B) "<br>"+show_input(db,""#B,current.B)+
 		PART_DATA(X)
 		#undef X
@@ -502,9 +759,9 @@ int main1(int argc,char **argv,char **envp){
 		cout<<run(r,db);
 	}
 	auto q=parse_query("");
-	PRINT(q);
+	//PRINT(q);
 	auto s=run(q,db);
-	PRINT(s);
+	//PRINT(s);
 	return 0;
 }
 

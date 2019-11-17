@@ -185,21 +185,66 @@ using Id=int;
 Id rand(const Id*);
 std::string to_db_type(const Id*);
 
-struct Subsystem_id{
+template<typename Sub,typename Data>
+struct Wrap{
+	Data data;
+};
+
+template<typename Sub,typename Data>
+std::string to_db_type(const Wrap<Sub,Data>*){
+	return to_db_type((Data*)0);
+}
+
+template<typename Sub,typename Data>
+bool operator==(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
+	return a.data==b.data;
+}
+
+template<typename Sub,typename Data>
+bool operator!=(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
+	return a.data!=b.data;
+}
+
+template<typename Sub,typename Data>
+std::ostream& operator<<(std::ostream& o,Wrap<Sub,Data> const& a){
+	return o<<a.data;
+}
+
+template<typename Sub,typename Data>
+Sub rand(const Wrap<Sub,Data>*){
+	return Sub{rand((Data*)0)};
+}
+
+template<typename Sub,typename Data>
+Sub parse(const Wrap<Sub,Data>*,std::string s){
+	return Sub{parse((Data*)0,s)};
+}
+
+template<typename Sub,typename Data>
+std::string show_input(DB db,std::string name,Wrap<Sub,Data> const& current){
+	return show_input(db,name,current.data);
+}
+
+template<typename Sub,typename Data>
+std::string escape(Wrap<Sub,Data> const& a){
+	return escape(a.data);
+}
+
+struct Part_id:Wrap<Part_id,Id>{};
+struct Subsystem_id:Wrap<Subsystem_id,Id>{};
+
+/*struct Subsystem_id{
 	Id id;
 };
 
 std::string to_db_type(const Subsystem_id*);
-
 bool operator==(Subsystem_id const&,Subsystem_id const&);
 bool operator!=(Subsystem_id const&,Subsystem_id const&);
 std::ostream& operator<<(std::ostream&,Subsystem_id const&);
 Subsystem_id rand(const Subsystem_id*);
-
-Subsystem_id parse(const Subsystem_id*,std::string);
-
+Subsystem_id parse(const Subsystem_id*,std::string);*/
 std::string show_input(DB db,std::string name,Subsystem_id const& current);
-std::string escape(Subsystem_id const&);
+/*std::string escape(Subsystem_id const&);*/
 
 template<typename T>
 std::string to_db_type(const std::optional<T>*){

@@ -1,4 +1,5 @@
 #include "data_types.h"
+#include "queries.h"
 #include<cassert>
 
 using namespace std;
@@ -254,46 +255,14 @@ string escape(Material const& s){
 Id rand(const Id*){ return rand()%100; }
 string to_db_type(const Id*){ return "int(11)"; }
 
-string to_db_type(const Subsystem_id*){ return "int(11)"; }
-
-bool operator==(Subsystem_id const& a,Subsystem_id const& b){
-	return a.id==b.id;
-}
-
-bool operator!=(Subsystem_id const& a,Subsystem_id const& b){
-	return !(a==b);
-}
-
-std::ostream& operator<<(std::ostream& o,Subsystem_id const& a){
-	//return o<<"Subsystem_id("<<a.id<<")";
-	return o<<a.id;
-}
-
-Subsystem_id rand(const Subsystem_id*){
-	return {rand((int*)0)};
-}
-
 int parse(const int*,string s){ return stoi(s); }
 
-Subsystem_id parse(const Subsystem_id*,string s){
-	return {parse((int*)0,s)};
-}
-
 string show_input(DB db,string name,Subsystem_id const& current){
-	/*auto q=query(
-		db,
-		"SELECT a.subsystem_id,a.name,a.valid FROM \n"
-		"(SELECT subsystem_id,valid,name,max(edit_date) FROM subsystem_info GROUP BY subsystem_id) as a\n"
-		"WHERE a.valid"
-	);*/
-
 	auto q=query(
 		db,
-		//"SELECT * FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id)"
 		"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"
 	);
 
-	//PRINT(q);
 	auto m=mapf(
 		[](auto row){
 			assert(row.size()==2);
@@ -304,10 +273,10 @@ string show_input(DB db,string name,Subsystem_id const& current){
 
 	//show the current one that it's part of, color coded
 	//show the other current ones in a drop-down
-	return drop_down(name,as_string(current),m);
+	return drop_down(name,as_string(current),m)+link(Subsystem_editor{current},"Current");
 }
 
-string escape(Subsystem_id const& a){
+/*string escape(Subsystem_id const& a){
 	return escape(a.id);
-}
+}*/
 

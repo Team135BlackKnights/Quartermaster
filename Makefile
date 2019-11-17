@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-std=c++17 -Wall -Werror -Os
+CXXFLAGS=-std=c++17 -Wall -Werror
 LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient
 
 parts: parts.cpp data_types.h util.h data_types.cpp util.cpp queries.cpp queries.h auth.h auth.cpp

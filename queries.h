@@ -78,7 +78,7 @@ struct Meeting_data{
 	MEETING_DATA(X)
 
 using Column_type=std::pair<std::string,bool>; //type and primary key
-using Table_type=std::map<std::string,Column_type>;
+using Table_type=std::vector<std::pair<std::string,Column_type>>;
 
 Table_type read(DB db,std::string name);
 
@@ -164,7 +164,7 @@ DECL_OPTION(Subsystems,SUBSYSTEMS_ITEMS)
 DECL_OPTION(Subsystem_new,SUBSYSTEM_NEW_ITEMS)
 
 #define SUBSYSTEM_EDITOR_ITEMS(X)\
-	X(Id,id)
+	X(Subsystem_id,id)
 DECL_OPTION(Subsystem_editor,SUBSYSTEM_EDITOR_ITEMS)
 
 #define SUBSYSTEM_EDIT_ITEMS(X)\
@@ -181,7 +181,7 @@ DECL_OPTION(Parts,PARTS_ITEMS)
 DECL_OPTION(Part_new,PART_NEW_ITEMS)
 
 #define PART_EDITOR_ITEMS(X)\
-	X(Id,id)
+	X(Part_id,id)
 DECL_OPTION(Part_editor,PART_EDITOR_ITEMS)
 	
 #define PART_EDIT_ITEMS(X)\
@@ -309,5 +309,7 @@ std::string to_query(std::variant<
 	#undef X
 	nyi
 }
+
+std::string link(Request req,std::string);
 
 #endif
