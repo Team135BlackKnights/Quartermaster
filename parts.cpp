@@ -24,18 +24,15 @@ T sum(vector<T> v){
 	return r;
 }
 
-template<typename A,typename B,typename C,typename D>
-std::ostream& operator<<(std::ostream& o,std::tuple<A,B,C,D> const& t){
-	o<<"(";
-	o<<get<0>(t)<<",";
-	o<<get<1>(t)<<",";
-	o<<get<2>(t)<<",";
-	o<<get<3>(t);
+template<typename ... Ts>
+std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
+	o<<"( ";
+	std::apply([&](auto&&... x){ ((o<<x<<" "), ...); },a);
 	return o<<")";
 }
 
 template<typename T>
-vector<T> convert(vector<vector<optional<string>>> in){
+vector<T> convert1(vector<vector<optional<string>>> in){
 	return mapf(
 		[](auto x){
 			assert(x.size()==1);
@@ -45,223 +42,27 @@ vector<T> convert(vector<vector<optional<string>>> in){
 	);
 }
 
-template<typename A,typename B>
-vector<tuple<A,B>> convert(vector<vector<optional<string>>> in){
-	return mapf(
-		[](auto x){
-			assert(x.size());
-	       		return make_tuple(
-				parse((A*)nullptr,*x[0]),
-				parse((B*)nullptr,*x[1])
-			);
-		},
-		in
-	);
+template<typename ... Ts>
+tuple<Ts...> convert_row(vector<optional<string>> row){
+	tuple<Ts...> t;
+	size_t i=0;
+	std::apply([&](auto&&... x){ ((x=parse(&x,*row[i++])), ...); },t);
+	return t;
 }
 
-template<typename A,typename B,typename C>
-vector<tuple<A,B,C>> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row){
-			assert(row.size()==3);
-			return make_tuple(
-				parse((A*)0,*row[0]),
-				parse((B*)0,*row[1]),
-				parse((C*)0,*row[2])
-			);
-		},
-		a
-	);
-}
-
-template<typename A,typename B,typename C,typename D>
-vector<tuple<A,B,C,D>> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row)->tuple<A,B,C,D>{
-			assert(row.size()==4);
-			return tuple<A,B,C,D>(
-				parse((A*)0,*row[0]),
-				parse((B*)0,*row[1]),
-				parse((C*)0,*row[2]),
-				parse((D*)0,*row[3])
-			);
-		},
-		a
-	);
-}
-
-template<typename A,typename B,typename C,typename D,typename E>
-vector<tuple<A,B,C,D,E>> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row)->tuple<A,B,C,D,E>{
-			assert(row.size()==5);
-			return make_tuple(
-				parse((A*)0,*row[0]),
-				parse((B*)0,*row[1]),
-				parse((C*)0,*row[2]),
-				parse((D*)0,*row[3]),
-				parse((E*)0,*row[4])
-			);
-		},
-		a
-	);
-}
-
-template<typename A,typename B,typename C,typename D,typename E,typename F>
-vector<tuple<A,B,C,D,E,F>> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row)->tuple<A,B,C,D,E,F>{
-			assert(row.size()==6);
-			return make_tuple(
-				parse((A*)0,*row[0]),
-				parse((B*)0,*row[1]),
-				parse((C*)0,*row[2]),
-				parse((D*)0,*row[3]),
-				parse((E*)0,*row[4]),
-				parse((F*)0,*row[5])
-			);
-		},
-		a
-	);
-}
-
-template<typename A,typename B,typename C,typename D,typename E,typename F,typename G>
-vector<tuple<A,B,C,D,E,F,G>> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row)->tuple<A,B,C,D,E,F,G>{
-			assert(row.size()==7);
-			return make_tuple(
-				parse((A*)0,*row[0]),
-				parse((B*)0,*row[1]),
-				parse((C*)0,*row[2]),
-				parse((D*)0,*row[3]),
-				parse((E*)0,*row[4]),
-				parse((F*)0,*row[5]),
-				parse((G*)0,*row[6])
-			);
-		},
-		a
-	);
+template<typename ... Ts>
+vector<tuple<Ts...>> convert(vector<vector<optional<string>>> in){
+	return mapf(convert_row<Ts...>,in);
 }
 
 #define COUNT_12(X) X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9) X(10) X(11)
 #define COUNT_13(X) X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9) X(10) X(11) X(12)
 
-template<
-#define X(A) typename T_##A,
-COUNT_12(X)
-#undef X
-typename Z
->
-vector<tuple<
-#define X(A) T_##A,
-COUNT_12(X)
-#undef X
-Z
->> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row){
-			assert(row.size()==13);
-			return make_tuple(
-				#define X(A) parse((T_##A*)0,*row[A]),
-				COUNT_12(X)
-				#undef X
-				parse((Z*)0,*row[12])
-			);
-		},
-		a
-	);
-}
-
-template<
-#define X(A) typename T_##A,
-COUNT_13(X)
-#undef X
-typename Z
->
-vector<tuple<
-#define X(A) T_##A,
-COUNT_13(X)
-#undef X
-Z
->> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row){
-			assert(row.size()==14);
-			return make_tuple(
-				#define X(A) parse((T_##A*)0,*row[A]),
-				COUNT_13(X)
-				#undef X
-				parse((Z*)0,*row[13])
-			);
-		},
-		a
-	);
-}
-
-template<
-	#define X(A,B) typename B,
-	PART_DATA_INNER(X)
-	#undef X
-	typename Z
->
-vector<tuple<
-	#define X(A,B) A,
-	PART_DATA_INNER(X)
-	#undef X
-	Z
->> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row){
-			int at=0;
-			#define X(A,B) A B##_=parse((A*)0,*row[at++]);
-			PART_DATA_INNER(X)
-			#undef X
-			return make_tuple(
-				#define X(A,B) B##_,
-				PART_DATA_INNER(X)
-				#undef X
-				parse((Z*)0,*row[at])
-			);
-		},
-		a
-	);
-}
-
-template<
-	#define X(A,B) typename B,
-	PART_INFO_ROW(X)
-	#undef X
-	typename Z
->
-vector<tuple<
-	#define X(A,B) A,
-	PART_INFO_ROW(X)
-	#undef X
-	Z
->> convert(vector<vector<optional<string>>> a){
-	return mapf(
-		[](auto row){
-			int at=0;
-			#define X(A,B) A B##_=parse((A*)0,*row[at++]);
-			PART_INFO_ROW(X)
-			#undef X
-			return make_tuple(
-				#define X(A,B) B##_,
-				PART_INFO_ROW(X)
-				#undef X
-				parse((Z*)0,*row[at])
-			);
-		},
-		a
-	);
-}
-
 template<typename T>
 vector<T> q1(DB db,string query_string){
 	auto q=query(db,query_string);
 	//PRINT(q);
-	return convert<T>(q);
+	return convert1<T>(q);
 }
 
 template<typename A,typename B>
@@ -270,98 +71,11 @@ vector<pair<A,B>> q2(DB db,string query_string){
 	return convert<A,B>(q);
 }
 
-/*template<typename A,typename B>
-auto qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<A,B>(q);
-}
-
-template<typename A,typename B,typename C>
-vector<tuple<A,B,C>> qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<A,B,C>(q);
-}
-
-template<typename A,typename B,typename C,typename D>
-vector<tuple<A,B,C,D>> qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<A,B,C,D>(q);
-}
-
-template<typename A,typename B,typename C,typename D,typename E>
-auto qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<A,B,C,D,E>(q);
-}*/
-
 template<typename ... Ts>
 vector<tuple<Ts...>> qm(DB db,string query_string){
 	auto q=query(db,query_string);
 	return convert<Ts...>(q);
 }
-
-/*template<
-	#define X(A) typename T_##A,
-	COUNT_13(X)
-	#undef X
-	typename Z
->
-vector<tuple<
-	#define X(A) T_##A,
-	COUNT_13(X)
-	#undef X
-	Z
->> qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<
-		#define X(A) T_##A,
-		COUNT_13(X)
-		#undef X
-		Z
-	>(q);
-}
-
-template<
-	#define X(A,B) typename B,
-	PART_DATA_INNER(X)
-	#undef X
-	typename Z
->
-vector<tuple<
-	#define X(A,B) B,
-	PART_DATA_INNER(X)
-	#undef X
-	Z
->> qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<
-		#define X(A,B) B,
-		PART_DATA_INNER(X)
-		#undef X
-		Z
-	>(q);
-}
-
-template<
-	#define X(A,B) typename B,
-	PART_INFO_ROW(X)
-	#undef X
-	typename Z
->
-vector<tuple<
-	#define X(A,B) B,
-	PART_INFO_ROW(X)
-	#undef X
-	Z
->> qm(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<
-		#define X(A,B) B,
-		PART_INFO_ROW(X)
-		#undef X
-		Z
-	>(q);
-}*/
 
 template<typename T>
 vector<optional<T>> operator|=(vector<optional<T>>,T)nyi
