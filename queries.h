@@ -20,12 +20,10 @@
 #define PART_ROW(X)\
 	X(Id,id)\
 
-#define PART_DATA(X)\
-	X(bool,valid)\
+#define PART_DATA_INNER(X)\
 	X(Subsystem_id,subsystem)\
 	X(std::string,name)\
 	X(std::string,part_number)\
-	X(std::string,incremental_number)\
 	X(Part_state,part_state)\
 	X(std::string,length)\
 	X(std::string,width)\
@@ -34,7 +32,7 @@
 	X(unsigned,qty)\
 	X(Decimal,time)\
 	X(Date,manufacture_date)\
-	X(std::string,who_manufacure)\
+	X(User,who_manufacture)\
 	X(Machine,machine)\
 	X(std::string,place)\
 	X(std::string,bent)\
@@ -46,13 +44,17 @@
 	X(Date,arrival_date)\
 	X(Decimal,price)
 
+#define PART_DATA(X)\
+	X(bool,valid)\
+	PART_DATA_INNER(X)
+
 struct Part_data{
 	PART_DATA(INST)
 };
 
 #define PART_INFO_ROW(X)\
 	X(Id,id)\
-	X(Id,part_id)\
+	X(Part_id,part_id)\
 	X(User,edit_user)\
 	X(Datetime,edit_date)\
 	PART_DATA(X)
@@ -60,11 +62,15 @@ struct Part_data{
 #define MEETING_ROW(X)\
 	X(Id,id)
 
+using Meeting_length=int;
+using Color=std::string;
+
 #define MEETING_DATA(X)\
 	X(bool,valid)\
 	X(Date,date)\
-	X(int,length)\
-	X(std::string,color)\
+	X(Meeting_length,length)\
+	X(Color,color)\
+	X(std::string,notes)\
 
 struct Meeting_data{
 	MEETING_DATA(INST)
@@ -72,7 +78,7 @@ struct Meeting_data{
 
 #define MEETING_INFO_ROW(X)\
 	X(Id,id)\
-	X(Id,meeting_id)\
+	X(Meeting_id,meeting_id)\
 	X(User,edit_user)\
 	X(Datetime,edit_date)\
 	MEETING_DATA(X)
@@ -103,7 +109,6 @@ std::string to_query(std::map<std::string,std::string> m);
 unsigned parse(const unsigned*,std::string);
 
 bool parse(const bool*,std::string);
-std::string parse(const std::string*,std::string);
 float parse(const float*,std::string);
 double parse(const double*,std::string);
 
@@ -196,7 +201,7 @@ DECL_OPTION(Calendar,CALENDAR_ITEMS)
 DECL_OPTION(Meeting_new,MEETING_NEW_ITEMS)
 
 #define MEETING_EDITOR_ITEMS(X)\
-	X(Id,id)
+	X(Meeting_id,id)
 DECL_OPTION(Meeting_editor,MEETING_EDITOR_ITEMS)
 
 #define MEETING_EDIT_ITEMS(X)\
@@ -207,6 +212,15 @@ DECL_OPTION(Meeting_edit,MEETING_EDIT_ITEMS)
 #define ERROR_ITEMS(X)\
 	X(std::string,s)
 DECL_OPTION(Error,ERROR_ITEMS)
+
+#define BY_USER_ITEMS(X) X(User,user)
+DECL_OPTION(By_user,BY_USER_ITEMS)
+
+#define MACHINES_ITEMS(X)
+DECL_OPTION(Machines,MACHINES_ITEMS)
+
+#define ORDERS_ITEMS(X)
+DECL_OPTION(Orders,ORDERS_ITEMS)
 
 #define PAGES(X)\
 	X(Home)\
@@ -222,73 +236,17 @@ DECL_OPTION(Error,ERROR_ITEMS)
 	X(Meeting_new)\
 	X(Meeting_editor)\
 	X(Meeting_edit)\
-
+	X(By_user)\
+	X(Machines)\
+	X(Orders)\
+	
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)
 	#undef X
 	Error
 >;
-/*
-int hex_digit(char c){
-	if(c>='0' && c<='9') return c-'0';
-	if(c>='a' && c<='f') return c-'a'+10;
-	if(c>='A' && c<='F') return c-'A'+10;
-	nyi
-}
 
-char from_hex(char a,char b){
-	return (hex_digit(a)<<4)+hex_digit(b);
-}
-
-string decode(string s){
-	//Remove %20, etc. style escapes
-	//There's got to be a library function for this somewhere
-	stringstream ss;
-	for(auto at=begin(s);at!=end(s);){
-		if(*at=='%'){
-			at++;
-			assert(at!=end(s));
-			auto b1=*at;
-			at++;
-			assert(at!=end(s));
-			auto b2=*at;
-			ss<<from_hex(b1,b2);
-			at++;
-		}else if(*at=='+'){
-			ss<<" ";
-			at++;
-		}else{
-			ss<<*at;
-			at++;
-		}
-	}
-	return ss.str();
-}
-
-map<string,vector<string>> parse_query_string(string s){
-	map<string,vector<string>> r;
-	auto at=begin(s);
-	auto end=std::end(s);
-	while(at!=end){
-		auto start=at;
-		while(at!=end && *at!='='){
-			at++;
-		}
-		string key(start,at);
-		assert(at!=end);
-		at++;
-		start=at;
-		while(at!=end && *at!='&'){
-			at++;
-		}
-		string value(start,at);
-		r[key]|=decode(value);
-		if(at!=end) at++; //skip the '&'
-	}
-	return r;
-}
-*/
 Request parse_query(std::string);
 
 template<

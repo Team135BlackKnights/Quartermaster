@@ -1,10 +1,9 @@
 #include "util.h"
 #include "data_types.h"
 #include "auth.h"
+#include "queries.h"
 
 using namespace std;
-
-#include "queries.h"
 
 //TODO: Move to util
 template<typename Func,typename T>
@@ -14,6 +13,25 @@ vector<T> filter(Func f,vector<T> v){
 		if(f(elem)) r|=elem;
 	}
 	return r;
+}
+
+template<typename T>
+T sum(vector<T> v){
+	T r{};
+	for(auto elem:v){
+		r+=elem;
+	}
+	return r;
+}
+
+template<typename A,typename B,typename C,typename D>
+std::ostream& operator<<(std::ostream& o,std::tuple<A,B,C,D> const& t){
+	o<<"(";
+	o<<get<0>(t)<<",";
+	o<<get<1>(t)<<",";
+	o<<get<2>(t)<<",";
+	o<<get<3>(t);
+	return o<<")";
 }
 
 template<typename T>
@@ -28,11 +46,11 @@ vector<T> convert(vector<vector<optional<string>>> in){
 }
 
 template<typename A,typename B>
-vector<pair<A,B>> convert(vector<vector<optional<string>>> in){
+vector<tuple<A,B>> convert(vector<vector<optional<string>>> in){
 	return mapf(
 		[](auto x){
 			assert(x.size());
-	       		return make_pair(
+	       		return make_tuple(
 				parse((A*)nullptr,*x[0]),
 				parse((B*)nullptr,*x[1])
 			);
@@ -56,6 +74,189 @@ vector<tuple<A,B,C>> convert(vector<vector<optional<string>>> a){
 	);
 }
 
+template<typename A,typename B,typename C,typename D>
+vector<tuple<A,B,C,D>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row)->tuple<A,B,C,D>{
+			assert(row.size()==4);
+			return tuple<A,B,C,D>(
+				parse((A*)0,*row[0]),
+				parse((B*)0,*row[1]),
+				parse((C*)0,*row[2]),
+				parse((D*)0,*row[3])
+			);
+		},
+		a
+	);
+}
+
+template<typename A,typename B,typename C,typename D,typename E>
+vector<tuple<A,B,C,D,E>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row)->tuple<A,B,C,D,E>{
+			assert(row.size()==5);
+			return make_tuple(
+				parse((A*)0,*row[0]),
+				parse((B*)0,*row[1]),
+				parse((C*)0,*row[2]),
+				parse((D*)0,*row[3]),
+				parse((E*)0,*row[4])
+			);
+		},
+		a
+	);
+}
+
+template<typename A,typename B,typename C,typename D,typename E,typename F>
+vector<tuple<A,B,C,D,E,F>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row)->tuple<A,B,C,D,E,F>{
+			assert(row.size()==6);
+			return make_tuple(
+				parse((A*)0,*row[0]),
+				parse((B*)0,*row[1]),
+				parse((C*)0,*row[2]),
+				parse((D*)0,*row[3]),
+				parse((E*)0,*row[4]),
+				parse((F*)0,*row[5])
+			);
+		},
+		a
+	);
+}
+
+template<typename A,typename B,typename C,typename D,typename E,typename F,typename G>
+vector<tuple<A,B,C,D,E,F,G>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row)->tuple<A,B,C,D,E,F,G>{
+			assert(row.size()==7);
+			return make_tuple(
+				parse((A*)0,*row[0]),
+				parse((B*)0,*row[1]),
+				parse((C*)0,*row[2]),
+				parse((D*)0,*row[3]),
+				parse((E*)0,*row[4]),
+				parse((F*)0,*row[5]),
+				parse((G*)0,*row[6])
+			);
+		},
+		a
+	);
+}
+
+#define COUNT_12(X) X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9) X(10) X(11)
+#define COUNT_13(X) X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9) X(10) X(11) X(12)
+
+template<
+#define X(A) typename T_##A,
+COUNT_12(X)
+#undef X
+typename Z
+>
+vector<tuple<
+#define X(A) T_##A,
+COUNT_12(X)
+#undef X
+Z
+>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row){
+			assert(row.size()==13);
+			return make_tuple(
+				#define X(A) parse((T_##A*)0,*row[A]),
+				COUNT_12(X)
+				#undef X
+				parse((Z*)0,*row[12])
+			);
+		},
+		a
+	);
+}
+
+template<
+#define X(A) typename T_##A,
+COUNT_13(X)
+#undef X
+typename Z
+>
+vector<tuple<
+#define X(A) T_##A,
+COUNT_13(X)
+#undef X
+Z
+>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row){
+			assert(row.size()==14);
+			return make_tuple(
+				#define X(A) parse((T_##A*)0,*row[A]),
+				COUNT_13(X)
+				#undef X
+				parse((Z*)0,*row[13])
+			);
+		},
+		a
+	);
+}
+
+template<
+	#define X(A,B) typename B,
+	PART_DATA_INNER(X)
+	#undef X
+	typename Z
+>
+vector<tuple<
+	#define X(A,B) A,
+	PART_DATA_INNER(X)
+	#undef X
+	Z
+>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row){
+			int at=0;
+			#define X(A,B) A B##_=parse((A*)0,*row[at++]);
+			PART_DATA_INNER(X)
+			#undef X
+			return make_tuple(
+				#define X(A,B) B##_,
+				PART_DATA_INNER(X)
+				#undef X
+				parse((Z*)0,*row[at])
+			);
+		},
+		a
+	);
+}
+
+template<
+	#define X(A,B) typename B,
+	PART_INFO_ROW(X)
+	#undef X
+	typename Z
+>
+vector<tuple<
+	#define X(A,B) A,
+	PART_INFO_ROW(X)
+	#undef X
+	Z
+>> convert(vector<vector<optional<string>>> a){
+	return mapf(
+		[](auto row){
+			int at=0;
+			#define X(A,B) A B##_=parse((A*)0,*row[at++]);
+			PART_INFO_ROW(X)
+			#undef X
+			return make_tuple(
+				#define X(A,B) B##_,
+				PART_INFO_ROW(X)
+				#undef X
+				parse((Z*)0,*row[at])
+			);
+		},
+		a
+	);
+}
+
 template<typename T>
 vector<T> q1(DB db,string query_string){
 	auto q=query(db,query_string);
@@ -69,11 +270,98 @@ vector<pair<A,B>> q2(DB db,string query_string){
 	return convert<A,B>(q);
 }
 
+/*template<typename A,typename B>
+auto qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<A,B>(q);
+}
+
 template<typename A,typename B,typename C>
-vector<tuple<A,B,C>> q3(DB db,string query_string){
+vector<tuple<A,B,C>> qm(DB db,string query_string){
 	auto q=query(db,query_string);
 	return convert<A,B,C>(q);
 }
+
+template<typename A,typename B,typename C,typename D>
+vector<tuple<A,B,C,D>> qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<A,B,C,D>(q);
+}
+
+template<typename A,typename B,typename C,typename D,typename E>
+auto qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<A,B,C,D,E>(q);
+}*/
+
+template<typename ... Ts>
+vector<tuple<Ts...>> qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<Ts...>(q);
+}
+
+/*template<
+	#define X(A) typename T_##A,
+	COUNT_13(X)
+	#undef X
+	typename Z
+>
+vector<tuple<
+	#define X(A) T_##A,
+	COUNT_13(X)
+	#undef X
+	Z
+>> qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<
+		#define X(A) T_##A,
+		COUNT_13(X)
+		#undef X
+		Z
+	>(q);
+}
+
+template<
+	#define X(A,B) typename B,
+	PART_DATA_INNER(X)
+	#undef X
+	typename Z
+>
+vector<tuple<
+	#define X(A,B) B,
+	PART_DATA_INNER(X)
+	#undef X
+	Z
+>> qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<
+		#define X(A,B) B,
+		PART_DATA_INNER(X)
+		#undef X
+		Z
+	>(q);
+}
+
+template<
+	#define X(A,B) typename B,
+	PART_INFO_ROW(X)
+	#undef X
+	typename Z
+>
+vector<tuple<
+	#define X(A,B) B,
+	PART_INFO_ROW(X)
+	#undef X
+	Z
+>> qm(DB db,string query_string){
+	auto q=query(db,query_string);
+	return convert<
+		#define X(A,B) B,
+		PART_INFO_ROW(X)
+		#undef X
+		Z
+	>(q);
+}*/
 
 template<typename T>
 vector<optional<T>> operator|=(vector<optional<T>>,T)nyi
@@ -81,6 +369,10 @@ vector<optional<T>> operator|=(vector<optional<T>>,T)nyi
 template<typename T>
 string pretty_td(DB,T t){
 	return td(as_string(t));
+}
+
+string pretty_td(DB,Dummy){
+	return "";
 }
 
 string subsystem_name(DB db,Subsystem_id id){
@@ -111,8 +403,8 @@ string part_name(DB db,Part_id id){
 		db,
 		"SELECT name "
 		"FROM part_info "
-		"WHERE (name,edit_date) IN "
-			"(SELECT name,MAX(edit_date) FROM part_info WHERE part_id="+as_string(id)+") "
+		"WHERE (id) IN "
+			"(SELECT MAX(id) FROM part_info WHERE part_id="+as_string(id)+") "
 			"AND valid"
 	);
 	//if(q.empty()) return "what?";
@@ -125,6 +417,25 @@ string pretty_td(DB db, Part_id a){
 	return td(link(Part_editor{a},part_name(db,a)));
 }
 
+string pretty_td(DB,User a){
+	return td(link(By_user{a},as_string(a)));
+}
+
+template<typename A,typename B>
+string as_table(DB db,vector<string> labels,vector<tuple<A,B>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		ss<<pretty_td(db,get<0>(row));
+		ss<<pretty_td(db,get<1>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
 template<typename A,typename B,typename C>
 string as_table(DB db,vector<string> labels,vector<tuple<A,B,C>> const& a){
 	stringstream ss;
@@ -132,7 +443,6 @@ string as_table(DB db,vector<string> labels,vector<tuple<A,B,C>> const& a){
 	ss<<join("",mapf(th,labels));
 	for(auto row:a){
 		ss<<"<tr>";
-		//ss<<td("aux");
 		ss<<pretty_td(db,get<0>(row));
 		ss<<pretty_td(db,get<1>(row));
 		ss<<pretty_td(db,get<2>(row));
@@ -142,8 +452,206 @@ string as_table(DB db,vector<string> labels,vector<tuple<A,B,C>> const& a){
 	return ss.str();
 }
 
+template<typename A,typename B,typename C,typename D>
+string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		ss<<pretty_td(db,get<0>(row));
+		ss<<pretty_td(db,get<1>(row));
+		ss<<pretty_td(db,get<2>(row));
+		ss<<pretty_td(db,get<3>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<typename A,typename B,typename C,typename D,typename E>
+string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D,E>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		ss<<pretty_td(db,get<0>(row));
+		ss<<pretty_td(db,get<1>(row));
+		ss<<pretty_td(db,get<2>(row));
+		ss<<pretty_td(db,get<3>(row));
+		ss<<pretty_td(db,get<4>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<typename A,typename B,typename C,typename D,typename E,typename F>
+string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D,E,F>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		ss<<pretty_td(db,get<0>(row));
+		ss<<pretty_td(db,get<1>(row));
+		ss<<pretty_td(db,get<2>(row));
+		ss<<pretty_td(db,get<3>(row));
+		ss<<pretty_td(db,get<4>(row));
+		ss<<pretty_td(db,get<5>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<typename A,typename B,typename C,typename D,typename E,typename F,typename G>
+string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D,E,F,G>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		ss<<pretty_td(db,get<0>(row));
+		ss<<pretty_td(db,get<1>(row));
+		ss<<pretty_td(db,get<2>(row));
+		ss<<pretty_td(db,get<3>(row));
+		ss<<pretty_td(db,get<4>(row));
+		ss<<pretty_td(db,get<5>(row));
+		ss<<pretty_td(db,get<6>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<
+#define X(A) typename T_##A,
+COUNT_12(X)
+#undef X
+typename Z
+>
+string as_table(DB db,vector<string> labels,vector<tuple<
+#define X(A) T_##A,
+COUNT_12(X)
+#undef X
+Z
+>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		#define X(A) ss<<pretty_td(db,get<A>(row));
+		COUNT_12(X)
+		#undef X
+		ss<<pretty_td(db,get<12>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<
+#define X(A) typename T_##A,
+COUNT_13(X)
+#undef X
+typename Z
+>
+string as_table(DB db,vector<string> labels,vector<tuple<
+#define X(A) T_##A,
+COUNT_13(X)
+#undef X
+Z
+>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		#define X(A) ss<<pretty_td(db,get<A>(row));
+		COUNT_13(X)
+		#undef X
+		ss<<pretty_td(db,get<13>(row));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<
+	#define X(A,B) typename B,
+	PART_DATA_INNER(X)
+	#undef X
+	typename Z
+>
+string as_table(DB db,vector<string> labels,vector<tuple<
+	#define X(A,B) B,
+	PART_DATA_INNER(X)
+	#undef X
+	Z
+>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		#define X(N) ss<<pretty_td(db,get<N>(row));
+		X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9)
+		X(10) X(11) X(12) X(13) X(14) X(15) X(16) X(17) X(18) X(19)
+		X(20) X(21) X(22)
+		#undef X
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<
+	#define X(A,B) typename B,
+	PART_INFO_ROW(X)
+	#undef X
+	typename Z
+>
+string as_table(DB db,vector<string> labels,vector<tuple<
+	#define X(A,B) B,
+	PART_INFO_ROW(X)
+	#undef X
+	Z
+>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		#define X(N) ss<<pretty_td(db,get<N>(row));
+		X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9)
+		X(10) X(11) X(12) X(13) X(14) X(15) X(16) X(17) X(18) X(19)
+		X(20) X(21) X(22) X(23) X(24) X(25) X(26) X(27)
+		#undef X
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<typename T>
+string as_table(DB db,vector<string> labels,vector<T> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		ss<<pretty_td(db,row);
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
 template<typename A,typename B>
-string as_table(vector<string> labels,vector<pair<A,B>> const&){
+string as_table(vector<string> labels,vector<tuple<A,B>> const&){
 	nyi
 }
 
@@ -209,8 +717,21 @@ string make_page(string heading,string main_body){
 
 }
 
-string inner(Home const& a,DB){
-	return make_page("Home","");
+string parts_by_state(DB db){
+	auto a=qm<Part_state,Subsystem_id,Part_id>(
+		db,
+		"SELECT part_state,subsystem,part_id "
+		"FROM part_info "
+		"WHERE "
+			"valid "
+			"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+		"ORDER BY part_state,subsystem "
+	);
+	return as_table(db,{"State","Subsystem","Part"},a);
+}
+
+string inner(Home const& a,DB db){
+	return make_page("Home",parts_by_state(db));
 }
 
 string make_table(vector<string> labels,vector<vector<optional<string>>> const& a){
@@ -244,10 +765,10 @@ string make_table(vector<vector<optional<string>>> const& a){
 	return ss.str();
 }
 
-string show_table(DB db,Table_name name){
+string show_table(DB db,Table_name name,optional<string> title={}){
 	auto columns=firsts(query(db,"DESCRIBE "+name));
 	stringstream ss;
-	ss<<h2(name);
+	ss<<h2(title?*title:name);
 	ss<<"<table border>";
 	ss<<"<tr>";
 	for(auto elem:columns) ss<<th(as_string(elem));
@@ -271,23 +792,86 @@ vector<int> get_ids(DB db,Table_name table){
 	return r;
 }
 
-string show_current_subsystems(DB db){
-	auto q=q2<Subsystem_id,string>(
+string show_current_subsystems1(DB db){
+	auto q=q1<Subsystem_id>(
 		db,
-                "SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"
+                "SELECT subsystem_id FROM subsystem_info WHERE (id) IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid"
 	);
-	return as_table(
-		{"subsystem_id","name"},
-		mapf(
-			[](auto x){
-				vector<string> r;
-				r|=as_string(x.first);
-				r|=link(Subsystem_editor{x.first},x.second);
-				return r;
-			},
-			q
-		)
+	return as_table(db,{"Subsystem"},q);
+}
+
+string subsystem_state_count(DB db){
+	auto q=qm<
+		Subsystem_id,
+		#define X(A) int,
+		PART_STATES(X)
+		#undef X
+		Dummy
+	>(
+		db,
+                "SELECT subsystem_id,"
+		#define X(A) "SUM(part_info.part_state='"#A "'),"
+		PART_STATES(X)
+		#undef X
+		"0 "
+		"FROM subsystem_info,part_info "
+		"WHERE "
+			"subsystem_info.id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			"AND subsystem_info.valid "
+			"AND part_info.valid "
+			"AND part_info.id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
+			"AND part_info.subsystem=subsystem_info.subsystem_id "
+		"GROUP BY subsystem_id"
 	);
+	return h2("Number of parts by state")+as_table(
+		db,
+		{
+			"Subsystem"
+			#define X(A) ,""#A
+			PART_STATES(X)
+			#undef X
+		},
+		q
+	);
+}
+
+string subsystem_machine_count(DB db){
+	auto q=qm<
+		Subsystem_id,
+		#define X(A) int,
+		MACHINES(X)
+		#undef X
+		Dummy
+	>(
+		db,
+                "SELECT subsystem_id,"
+		#define X(A) "SUM(part_info.machine='"#A "'),"
+		MACHINES(X)
+		#undef X
+		"0 "
+		"FROM subsystem_info,part_info "
+		"WHERE "
+			"subsystem_info.id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			"AND subsystem_info.valid "
+			"AND part_info.valid "
+			"AND part_info.id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
+			"AND part_info.subsystem=subsystem_info.subsystem_id "
+		"GROUP BY subsystem_id"
+	);
+	return h2("Number of parts by machine")+as_table(
+		db,
+		{
+			"Subsystem"
+			#define X(A) ,""#A
+			MACHINES(X)
+			#undef X
+		},
+		q
+	);
+}
+
+string show_current_subsystems(DB db){
+	return subsystem_state_count(db)+subsystem_machine_count(db);
 }
 
 string inner(Subsystems const& a,DB db){
@@ -302,8 +886,8 @@ string inner(Subsystems const& a,DB db){
 			}
 			return ss.str();
 		}()+
-		show_table(db,"subsystem")+
-		show_table(db,"subsystem_info")*/
+		show_table(db,"subsystem")+*/
+		+show_table(db,"subsystem_info","History")
 	);
 }
 
@@ -339,15 +923,15 @@ string inner(Subsystem_new const&,DB db){
 }
 
 string parts_of_subsystem(DB db,Subsystem_id id){
-	auto q=q3<Part_id,Subsystem_id,string>(
+	auto q=qm<Part_id,Part_state,int>(
 		db,
-		"SELECT part_id,subsystem,name "
+		"SELECT part_id,part_state,qty "
 		"FROM part_info "
-		"WHERE (part_id,subsystem,edit_date) IN "
-			"(SELECT part_id,subsystem,MAX(edit_date) FROM part_info GROUP BY part_id) "
+		"WHERE (id) IN "
+			"(SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid AND subsystem="+as_string(id)
 	);
-	return as_table(db,{"part_id","subsystem","name"},q);
+	return h2("Parts in subsystem")+as_table(db,{"Part","State","Qty"},q);
 }
 
 string inner(Subsystem_editor const& a,DB db){
@@ -378,11 +962,12 @@ string inner(Subsystem_editor const& a,DB db){
 			[=](){ if(valid) return "checked=on"; return ""; }()+"\">"+
 		"<br><input type=\"submit\">"+
 		"</form>"
+		+parts_of_subsystem(db,a.id)
 		+h2("History")
 		+make_table(
 			{"edit_date","edit_user","id","name","subsystem_id","valid"},
-			query(db,"SELECT * FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
-		)+parts_of_subsystem(db,a.id)
+			query(db,"SELECT edit_date,edit_user,id,name,subsystem_id,valid FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
+		)
 	);
 }
 
@@ -411,7 +996,7 @@ string inner(Part_new const& a,DB db){
 }
 
 vector<pair<Id,string>> current_subsystems(DB db){
-	auto q=query(db,"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid");
+	auto q=query(db,"SELECT subsystem_id,name FROM subsystem_info WHERE (id) IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid");
 	vector<pair<Id,string>> r;
 	for(auto row:q){
 		r|=make_pair(stoi(*row[0]),*row[1]);
@@ -421,7 +1006,7 @@ vector<pair<Id,string>> current_subsystems(DB db){
 
 string subsystem_name(DB db,Id subsystem_id){
 	//query(db,"SELECT name FROM subsystem_info");
-	//query(db,"SELECT subsystem_part_id,name FROM part_info WHERE (part_id,edit_date) IN (SELECT part_id,MAX(edit_date) FROM part_info GROUP BY part_id) AND valid"
+	//query(db,"SELECT subsystem_part_id,name FROM part_info WHERE (id) IN (SELECT MAX(id) FROM part_info GROUP BY part_id) AND valid"
 	//auto q=query(db,"SELECT * FROM ");
 	auto f=filter(
 		[=](auto x){ return x.first==subsystem_id; },
@@ -434,48 +1019,45 @@ string subsystem_name(DB db,Id subsystem_id){
 	return f[0].second;
 }
 
-string show_current_parts(DB db){
-	auto q1=query(
-		db,
-		"SELECT * "
-		"FROM part_info "
-		"WHERE (part_id,subsystem,edit_date) IN (SELECT part_id,subsystem,MAX(edit_date) FROM part_info GROUP BY part_id) AND valid"
-	);
-	/*auto q1=q3<Part_id,Subsystem_id,string>(
-		db,
-		"SELECT part_id,subsystem,name FROM part_info WHERE (part_id,subsystem,edit_date) IN (SELECT part_id,subsystem,MAX(edit_date) FROM part_info GROUP BY part_id) AND valid"
-	);*/
-	return as_table({"part_id","subsystem_id","name"},q1);
-	//auto q1=convert<Id,Id,string>(q);
-	/*return as_table(
-		{"part_id","subsystem_id","name"},
-		mapf(
-			[&](auto x){
-				vector<string> r;
-				r|=as_string(get<0>(x));
-				r|=link(Subsystem_editor{get<1>(x)},subsystem_name(db,get<1>(x)));
-				r|=link(Part_editor{get<0>(x)},as_string(get<2>(x)));
-				return r;
-			},
-			q1
-		)
-	);*/
+vector<std::string> operator|=(vector<string> &a,const char *s){
+	a.push_back(s);
+	return a;
 }
 
+string show_current_parts(DB db){
+	vector<string> columns;
+	#define X(A,B) columns|=""#B;
+	PART_DATA_INNER(X)
+	#undef X
+	auto query_str="SELECT "+join(",",columns)+",0 "
+		"FROM part_info "
+		"WHERE valid AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)";
+
+	auto q1=qm<
+		#define X(A,B) A,
+		PART_DATA_INNER(X)
+		#undef X
+		Dummy
+	>(
+		db,query_str
+	);
+	return h2("Current state")+as_table(db,columns,q1);
+}
 
 string inner(Parts const&,DB db){
 	return make_page(
 		"Parts",
 		show_current_parts(db)+
-		[=](){
+		//parts_by_machine(db)+
+		/*[=](){
 			stringstream ss;
 			for(auto id:get_ids(db,"part")){
 				ss<<link(Part_editor{id},"Edit "+as_string(id))<<"<br>";
 			}
 			return ss.str();
 		}()+
-		show_table(db,"part")+
-		show_table(db,"part_info")
+		show_table(db,"part")+*/
+		show_table(db,"part_info","History")
 	);
 }
 
@@ -559,7 +1141,7 @@ string inner(Meeting_editor const& a,DB db){
 		area_cap+" editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
-		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+to_string(a.id)+"\">"
+		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"
 		#define X(A,B) "<br>"+show_input(db,""#B,current.B)+
 		MEETING_DATA(X)
 		#undef X
@@ -577,11 +1159,48 @@ string inner(Meeting_new const&,DB db){
 	return inner_new<Meeting_editor>(db,"meeting");
 }
 
+string current_calendar(DB db){
+	auto found=qm<Meeting_id,Date,Meeting_length,Color,std::string>(
+		db,
+		"SELECT meeting_id,date,length,color,notes "
+		"FROM meeting_info "
+		"WHERE "
+			"valid "
+			"AND id in (SELECT MAX(id) FROM meeting_info GROUP BY meeting_id)"
+			"AND date>now() "
+		"ORDER BY date"
+	);
+//(id) IN "
+  //                      "(SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+as_string(id)+") "
+
+	stringstream ss;
+	ss<<h2("Remaining meetings");
+	ss<<"<table border>";
+	ss<<"<tr>";
+	ss<<th("Date")<<th("Length (hours)")<<th("Notes");
+	ss<<"</tr>";
+	for(auto [meeting_id,date,length,color,notes]:found){
+		ss<<"<tr>";
+		ss<<"<td bgcolor=\""<<color<<"\">"<<link(Meeting_editor{meeting_id},as_string(date))<<"</td>";
+		ss<<td(as_string(length));
+		ss<<td(notes);
+		ss<<"</tr>";
+	}
+	ss<<"<tr>";
+	ss<<td("Total days: "+as_string(found.size()));
+	ss<<td("Total hours: "+as_string(sum(mapf([](auto x){ return get<2>(x); },found))));
+	ss<<"</tr>";
+	ss<<"</table>";
+	return ss.str();
+	return as_table(db,{"Date","Length","Color"},found);
+}
+
 string inner(Calendar const&,DB db){
 	return make_page(
 		"Calendar",
-		show_table(db,"meeting")
-		+show_table(db,"meeting_info")
+		current_calendar(db)
+		//show_table(db,"meeting")
+		+show_table(db,"meeting_info","History")
 	);
 }
 
@@ -636,6 +1255,130 @@ string inner(Error const& a,DB db){
 	);
 }
 
+string show_table_user(DB db,Table_name name,User edit_user){
+	auto columns=firsts(query(db,"DESCRIBE "+name));
+	stringstream ss;
+	ss<<h2(name);
+	ss<<"<table border>";
+	ss<<"<tr>";
+	for(auto elem:columns) ss<<th(as_string(elem));
+	ss<<"</tr>";
+	for(auto row:query(db,"SELECT * FROM "+name+" WHERE edit_user="+escape(edit_user))){
+		ss<<"<tr>";
+		for(auto elem:row){
+			ss<<td(as_string(elem));
+		}
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+
+string inner(By_user const& a,DB db){
+	return make_page(
+		"By user \""+as_string(a)+"\"",
+		show_table_user(db,"subsystem_info",a.user)
+		+show_table_user(db,"part_info",a.user)
+		+show_table_user(db,"meeting_info",a.user)
+	);
+}
+
+template<size_t N,typename ... Ts>
+auto get_col(vector<tuple<Ts...>> const& in){
+	return mapf([](auto x){ return get<N>(x); },in);
+}
+
+string by_machine(DB db,Machine const& a){
+	auto qq=qm<Part_state,Subsystem_id,Part_id,unsigned,Decimal>(
+		db,
+		"SELECT part_state,subsystem,part_id,qty,time "
+		"FROM part_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+			"AND valid "
+			"AND machine='"+as_string(a)+"' "
+		"ORDER BY part_state"
+	);
+	return h2(as_string(a))
+		+as_table(db,{"Status","Subsystem","Part","Qty","Time"},qq)
+		+"Total time:"+as_string(sum(get_col<3>(qq)));
+}
+
+vector<Machine> machines(){
+	vector<Machine> r;
+	#define X(A) r|=Machine::A;
+	MACHINES(X)
+	#undef X
+	return r;
+}
+
+string inner(Machines const& a,DB db){
+	return make_page(
+		"Machines",
+		join("",mapf([=](auto x){ return by_machine(db,x); },machines()))
+	);
+}
+
+string to_order(DB db){
+	return h2("To order")+as_table(
+		db,
+		{"Subsystem","Part","Supplier","Part #","qty","part_link","price"},
+		qm<Subsystem_id,Part_id,string,string,unsigned,URL,Decimal>(
+			db,
+			"SELECT subsystem,part_id,part_supplier,part_number,qty,part_link,price "
+			"FROM part_info "
+			"WHERE "
+				"valid "
+				"AND id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
+				"AND part_state='buy_list'"
+		)
+	);
+}
+
+string on_order(DB db){
+	return h2("On order")+as_table(
+		db,
+		{"Subsystem","Part","Supplier","Part #","qty","Expected arrival"},
+		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
+			db,
+			"SELECT subsystem,part_id,part_supplier,part_number,qty,arrival_date "
+			"FROM part_info "
+			"WHERE "
+				"valid "
+				"AND id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
+				"AND part_state='ordered' "
+			"ORDER BY arrival_date"
+		)
+	);
+}
+
+string arrived(DB db){
+	return h2("Arrived")+as_table(
+		db,
+		{"Subsystem","Part","Supplier","Part #","qty","Arrival date"},
+		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
+			db,
+			"SELECT subsystem,part_id,part_supplier,part_number,qty,arrival_date "
+			"FROM part_info "
+			"WHERE "
+				"valid "
+				"AND id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
+				"AND part_state='arrived'"
+			"ORDER BY arrival_date"
+		)
+	);
+}
+
+string inner(Orders const& a,DB db){
+	return make_page(
+		"Orders",
+		to_order(db)
+		+on_order(db)
+		+arrived(db)
+	);
+}
+
 #define EMPTY_PAGE(X) string inner(X x,DB db){ \
 	return make_page(\
 		""#X,\
@@ -644,6 +1387,7 @@ string inner(Error const& a,DB db){
 }
 //EMPTY_PAGE(Meeting_editor)
 //EMPTY_PAGE(Meeting_edit)
+//EMPTY_PAGE(By_user)
 #undef EMPTY_PAGE
 
 
@@ -652,12 +1396,7 @@ string run(Request req,DB db){
 	PAGES(X)
 	X(Error)
 	#undef X
-	PRINT(req)
-	if(req==Home{}){
-		nyi;
-	}
-	nyi
-	//return run(
+	return inner(Error{"Could not find page"},db);
 }
 
 template<

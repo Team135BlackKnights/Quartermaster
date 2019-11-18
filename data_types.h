@@ -6,6 +6,8 @@
 #include<decimal/decimal>
 #include "util.h"
 
+std::string parse(const std::string*,std::string);
+
 std::string with_suggestions(std::string name,std::string value,std::vector<std::string> const& suggestions);
 std::string show_input(DB,std::string name,std::string value);
 std::string show_input(DB,std::string name,int value);
@@ -14,21 +16,75 @@ std::string show_input(DB,std::string name,unsigned value);
 std::string show_input(DB,std::string name,bool value);
 
 std::string escape(std::string);
+
 std::string escape(int);
 int parse(const int*,std::string s);
+std::string to_db_type(const int*);
+int rand(const int*);
 
-struct User{
-	//not just a typedef so that can dispatch on the type
-	std::string s;
+template<typename Sub,typename Data>
+struct Wrap{
+	Data data;
 };
 
+template<typename Sub,typename Data>
+std::string to_db_type(const Wrap<Sub,Data>*){
+	return to_db_type((Data*)0);
+}
+
+template<typename Sub,typename Data>
+bool operator==(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
+	return a.data==b.data;
+}
+
+template<typename Sub,typename Data>
+bool operator!=(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
+	return a.data!=b.data;
+}
+
+template<typename Sub,typename Data>
+std::ostream& operator<<(std::ostream& o,Wrap<Sub,Data> const& a){
+	return o<<a.data;
+}
+
+template<typename Sub,typename Data>
+Sub rand(const Wrap<Sub,Data>*){
+	return Sub{rand((Data*)0)};
+}
+
+template<typename Sub,typename Data>
+Sub parse(const Wrap<Sub,Data>*,std::string s){
+	return Sub{parse((Data*)0,s)};
+}
+
+template<typename Sub,typename Data>
+std::string show_input(DB db,std::string name,Wrap<Sub,Data> const& current){
+	return show_input(db,name,current.data);
+}
+
+template<typename Sub,typename Data>
+std::string escape(Wrap<Sub,Data> const& a){
+	return escape(a.data);
+}
+
+using Id=int;
+
+struct Part_id:Wrap<Part_id,Id>{};
+struct Meeting_id:Wrap<Meeting_id,Id>{};
+
+struct Subsystem_id:Wrap<Subsystem_id,Id>{};
+std::string show_input(DB db,std::string name,Subsystem_id const& current);
+
+struct User:Wrap<User,std::string>{};
 std::string to_db_type(const User*);
 
 struct Datetime{
 	std::string s;
 };
 
+std::ostream& operator<<(std::ostream&,Datetime const&);
 std::string to_db_type(const Datetime*);
+Datetime parse(const Datetime*,std::string const&);
 
 struct Date{
 	//not just a typedef so that can dispatch on the type
@@ -181,71 +237,6 @@ struct Material:public Suggest<Material>{
 	std::vector<std::string> suggestions()const;
 };
 
-using Id=int;
-Id rand(const Id*);
-std::string to_db_type(const Id*);
-
-template<typename Sub,typename Data>
-struct Wrap{
-	Data data;
-};
-
-template<typename Sub,typename Data>
-std::string to_db_type(const Wrap<Sub,Data>*){
-	return to_db_type((Data*)0);
-}
-
-template<typename Sub,typename Data>
-bool operator==(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
-	return a.data==b.data;
-}
-
-template<typename Sub,typename Data>
-bool operator!=(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
-	return a.data!=b.data;
-}
-
-template<typename Sub,typename Data>
-std::ostream& operator<<(std::ostream& o,Wrap<Sub,Data> const& a){
-	return o<<a.data;
-}
-
-template<typename Sub,typename Data>
-Sub rand(const Wrap<Sub,Data>*){
-	return Sub{rand((Data*)0)};
-}
-
-template<typename Sub,typename Data>
-Sub parse(const Wrap<Sub,Data>*,std::string s){
-	return Sub{parse((Data*)0,s)};
-}
-
-template<typename Sub,typename Data>
-std::string show_input(DB db,std::string name,Wrap<Sub,Data> const& current){
-	return show_input(db,name,current.data);
-}
-
-template<typename Sub,typename Data>
-std::string escape(Wrap<Sub,Data> const& a){
-	return escape(a.data);
-}
-
-struct Part_id:Wrap<Part_id,Id>{};
-struct Subsystem_id:Wrap<Subsystem_id,Id>{};
-
-/*struct Subsystem_id{
-	Id id;
-};
-
-std::string to_db_type(const Subsystem_id*);
-bool operator==(Subsystem_id const&,Subsystem_id const&);
-bool operator!=(Subsystem_id const&,Subsystem_id const&);
-std::ostream& operator<<(std::ostream&,Subsystem_id const&);
-Subsystem_id rand(const Subsystem_id*);
-Subsystem_id parse(const Subsystem_id*,std::string);*/
-std::string show_input(DB db,std::string name,Subsystem_id const& current);
-/*std::string escape(Subsystem_id const&);*/
-
 template<typename T>
 std::string to_db_type(const std::optional<T>*){
 	return to_db_type((T*)nullptr);
@@ -271,5 +262,9 @@ std::string escape(std::optional<T> const& a){
 	if(a) return escape(*a);
 	return "NULL";
 }
+
+struct Dummy{};
+Dummy parse(const Dummy*,std::string const&);
+std::ostream& operator<<(std::ostream&,Dummy);
 
 #endif

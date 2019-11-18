@@ -4,6 +4,14 @@
 
 using namespace std;
 
+string to_db_type(const int*){
+	return "int(11)";
+}
+
+int rand(const int*){ return rand()%100; }
+
+int parse(const int*,string s){ return stoi(s); }
+
 string with_suggestions(string name,string value,vector<string> const& suggestions){
 	stringstream ss;
 	ss<<"<br>"<<name<<":<input name=\""<<name<<"\" list=\""<<name<<"\" value=\""<<value<<"\">";
@@ -74,6 +82,12 @@ string drop_down(string name,T current,vector<T> const& options){
 string to_db_type(const User*){ return "varchar(11)"; }
 
 string to_db_type(const Datetime*){ return "datetime"; }
+
+Datetime parse(const Datetime*,std::string const& s){ return {s}; }
+
+std::ostream& operator<<(std::ostream& o,Datetime const& a){
+	return o<<a.s;
+}
 
 bool operator==(Date a,Date b){
 	return a.s==b.s;
@@ -252,11 +266,6 @@ string escape(Material const& s){
 	return escape(s.s);
 }
 
-Id rand(const Id*){ return rand()%100; }
-string to_db_type(const Id*){ return "int(11)"; }
-
-int parse(const int*,string s){ return stoi(s); }
-
 string show_input(DB db,string name,Subsystem_id const& current){
 	auto q=query(
 		db,
@@ -276,7 +285,10 @@ string show_input(DB db,string name,Subsystem_id const& current){
 	return drop_down(name,as_string(current),m)+link(Subsystem_editor{current},"Current");
 }
 
-/*string escape(Subsystem_id const& a){
-	return escape(a.id);
-}*/
+Dummy parse(const Dummy*,std::string const&){
+	return Dummy{};
+}
 
+std::ostream& operator<<(std::ostream& o,Dummy){
+	return o;
+}
