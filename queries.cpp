@@ -252,6 +252,8 @@ DEF_OPTION(Error,ERROR_ITEMS)
 DEF_OPTION(By_user,BY_USER_ITEMS)
 DEF_OPTION(Machines,MACHINES_ITEMS)
 DEF_OPTION(Orders,ORDERS_ITEMS)
+DEF_OPTION(Machine_page,MACHINE_ITEMS)
+DEF_OPTION(State,STATE_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';

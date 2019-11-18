@@ -15,6 +15,39 @@ vector<T> filter(Func f,vector<T> v){
 	return r;
 }
 
+/*Subsystem_id& operator+=(Subsystem_id& a,Subsystem_id b){
+	a.data=0;//obviously invalid; real ones start numbering at 1.
+	return a;
+}*/
+
+template<typename T>
+optional<T>& operator+=(optional<T>& a,optional<T> b){
+	if(b) a={};
+	return a;
+}
+
+template<typename T>
+variant<T,string>& operator+=(std::variant<T,string>& a,std::variant<T,string> b){
+	a="Total";
+	return a;
+}
+
+Dummy& operator+=(Dummy& a,Dummy){
+	return a;
+}
+
+template<typename ... Ts>
+tuple<Ts...>& operator+=(tuple<Ts...>& a,tuple<Ts...> b){
+	std::apply(
+		[&](auto&&... x){
+			//Do a bunch of nasty pointer arithmetic to figure out where the parallel item is in "b"
+			(( x+=*(typename std::remove_reference<decltype(x)>::type*)((char*)&b+((char*)&x-(char*)&a)) ), ... );
+		},
+		a
+	);
+	return a;
+}
+
 template<typename T>
 T sum(vector<T> v){
 	T r{};
@@ -76,8 +109,30 @@ string pretty_td(DB,T t){
 	return td(as_string(t));
 }
 
+template<typename A,typename B>
+string pretty_td(DB db,std::variant<A,B> const& a){
+	if(holds_alternative<A>(a)){
+		return pretty_td(db,get<A>(a));
+	}
+	return pretty_td(db,get<B>(a));
+}
+
+template<typename T>
+string pretty_td(DB db,std::optional<T> const& a){
+	if(a) return pretty_td(db,*a);
+	return td("-");
+}
+
 string pretty_td(DB,Dummy){
 	return "";
+}
+
+string pretty_td(DB,Machine a){
+	return td(link(Machine_page{a},as_string(a)));
+}
+
+string pretty_td(DB,Part_state a){
+	return td(link(State{a},as_string(a)));
 }
 
 string subsystem_name(DB db,Subsystem_id id){
@@ -134,6 +189,26 @@ string as_table(DB db,vector<string> labels,vector<tuple<Ts...>> const& a){
 	for(auto row:a){
 		ss<<"<tr>";
 		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },row);
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+template<typename ... Ts>
+string table_with_totals(DB db,vector<string> labels,vector<tuple<Ts...>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<join("",mapf(th,labels));
+	for(auto row:a){
+		ss<<"<tr>";
+		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },row);
+		ss<<"</tr>";
+	}
+	if(!a.empty()){
+		ss<<"<tr>";
+		auto t=sum(a);
+		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },t);
 		ss<<"</tr>";
 	}
 	ss<<"</table>";
@@ -304,20 +379,25 @@ string show_current_subsystems1(DB db){
 	return as_table(db,{"Subsystem"},q);
 }
 
+template<typename A,typename B>
+std::variant<A,B> parse(const variant<A,B>*,string const& s){
+	return parse((A*)0,s);
+}
+
 string subsystem_state_count(DB db){
 	auto q=qm<
-		Subsystem_id,
+		variant<Subsystem_id,string>,
 		#define X(A) int,
 		PART_STATES(X)
 		#undef X
-		Dummy
+		unsigned
 	>(
 		db,
                 "SELECT subsystem_id,"
 		#define X(A) "SUM(part_info.part_state='"#A "'),"
 		PART_STATES(X)
 		#undef X
-		"0 "
+		"COUNT(*) "
 		"FROM subsystem_info,part_info "
 		"WHERE "
 			"subsystem_info.id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
@@ -327,13 +407,14 @@ string subsystem_state_count(DB db){
 			"AND part_info.subsystem=subsystem_info.subsystem_id "
 		"GROUP BY subsystem_id"
 	);
-	return h2("Number of parts by state")+as_table(
+	return h2("Number of parts by state")+table_with_totals(
 		db,
 		{
 			"Subsystem"
-			#define X(A) ,""#A
+			#define X(A) ,link(State{Part_state::A},""#A)
 			PART_STATES(X)
 			#undef X
+			,"Total"
 		},
 		q
 	);
@@ -341,7 +422,7 @@ string subsystem_state_count(DB db){
 
 string subsystem_machine_count(DB db){
 	auto q=qm<
-		Subsystem_id,
+		variant<Subsystem_id,string>,
 		#define X(A) int,
 		MACHINES(X)
 		#undef X
@@ -362,11 +443,11 @@ string subsystem_machine_count(DB db){
 			"AND part_info.subsystem=subsystem_info.subsystem_id "
 		"GROUP BY subsystem_id"
 	);
-	return h2("Number of parts by machine")+as_table(
+	return h2("Number of parts by machine")+"Note: This is regardless of state, so includes finished parts."+table_with_totals(
 		db,
 		{
 			"Subsystem"
-			#define X(A) ,""#A
+			#define X(A) ,link(Machine_page{Machine::A},""#A)
 			MACHINES(X)
 			#undef X
 		},
@@ -528,14 +609,50 @@ vector<std::string> operator|=(vector<string> &a,const char *s){
 	return a;
 }
 
+string done(DB db){
+	return h2("Done")+table_with_totals(
+		db,
+		{"State","Machine","Time","Subsystem","Part"},
+		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
+			db,
+			"SELECT part_state,machine,time,subsystem,part_id "
+			"FROM part_info "
+			"WHERE "
+				"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+				"AND valid "
+				"AND (part_state='fabbed' OR part_state='found' OR part_state='ordered' OR part_state='arrived') "
+			"ORDER BY part_state,machine "
+		)
+	);
+}
+
+string to_do(DB db){
+	return h2("To do")+table_with_totals(
+		db,
+		{"State","Machine","Time","Subsystem","Part"},
+		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
+			db,
+			"SELECT part_state,machine,time,subsystem,part_id "
+			"FROM part_info "
+			"WHERE "
+				"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+				"AND valid "
+				"AND part_state!='fabbed' AND part_state!='found' AND part_state!='ordered' AND part_state!='arrived' "
+			"ORDER BY part_state,machine "
+		)
+	);
+}
+
 string show_current_parts(DB db){
-	vector<string> columns;
+/*	vector<string> columns;
 	#define X(A,B) columns|=""#B;
 	PART_DATA_INNER(X)
 	#undef X
 	auto query_str="SELECT "+join(",",columns)+",0 "
 		"FROM part_info "
-		"WHERE valid AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)";
+		"WHERE valid AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+		"ORDER BY subsystem,part_id"
+	;
 
 	auto q1=qm<
 		#define X(A,B) A,
@@ -546,6 +663,8 @@ string show_current_parts(DB db){
 		db,query_str
 	);
 	return h2("Current state")+as_table(db,columns,q1);
+	*/
+	return h2("Current state")+to_do(db)+done(db);
 }
 
 string inner(Parts const&,DB db){
@@ -703,6 +822,7 @@ string inner(Calendar const&,DB db){
 	return make_page(
 		"Calendar",
 		current_calendar(db)
+		+to_do(db)
 		//show_table(db,"meeting")
 		+show_table(db,"meeting_info","History")
 	);
@@ -806,7 +926,7 @@ string by_machine(DB db,Machine const& a){
 	);
 	return h2(as_string(a))
 		+as_table(db,{"Status","Subsystem","Part","Qty","Time"},qq)
-		+"Total time:"+as_string(sum(get_col<3>(qq)));
+		+"Total time:"+as_string(sum(get_col<4>(qq)));
 }
 
 vector<Machine> machines(){
@@ -870,6 +990,33 @@ string arrived(DB db){
 				"AND id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
 				"AND part_state='arrived'"
 			"ORDER BY arrival_date"
+		)
+	);
+}
+
+string inner(Machine_page const& a,DB db){
+	return make_page(
+		as_string(a.machine),
+		by_machine(db,a.machine)
+	);
+}
+
+string inner(State const& a,DB db){
+	return make_page(
+		as_string(a.state),
+		as_table(
+			db,
+			{"Subsystem","Part"},
+			qm<Subsystem_id,Part_id>(
+				db,
+				"SELECT subsystem,part_id "
+				"FROM part_info "
+				"WHERE "
+					"valid "
+					"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+					"AND part_state='"+as_string(a.state)+"'"
+				"ORDER BY subsystem,part_id "
+			)
 		)
 	);
 }

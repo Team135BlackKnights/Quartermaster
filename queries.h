@@ -222,6 +222,14 @@ DECL_OPTION(Machines,MACHINES_ITEMS)
 #define ORDERS_ITEMS(X)
 DECL_OPTION(Orders,ORDERS_ITEMS)
 
+#define MACHINE_ITEMS(X)\
+	X(Machine,machine)
+DECL_OPTION(Machine_page,MACHINE_ITEMS)
+
+#define STATE_ITEMS(X)\
+	X(Part_state,state)
+DECL_OPTION(State,STATE_ITEMS)
+
 #define PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -239,7 +247,9 @@ DECL_OPTION(Orders,ORDERS_ITEMS)
 	X(By_user)\
 	X(Machines)\
 	X(Orders)\
-	
+	X(Machine_page)\
+	X(State)
+
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)
