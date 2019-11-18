@@ -55,20 +55,11 @@ vector<tuple<Ts...>> convert(vector<vector<optional<string>>> in){
 	return mapf(convert_row<Ts...>,in);
 }
 
-#define COUNT_12(X) X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9) X(10) X(11)
-#define COUNT_13(X) X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9) X(10) X(11) X(12)
-
 template<typename T>
 vector<T> q1(DB db,string query_string){
 	auto q=query(db,query_string);
 	//PRINT(q);
 	return convert1<T>(q);
-}
-
-template<typename A,typename B>
-vector<pair<A,B>> q2(DB db,string query_string){
-	auto q=query(db,query_string);
-	return convert<A,B>(q);
 }
 
 template<typename ... Ts>
@@ -135,215 +126,14 @@ string pretty_td(DB,User a){
 	return td(link(By_user{a},as_string(a)));
 }
 
-template<typename A,typename B>
-string as_table(DB db,vector<string> labels,vector<tuple<A,B>> const& a){
+template<typename ... Ts>
+string as_table(DB db,vector<string> labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<join("",mapf(th,labels));
 	for(auto row:a){
 		ss<<"<tr>";
-		ss<<pretty_td(db,get<0>(row));
-		ss<<pretty_td(db,get<1>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<typename A,typename B,typename C>
-string as_table(DB db,vector<string> labels,vector<tuple<A,B,C>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		ss<<pretty_td(db,get<0>(row));
-		ss<<pretty_td(db,get<1>(row));
-		ss<<pretty_td(db,get<2>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<typename A,typename B,typename C,typename D>
-string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		ss<<pretty_td(db,get<0>(row));
-		ss<<pretty_td(db,get<1>(row));
-		ss<<pretty_td(db,get<2>(row));
-		ss<<pretty_td(db,get<3>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<typename A,typename B,typename C,typename D,typename E>
-string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D,E>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		ss<<pretty_td(db,get<0>(row));
-		ss<<pretty_td(db,get<1>(row));
-		ss<<pretty_td(db,get<2>(row));
-		ss<<pretty_td(db,get<3>(row));
-		ss<<pretty_td(db,get<4>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<typename A,typename B,typename C,typename D,typename E,typename F>
-string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D,E,F>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		ss<<pretty_td(db,get<0>(row));
-		ss<<pretty_td(db,get<1>(row));
-		ss<<pretty_td(db,get<2>(row));
-		ss<<pretty_td(db,get<3>(row));
-		ss<<pretty_td(db,get<4>(row));
-		ss<<pretty_td(db,get<5>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<typename A,typename B,typename C,typename D,typename E,typename F,typename G>
-string as_table(DB db,vector<string> labels,vector<tuple<A,B,C,D,E,F,G>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		ss<<pretty_td(db,get<0>(row));
-		ss<<pretty_td(db,get<1>(row));
-		ss<<pretty_td(db,get<2>(row));
-		ss<<pretty_td(db,get<3>(row));
-		ss<<pretty_td(db,get<4>(row));
-		ss<<pretty_td(db,get<5>(row));
-		ss<<pretty_td(db,get<6>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<
-#define X(A) typename T_##A,
-COUNT_12(X)
-#undef X
-typename Z
->
-string as_table(DB db,vector<string> labels,vector<tuple<
-#define X(A) T_##A,
-COUNT_12(X)
-#undef X
-Z
->> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		#define X(A) ss<<pretty_td(db,get<A>(row));
-		COUNT_12(X)
-		#undef X
-		ss<<pretty_td(db,get<12>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<
-#define X(A) typename T_##A,
-COUNT_13(X)
-#undef X
-typename Z
->
-string as_table(DB db,vector<string> labels,vector<tuple<
-#define X(A) T_##A,
-COUNT_13(X)
-#undef X
-Z
->> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		#define X(A) ss<<pretty_td(db,get<A>(row));
-		COUNT_13(X)
-		#undef X
-		ss<<pretty_td(db,get<13>(row));
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<
-	#define X(A,B) typename B,
-	PART_DATA_INNER(X)
-	#undef X
-	typename Z
->
-string as_table(DB db,vector<string> labels,vector<tuple<
-	#define X(A,B) B,
-	PART_DATA_INNER(X)
-	#undef X
-	Z
->> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		#define X(N) ss<<pretty_td(db,get<N>(row));
-		X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9)
-		X(10) X(11) X(12) X(13) X(14) X(15) X(16) X(17) X(18) X(19)
-		X(20) X(21) X(22)
-		#undef X
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<
-	#define X(A,B) typename B,
-	PART_INFO_ROW(X)
-	#undef X
-	typename Z
->
-string as_table(DB db,vector<string> labels,vector<tuple<
-	#define X(A,B) B,
-	PART_INFO_ROW(X)
-	#undef X
-	Z
->> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		#define X(N) ss<<pretty_td(db,get<N>(row));
-		X(0) X(1) X(2) X(3) X(4) X(5) X(6) X(7) X(8) X(9)
-		X(10) X(11) X(12) X(13) X(14) X(15) X(16) X(17) X(18) X(19)
-		X(20) X(21) X(22) X(23) X(24) X(25) X(26) X(27)
-		#undef X
+		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },row);
 		ss<<"</tr>";
 	}
 	ss<<"</table>";
