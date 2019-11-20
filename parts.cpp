@@ -127,6 +127,10 @@ string pretty_td(DB,Dummy){
 	return "";
 }
 
+string pretty_td(DB,URL a){
+	return td("<a href=\""+a.s+"\">"+a.s+"</a>");
+}
+
 string pretty_td(DB,Machine a){
 	return td(link(Machine_page{a},as_string(a)));
 }

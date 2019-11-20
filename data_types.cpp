@@ -8,6 +8,10 @@ string to_db_type(const int*){
 	return "int(11)";
 }
 
+std::string to_db_type(const Part_number*){
+	return "varchar(100)";
+}
+
 int rand(const int*){ return rand()%100; }
 
 int parse(const int*,string s){ return stoi(s); }

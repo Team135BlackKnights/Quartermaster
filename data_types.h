@@ -71,6 +71,8 @@ using Id=int;
 
 struct Part_id:Wrap<Part_id,Id>{};
 struct Meeting_id:Wrap<Meeting_id,Id>{};
+struct Part_number:Wrap<Part_number,std::string>{};
+std::string to_db_type(const Part_number*);
 
 struct Subsystem_id:Wrap<Subsystem_id,Id>{};
 std::string show_input(DB db,std::string name,Subsystem_id const& current);

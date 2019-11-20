@@ -23,7 +23,7 @@
 #define PART_DATA_INNER(X)\
 	X(Subsystem_id,subsystem)\
 	X(std::string,name)\
-	X(std::string,part_number)\
+	X(Part_number,part_number)\
 	X(Part_state,part_state)\
 	X(std::string,length)\
 	X(std::string,width)\
