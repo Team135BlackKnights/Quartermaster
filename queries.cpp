@@ -197,7 +197,7 @@ unsigned rand(const unsigned*){ return rand()%100; }
 }
 
 #define TO_Q(A,B) r[""#B]=as_string(a.B);
-#define RAND(A,B) rand((const A*)nullptr),
+#define RAND(A,B) r.B=rand((const A*)nullptr);
 #define INST_EQ(A,B) if(a.B!=b.B) return 0;
 #define SHOW(A,B) { o<<""#B<<":"<<a.B<<" "; }
 #define DIFF(A,B) if(a.B!=b.B) cout<<""#B<<":"<<a.B<<" "<<b.B<<"\n";
@@ -216,7 +216,9 @@ unsigned rand(const unsigned*){ return rand()%100; }
 		return o<<")";\
 	}\
 	T rand(const T*){\
-		nyi\
+		T r;\
+		ITEMS(RAND)\
+		return r;\
 	}\
 	string to_query(T a){\
 		map<string,string> r;\

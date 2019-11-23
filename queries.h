@@ -125,7 +125,6 @@ struct Page{
 #define STR(X) ""#X
 
 #define TO_Q(A,B) r[""#B]=as_string(a.B);
-#define RAND(A,B) rand((const A*)nullptr),
 #define INST_EQ(A,B) if(a.B!=b.B) return 0;
 #define SHOW(A,B) { o<<""#B<<":"<<a.B<<" "; }
 #define DIFF(A,B) if(a.B!=b.B) cout<<""#B<<":"<<a.B<<" "<<b.B<<"\n";

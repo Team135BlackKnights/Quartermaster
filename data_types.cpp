@@ -14,9 +14,9 @@ std::string to_db_type(const Part_number*){
 
 int rand(const int*){ return rand()%100; }
 
-int parse(const int*,string s){ return stoi(s); }
+int parse(const int*,string const& s){ return stoi(s); }
 
-string with_suggestions(string name,string value,vector<string> const& suggestions){
+string with_suggestions(string const& name,string const& value,vector<string> const& suggestions){
 	stringstream ss;
 	ss<<"<br>"<<name<<":<input name=\""<<name<<"\" list=\""<<name<<"\" value=\""<<value<<"\">";
 	ss<<"<datalist id=\""<<name<<"\">";
@@ -27,28 +27,28 @@ string with_suggestions(string name,string value,vector<string> const& suggestio
 	return ss.str();
 }
 
-string show_input(DB,string name,string value){
+string show_input(DB,string const& name,string const& value){
 	return "<br>"+name+":<input type=\"text\" name=\""+name+"\" value=\""+value+"\">";
 }
 
-string show_input(DB db,string name,int value){
+string show_input(DB db,string const& name,int value){
 	return show_input(db,name,as_string(value))+" (integer)";
 }
 
-string show_input(DB db,string name,double value){
+string show_input(DB db,string const& name,double value){
 	return show_input(db,name,as_string(value))+" (fraction)";
 }
 
-string show_input(DB db,string name,unsigned value){
+string show_input(DB db,string const& name,unsigned value){
 	return show_input(db,name,as_string(value))+" (non-negative integer)";
 }
 
-string show_input(DB db,string name,bool value){
+string show_input(DB db,string const& name,bool value){
 	return "<br>"+name+":<input type=\"checkbox\" name=\""+name+"\" "+
 		[=](){ if(value) return "checked=on"; return ""; }()+"\">";
 }
 
-string escape(string s){
+string escape(string const& s){
 	stringstream ss;
 	ss<<"\"";
 	for(auto c:s){
@@ -65,7 +65,7 @@ string escape(string s){
 string escape(int i){ return as_string(i); }
 
 template<typename Value,typename Display>
-string drop_down(string name,Value current,vector<pair<Value,Display>> const& v){
+string drop_down(string const& name,Value const& current,vector<pair<Value,Display>> const& v){
 	stringstream ss;
 	ss<<"<br>"<<name<<":";
 	ss<<"<select name=\""<<name<<"\">";
@@ -79,7 +79,7 @@ string drop_down(string name,Value current,vector<pair<Value,Display>> const& v)
 }
 
 template<typename T>
-string drop_down(string name,T current,vector<T> const& options){
+string drop_down(string const& name,T const& current,vector<T> const& options){
 	return drop_down(name,current,mapf([](auto x){ return make_pair(x,x); },options));
 }
 
@@ -87,67 +87,13 @@ string to_db_type(const User*){ return "varchar(11)"; }
 
 string to_db_type(const Datetime*){ return "datetime"; }
 
-/*Datetime parse(const Datetime*,std::string const& s){ return {s}; }
-
-std::ostream& operator<<(std::ostream& o,Datetime const& a){
-	return o<<a.s;
-}*/
-
-/*bool operator==(Date a,Date b){
-	return a.s==b.s;
-}
-
-bool operator!=(Date a,Date b){
-	return !(a==b);
-}
-
-std::ostream& operator<<(std::ostream& o,Date a){
-	return o<<a.s;
-}
-
-Date rand(const Date*){ return {rand((string*)nullptr)}; }
-
-Date parse(const Date*,string s){
-	return {s};
-}*/
-
-string show_input(DB db,string name,Date current){
+string show_input(DB db,string const& name,Date const& current){
 	return "<br>"+name+":<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">";
 }
 
-//string escape(Date a){ return escape(a.s); }
-
 string to_db_type(const Date*){ return "date"; }
 
-/*bool operator==(URL a,URL b){
-	return a.s==b.s;
-}
-
-bool operator!=(URL a,URL b){
-	return !(a==b);
-}
-
-std::ostream& operator<<(std::ostream& o,URL const& a){
-	return o<<a.s;
-}
-
-URL rand(const URL*){
-	return {rand((string*)nullptr)};
-}
-
-URL parse(const URL*,string const& s){
-	return {s};
-}
-
-string to_db_type(const URL*){
-	return "varchar(100)";
-}*/
-
-/*string escape(URL const& a){
-	return escape(a.s);
-}*/
-
-string show_input(DB db,string name,URL const& value){
+string show_input(DB db,string const& name,URL const& value){
 	if(prefix("http",value.data)){
 		return "<br><a href=\""+value.data+"\">"+name+":</a><input type=\"text\" name=\""+name+"\" value=\""+value.data+"\">";
 	}
@@ -176,10 +122,10 @@ string show_input(DB db,string name,URL const& value){
 		OPTIONS(E_PARSE)\
 		throw std::invalid_argument{""#NAME};\
 	}\
-	string show_input(DB db,string name,T value){\
+	string show_input(DB db,string const& name,T const& value){\
 		return drop_down(name,value,options(&value));\
 	}\
-	string escape(T a){ return "'"+as_string(a)+"'"; }\
+	string escape(T const& a){ return "'"+as_string(a)+"'"; }\
 	\
 	string to_db_type(const T*){\
 		vector<string> values;\
@@ -215,7 +161,7 @@ std::ostream& operator<<(std::ostream& o,Decimal const& a){
 
 Decimal rand(const Decimal*){ return (rand()%1000)/100; }
 
-Decimal parse(const Decimal*,string s){
+Decimal parse(const Decimal*,string const& s){
 	auto sp=split('.',s);
 	if(sp.size()==1){
 		return std::decimal::make_decimal32((long long)stoi(sp[0]),0);
@@ -238,7 +184,7 @@ Decimal parse(const Decimal*,string s){
 	throw "Not a decimal";
 }
 
-string show_input(DB db,string name,Decimal value){
+string show_input(DB db,string const& name,Decimal value){
 	return show_input(db,name,as_string(value))+" Max 2 decimal places";
 }
 
@@ -270,7 +216,7 @@ string escape(Material const& s){
 	return escape(s.s);
 }
 
-string show_input(DB db,string name,Subsystem_id const& current){
+string show_input(DB db,string const& name,Subsystem_id const& current){
 	auto q=query(
 		db,
 		"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"

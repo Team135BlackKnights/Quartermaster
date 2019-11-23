@@ -8,18 +8,18 @@
 
 std::string parse(const std::string*,std::string);
 
-std::string with_suggestions(std::string name,std::string value,std::vector<std::string> const& suggestions);
-std::string show_input(DB,std::string name,std::string value);
-std::string show_input(DB,std::string name,int value);
-std::string show_input(DB,std::string name,double value);
-std::string show_input(DB,std::string name,unsigned value);
-std::string show_input(DB,std::string name,bool value);
+std::string with_suggestions(std::string const& name,std::string const& value,std::vector<std::string> const& suggestions);
+std::string show_input(DB,std::string const& name,std::string const& value);
+std::string show_input(DB,std::string const& name,int value);
+std::string show_input(DB,std::string const& name,double value);
+std::string show_input(DB,std::string const& name,unsigned value);
+std::string show_input(DB,std::string const& name,bool value);
 std::string to_db_type(const std::string*);
 
-std::string escape(std::string);
+std::string escape(std::string const&);
 
 std::string escape(int);
-int parse(const int*,std::string s);
+int parse(const int*,std::string const&);
 std::string to_db_type(const int*);
 int rand(const int*);
 
@@ -59,12 +59,12 @@ Sub rand(const Wrap<Sub,Data>*){
 }
 
 template<typename Sub,typename Data>
-Sub parse(const Wrap<Sub,Data>*,std::string s){
+Sub parse(const Wrap<Sub,Data>*,std::string const& s){
 	return Sub{parse((Data*)0,s)};
 }
 
 template<typename Sub,typename Data>
-std::string show_input(DB db,std::string name,Wrap<Sub,Data> const& current){
+std::string show_input(DB db,std::string const& name,Wrap<Sub,Data> const& current){
 	return show_input(db,name,current.data);
 }
 
@@ -81,55 +81,20 @@ struct Part_number:Wrap<Part_number,std::string>{};
 std::string to_db_type(const Part_number*);
 
 struct Subsystem_id:Wrap<Subsystem_id,Id>{};
-std::string show_input(DB db,std::string name,Subsystem_id const& current);
+std::string show_input(DB db,std::string const& name,Subsystem_id const& current);
 
 struct User:Wrap<User,std::string>{};
 std::string to_db_type(const User*);
 
-/*struct Datetime{
-	std::string s;
-};*/
 struct Datetime:Wrap<Datetime,std::string>{};
-//std::ostream& operator<<(std::ostream&,Datetime const&);
 std::string to_db_type(const Datetime*);
-//Datetime parse(const Datetime*,std::string const&);
 
 struct Date:Wrap<Date,std::string>{};
-/*struct Date{
-	//not just a typedef so that can dispatch on the type
-	std::string s;
-};
-
-bool operator==(Date,Date);
-bool operator!=(Date,Date);
-
-std::ostream& operator<<(std::ostream&,Date);*/
-
-Date rand(const Date*);
-//Date parse(const Date*,std::string);
-
-std::string show_input(DB db,std::string name,Date current);
-
-//std::string escape(Date);
+std::string show_input(DB db,std::string const& name,Date const& current);
 std::string to_db_type(const Date*);
 
-/*struct URL{
-	std::string s;
-};
-
-bool operator==(URL,URL);
-bool operator!=(URL,URL);
-
-std::ostream& operator<<(std::ostream&,URL const&);
-
-URL rand(const URL*);
-URL parse(const URL*,std::string const&);
-
-std::string to_db_type(const URL*);
-std::string escape(URL const&);*/
 struct URL:Wrap<URL,std::string>{};
-
-std::string show_input(DB db,std::string name,URL const& value);
+std::string show_input(DB db,std::string const& name,URL const& value);
 
 #define PART_STATES(X)\
 	X(in_design)\
@@ -166,8 +131,8 @@ std::string show_input(DB db,std::string name,URL const& value);
 	std::vector<NAME> options(const NAME*);\
 	NAME rand(const NAME* a);\
 	NAME parse(const NAME*,std::string const&);\
-	std::string show_input(DB db,std::string name,NAME value);\
-	std::string escape(NAME a);\
+	std::string show_input(DB db,std::string const& name,NAME const& value);\
+	std::string escape(NAME const&);\
 	std::string to_db_type(const NAME*);\
 
 ENUM_DECL(Part_state,PART_STATES)
@@ -180,9 +145,9 @@ using Decimal=std::decimal::decimal32;
 
 std::ostream& operator<<(std::ostream&,Decimal const&);
 Decimal rand(const Decimal*);
-Decimal parse(const Decimal*,std::string);
+Decimal parse(const Decimal*,std::string const&);
 std::string to_db_type(const Decimal*);
-std::string show_input(DB db,std::string name,Decimal value);
+std::string show_input(DB db,std::string const& name,Decimal value);
 std::string escape(Decimal a);
 
 template<typename T>
@@ -190,7 +155,7 @@ struct Suggest{
 	std::string s;
 
 	Suggest(){}
-	Suggest(std::string s1):s(s1){}
+	Suggest(std::string s1):s(std::move(s1)){}
 	Suggest(T);
 	virtual std::vector<std::string> suggestions()const=0;
 };
@@ -225,12 +190,12 @@ std::string to_db_type(const Suggest<T>*){
 template<typename T>
 T parse(const Suggest<T>*,std::string s){
 	T r;
-	r.s=s;
+	r.s=move(s);
 	return r;
 }
 
 template<typename T>
-std::string show_input(DB db,std::string name,Suggest<T> const& value){
+std::string show_input(DB db,std::string const& name,Suggest<T> const& value){
 	return with_suggestions(name,value.s,value.suggestions());
 }
 
@@ -256,13 +221,13 @@ template<typename T>
 T rand(const std::optional<T>*){ return rand((T*)0); }
 
 template<typename T>
-T parse(const std::optional<T>*,std::string s){
+T parse(const std::optional<T>*,std::string const& s){
 	if(s=="") return {};
 	return parse((T*)0,s);
 }
 
 template<typename T>
-std::string show_input(DB db,std::string name,std::optional<T> const& a){
+std::string show_input(DB db,std::string const& name,std::optional<T> const& a){
 	if(a) return show_input(db,name,*a);
 	return show_input(db,name,"");
 }
