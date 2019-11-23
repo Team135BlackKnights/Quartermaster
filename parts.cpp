@@ -417,9 +417,9 @@ string nav(){
 	;
 }
 
-string make_page(string const& heading,string const& main_body){
+void make_page(std::ostream& o,string const& heading,string const& main_body){
 	string name=heading+" - "+title_end();
-	return html(
+	o<<html(
 		head(
 			title(name)
 		)+
@@ -512,8 +512,8 @@ string part_tree(DB db){
 	return ss.str();
 }
 
-string inner(Home const& a,DB db){
-	return make_page("Home",parts_by_state(db,a)+part_tree(db));
+void inner(ostream& o,Home const& a,DB db){
+	make_page(o,"Home",parts_by_state(db,a)+part_tree(db));
 }
 
 string make_table(Request const& page,vector<string> const& columns,vector<vector<optional<string>>> q){
@@ -707,8 +707,9 @@ string show_current_subsystems(DB db,Request const& page){
 	);
 }
 
-string inner(Subsystems const& a,DB db){
+void inner(ostream& o,Subsystems const& a,DB db){
 	return make_page(
+		o,
 		"Subsystems",
 		show_current_subsystems(db,a)
 		+subsystem_state_count(db,a)
@@ -729,7 +730,7 @@ string redirect_to(T const& t){
 }
 
 template<typename T>
-string inner_new(DB db,Table_name const& table){
+void inner_new(ostream& o,DB db,Table_name const& table){
 	run_cmd(db,"INSERT INTO "+table+" VALUES ()");
 	auto q=query(db,"SELECT LAST_INSERT_ID()");
 	//PRINT(q);
@@ -740,14 +741,15 @@ string inner_new(DB db,Table_name const& table){
 
 	T page;
 	page.id={id};
-	return make_page(
+	make_page(
+		o,
 		"Subsystem new",
 		redirect_to(page)
 	);
 }
 
-string inner(Subsystem_new const&,DB db){
-	return inner_new<Subsystem_editor>(db,"subsystem");
+void inner(ostream& o,Subsystem_new const&,DB db){
+	inner_new<Subsystem_editor>(o,db,"subsystem");
 }
 
 string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
@@ -785,7 +787,7 @@ string subsystems_of_subsystem(DB db,Request const& page,Subsystem_id subsystem)
 	);
 }
 
-string inner(Subsystem_editor const& a,DB db){
+void inner(ostream& o,Subsystem_editor const& a,DB db){
 	auto q=query(
 		db,
 		"SELECT name,valid,prefix,parent FROM subsystem_info "
@@ -803,7 +805,8 @@ string inner(Subsystem_editor const& a,DB db){
 		current.prefix=parse(&current.prefix,*q[0][2]);
 		current.parent=parse(&current.parent,q[0][3]);
 	}
-	return make_page(
+	make_page(
+		o,
 		"Subsystem editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
@@ -828,7 +831,7 @@ string inner(Subsystem_editor const& a,DB db){
 	);
 }
 
-string inner(Subsystem_edit const& a,DB db){
+void inner(ostream& o,Subsystem_edit const& a,DB db){
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape("user1"));
@@ -844,14 +847,15 @@ string inner(Subsystem_edit const& a,DB db){
 	run_cmd(db,q);
 	Subsystem_editor page;
 	page.id=Subsystem_id{a.subsystem_id};
-	return make_page(
+	make_page(
+		o,
 		"Subsystem edit",
 		redirect_to(page)
 	);
 }
 
-string inner(Part_new const& a,DB db){
-	return inner_new<Part_editor>(db,"part");
+void inner(std::ostream& o,Part_new const& a,DB db){
+	return inner_new<Part_editor>(o,db,"part");
 }
 
 vector<pair<Id,string>> current_subsystems(DB db){
@@ -923,15 +927,16 @@ std::string show_current_parts(DB db,Request const& page){
 	return h2("Current state")+to_do(db,page)+done(db,page);
 }
 
-string inner(Parts const& a,DB db){
-	return make_page(
+void inner(ostream& o,Parts const& a,DB db){
+	make_page(
+		o,
 		"Parts",
 		show_current_parts(db,a)+
 		show_table(db,a,"part_info","History")
 	);
 }
 
-string inner(Part_editor const& a,DB db){
+void inner(ostream& o,Part_editor const& a,DB db){
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
 		PART_DATA(X)
@@ -960,7 +965,8 @@ string inner(Part_editor const& a,DB db){
 		#undef X
 	}
 	vector<string> all_cols=vector<string>{"edit_date","edit_user","id",area_lower+"_id"}+data_cols;
-	return make_page(
+	make_page(
+		o,
 		area_cap+" editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
@@ -979,7 +985,7 @@ string inner(Part_editor const& a,DB db){
 	);
 }
 
-string inner(Meeting_editor const& a,DB db){
+void inner(ostream& o,Meeting_editor const& a,DB db){
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
 		MEETING_DATA(X)
@@ -1008,7 +1014,8 @@ string inner(Meeting_editor const& a,DB db){
 		#undef X
 	}
 	vector<string> all_cols=vector<string>{"edit_date","edit_user","id",area_lower+"_id"}+data_cols;
-	return make_page(
+	make_page(
+		o,
 		area_cap+" editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
@@ -1027,8 +1034,8 @@ string inner(Meeting_editor const& a,DB db){
 	);
 }
 
-string inner(Meeting_new const&,DB db){
-	return inner_new<Meeting_editor>(db,"meeting");
+void inner(ostream& o,Meeting_new const&,DB db){
+	return inner_new<Meeting_editor>(o,db,"meeting");
 }
 
 string current_calendar(DB db,Request const& page){
@@ -1069,8 +1076,9 @@ string current_calendar(DB db,Request const& page){
 	return as_table(db,page,vector<Label>{"Date","Length","Color"},found);
 }
 
-string inner(Calendar const& a,DB db){
-	return make_page(
+void inner(std::ostream& o,Calendar const& a,DB db){
+	make_page(
+		o,
 		"Calendar",
 		current_calendar(db,a)
 		+to_do(db,a)
@@ -1079,7 +1087,7 @@ string inner(Calendar const& a,DB db){
 	);
 }
 
-string inner(Part_edit const& a,DB db){
+void inner(std::ostream& o,Part_edit const& a,DB db){
 	string area_lower="part";
 	string area_cap="Part";
 
@@ -1097,13 +1105,14 @@ string inner(Part_edit const& a,DB db){
 	run_cmd(db,q);
 	Part_editor page;
 	page.id=Part_id{a.part_id};
-	return make_page(
+	make_page(
+		o,
 		area_cap+" edit",
 		redirect_to(page)
 	);
 }
 
-string inner(Meeting_edit const& a,DB db){
+void inner(ostream& o,Meeting_edit const& a,DB db){
 	string area_lower="meeting";
 	string area_cap="Meeting";
 
@@ -1121,14 +1130,16 @@ string inner(Meeting_edit const& a,DB db){
 	run_cmd(db,q);
 	Meeting_editor page;
 	page.id=Meeting_id{a.meeting_id};
-	return make_page(
+	make_page(
+		o,
 		area_cap+" edit",
 		redirect_to(page)
 	);
 }
 
-string inner(Error const& a,DB db){
-	return make_page(
+void inner(std::ostream& o,Error const& a,DB db){
+	make_page(
+		o,
 		"Error",
 		a.s
 	);
@@ -1154,8 +1165,9 @@ string show_table_user(DB db,Request const& page,Table_name const& name,User con
 }
 
 
-string inner(By_user const& a,DB db){
-	return make_page(
+void inner(std::ostream& o,By_user const& a,DB db){
+	make_page(
+		o,
 		"By user \""+as_string(a)+"\"",
 		show_table_user(db,a,"subsystem_info",a.user)
 		+show_table_user(db,a,"part_info",a.user)
@@ -1192,8 +1204,9 @@ vector<Machine> machines(){
 	return r;
 }
 
-string inner(Machines const& a,DB db){
-	return make_page(
+void inner(std::ostream& o,Machines const& a,DB db){
+	make_page(
+		o,
 		"Machines",
 		join("",mapf([=](auto x){ return by_machine(db,a,x); },machines()))
 	);
@@ -1252,15 +1265,17 @@ string arrived(DB db,Request const& page){
 	);
 }
 
-string inner(Machine_page const& a,DB db){
-	return make_page(
+void inner(ostream& o,Machine_page const& a,DB db){
+	make_page(
+		o,
 		as_string(a.machine),
 		by_machine(db,a,a.machine)
 	);
 }
 
-string inner(State const& a,DB db){
-	return make_page(
+void inner(ostream& o,State const& a,DB db){
+	make_page(
+		o,
 		as_string(a.state),
 		as_table(
 			db,
@@ -1280,8 +1295,9 @@ string inner(State const& a,DB db){
 	);
 }
 
-string inner(Orders const& a,DB db){
-	return make_page(
+void inner(ostream& o,Orders const& a,DB db){
+	make_page(
+		o,
 		"Orders",
 		to_order(db,a)
 		+on_order(db,a)
@@ -1289,8 +1305,8 @@ string inner(Orders const& a,DB db){
 	);
 }
 
-#define EMPTY_PAGE(X) string inner(X const& x,DB db){ \
-	return make_page(\
+#define EMPTY_PAGE(X) void inner(ostream& o,X const& x,DB db){ \
+	make_page(\
 		""#X,\
 		as_string(x)+p("Under construction")\
 	); \
@@ -1301,14 +1317,14 @@ string inner(Orders const& a,DB db){
 #undef EMPTY_PAGE
 
 
-string run(Request const& req,DB db){
-	#define X(A) if(holds_alternative<A>(req)) return inner(get<A>(req),db);
+void run(ostream& o,Request const& req,DB db){
+	#define X(A) if(holds_alternative<A>(req)) return inner(o,get<A>(req),db);
 	PAGES(X)
 	X(Error)
 	#undef X
 	Error page;
 	page.s="Could not find page";
-	return inner(page,db);
+	inner(o,page,db);
 }
 
 template<
@@ -1392,7 +1408,7 @@ int main1(int argc,char **argv,char **envp){
 
 	auto g=getenv("QUERY_STRING");
 	if(g){
-		cout<<run(parse_query(g),db);
+		run(cout,parse_query(g),db);
 		return 0;
 	}
 	for(auto _:range(100)){
@@ -1409,12 +1425,11 @@ int main1(int argc,char **argv,char **envp){
 		assert(p==r);
 		PRINT(r);
 		stringstream ss;
-		ss<<run(r,db);
+		run(ss,r,db);
 	}
 	auto q=parse_query("");
-	//PRINT(q);
-	auto s=run(q,db);
-	//PRINT(s);
+	stringstream ss;
+	run(ss,q,db);
 	return 0;
 }
 
