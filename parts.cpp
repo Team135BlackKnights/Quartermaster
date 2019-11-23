@@ -8,9 +8,9 @@ using namespace std;
 
 //TODO: Move to util
 template<typename Func,typename T>
-vector<T> filter(Func f,vector<T> v){
+vector<T> filter(Func f,vector<T> const& v){
 	vector<T> r;
-	for(auto elem:v){
+	for(auto const& elem:v){
 		if(f(elem)) r|=elem;
 	}
 	return r;
@@ -22,13 +22,13 @@ vector<T> filter(Func f,vector<T> v){
 }*/
 
 template<typename T>
-optional<T>& operator+=(optional<T>& a,optional<T> b){
+optional<T>& operator+=(optional<T>& a,optional<T> const& b){
 	if(b) a={};
 	return a;
 }
 
 template<typename T>
-variant<T,string>& operator+=(std::variant<T,string>& a,std::variant<T,string> b){
+variant<T,string>& operator+=(std::variant<T,string>& a,std::variant<T,string> const&){
 	a="Total";
 	return a;
 }
@@ -38,7 +38,7 @@ Dummy& operator+=(Dummy& a,Dummy){
 }
 
 template<typename ... Ts>
-tuple<Ts...>& operator+=(tuple<Ts...>& a,tuple<Ts...> b){
+tuple<Ts...>& operator+=(tuple<Ts...>& a,tuple<Ts...> const& b){
 	std::apply(
 		[&](auto&&... x){
 			//Do a bunch of nasty pointer arithmetic to figure out where the parallel item is in "b"
@@ -50,7 +50,7 @@ tuple<Ts...>& operator+=(tuple<Ts...>& a,tuple<Ts...> b){
 }
 
 template<typename T>
-T sum(vector<T> v){
+T sum(vector<T> const& v){
 	T r{};
 	for(auto elem:v){
 		r+=elem;
@@ -66,7 +66,7 @@ std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
 }
 
 template<typename T>
-vector<T> convert1(vector<vector<optional<string>>> in){
+vector<T> convert1(vector<vector<optional<string>>> const& in){
 	return mapf(
 		[](auto x){
 			assert(x.size()==1);
@@ -77,7 +77,7 @@ vector<T> convert1(vector<vector<optional<string>>> in){
 }
 
 template<typename ... Ts>
-tuple<Ts...> convert_row(vector<optional<string>> row){
+tuple<Ts...> convert_row(vector<optional<string>> const& row){
 	tuple<Ts...> t;
 	size_t i=0;
 	std::apply([&](auto&&... x){ ((x=parse(&x,*row[i++])), ...); },t);
@@ -85,19 +85,19 @@ tuple<Ts...> convert_row(vector<optional<string>> row){
 }
 
 template<typename ... Ts>
-vector<tuple<Ts...>> convert(vector<vector<optional<string>>> in){
+vector<tuple<Ts...>> convert(vector<vector<optional<string>>> const& in){
 	return mapf(convert_row<Ts...>,in);
 }
 
 template<typename T>
-vector<T> q1(DB db,string query_string){
+vector<T> q1(DB db,string const& query_string){
 	auto q=query(db,query_string);
 	//PRINT(q);
 	return convert1<T>(q);
 }
 
 template<typename ... Ts>
-vector<tuple<Ts...>> qm(DB db,string query_string){
+vector<tuple<Ts...>> qm(DB db,string const& query_string){
 	auto q=query(db,query_string);
 	return convert<Ts...>(q);
 }
@@ -106,7 +106,7 @@ template<typename T>
 vector<optional<T>> operator|=(vector<optional<T>>,T)nyi
 
 template<typename T>
-string pretty_td(DB,T t){
+string pretty_td(DB,T const& t){
 	return td(as_string(t));
 }
 
@@ -128,7 +128,7 @@ string pretty_td(DB,Dummy){
 	return "";
 }
 
-string pretty_td(DB,URL a){
+string pretty_td(DB,URL const& a){
 	return td("<a href=\""+a.data+"\">"+a.data+"</a>");
 }
 
@@ -190,7 +190,7 @@ string pretty_td(DB db, Part_id a){
 	return td(link(page,part_name(db,a)));
 }
 
-string pretty_td(DB,User a){
+string pretty_td(DB,User const& a){
 	By_user page;
 	page.user=a;
 	return td(link(page,as_string(a)));
@@ -199,7 +199,7 @@ string pretty_td(DB,User a){
 //static const char* ARROW_UP="▲";
 //static const char* ARROW_DOWN="▼";
 
-string link(optional<string> url,string text){
+string link(optional<string> const& url,string const& text){
 	if(!url) return text;
 	stringstream ss;
 	ss<<"<a href=\""<<*url<<"\">"<<text<<"</a>";
@@ -218,7 +218,7 @@ struct Label{
 	optional<Request> url;
 
 	Label(const char *s):text(s){}
-	Label(string s,Request r):text(s),url(r){}
+	Label(string s,Request r):text(std::move(s)),url(std::move(r)){}
 };
 
 std::ostream& operator<<(std::ostream& o,Label const& a){
@@ -230,7 +230,7 @@ std::ostream& operator<<(std::ostream& o,Label const& a){
 	nyi//return a.text==b;
 }*/
 
-string sortable_labels(Request const& page,vector<Label> labels){
+string sortable_labels(Request const& page,vector<Label> const& labels){
 	std::stringstream ss;
 	ss<<"<tr>";
 	for(auto label:labels){
@@ -249,65 +249,6 @@ string sortable_labels(Request const& page,vector<Label> labels){
 	return ss.str();
 }
 
-/*template<std::size_t ...S>
-struct seq { };
-
-template<std::size_t N, std::size_t ...S>
-struct gens : gens<N-1, N-1, S...> { };
-
-template<std::size_t ...S>
-struct gens<0, S...> {
-  typedef seq<S...> type;
-};
-
-template <template <typename ...> class Tup1,
-    template <typename ...> class Tup2,
-    typename ...A, typename ...B,
-    std::size_t ...S>
-auto tuple_zip_helper(Tup1<A...> t1, Tup2<B...> t2, seq<S...> s) ->
-decltype(std::make_tuple(std::make_pair(std::get<S>(t1),std::get<S>(t2))...)) {
-  return std::make_tuple( std::make_pair( std::get<S>(t1), std::get<S>(t2) )...);
-}
-
-template <template <typename ...> class Tup1,
-  template <typename ...> class Tup2,
-  typename ...A, typename ...B>
-auto tuple_zip(Tup1<A...> t1, Tup2<B...> t2) ->
-decltype(tuple_zip_helper(t1, t2, typename gens<sizeof...(A)>::type() )) {
-  static_assert(sizeof...(A) == sizeof...(B), "The tuple sizes must be the same");
-  return tuple_zip_helper( t1, t2, typename gens<sizeof...(A)>::type() );
-}
-
-template<typename ... Ts>
-vector<tuple<Ts...>> sort_by_col(vector<tuple<Ts...>> a,unsigned element){
-	std::sort(
-		begin(a),
-		end(a),
-		[element](auto e1,auto e2)->bool{
-
-			auto t=tuple_zip(e1,e2);
-			unsigned at=0;
-			bool result=0;
-			std::apply(
-				[&](auto p){
-					if(at==element) result=( p.first<p.second );
-					at++;
-				},
-				t
-			);
-			return result;
-			//return get<N>(a) < get<N>(b);
-		}
-	);
-	return a;
-}*/
-
-/*template<typename T>
-vector<T> sorted(vector<T> a){
-	sort(begin(a),end(a));
-	return a;
-}*/
-
 template<typename T>
 vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
 	vector<pair<size_t,T>> r;
@@ -318,7 +259,7 @@ vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
 }
 
 template<typename ... Ts>
-string table_inner(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
+string table_inner(DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<sortable_labels(page,labels);
 	
@@ -375,7 +316,7 @@ string table_inner(DB db,Request const& page,vector<Label> labels,vector<tuple<T
 }
 
 template<typename ... Ts>
-string as_table(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
+string as_table(DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<table_inner(db,page,labels,a);
@@ -384,7 +325,7 @@ string as_table(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts..
 }
 
 template<typename ... Ts>
-string table_with_totals(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
+string table_with_totals(DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<table_inner(db,page,labels,a);
@@ -398,20 +339,7 @@ string table_with_totals(DB db,Request const& page,vector<Label> labels,vector<t
 	return ss.str();
 }
 
-/*template<typename T>
-string as_table(DB db,Request const& page,vector<Label> labels,vector<T> const& a){
-	return as_table(
-		db,
-		page,
-		labels,
-		mapf(
-			[](auto x){ return make_tuple(x); },
-			a
-		)
-	);
-}*/
-
-string as_table(vector<string> labels,vector<vector<std::string>> in){
+string as_table(vector<string> const& labels,vector<vector<std::string>> const& in){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<"<tr>";
@@ -428,7 +356,7 @@ string as_table(vector<string> labels,vector<vector<std::string>> in){
 	return ss.str();
 }
 
-string as_table(vector<string> labels,vector<vector<std::optional<string>>> in){
+string as_table(vector<string> const& labels,vector<vector<std::optional<string>>> const& in){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<"<tr>";
@@ -459,7 +387,7 @@ string nav(){
 	;
 }
 
-string make_page(string heading,string main_body){
+string make_page(string const& heading,string const& main_body){
 	string name=heading+" - "+title_end();
 	return html(
 		head(
@@ -489,7 +417,7 @@ string inner(Home const& a,DB db){
 	return make_page("Home",parts_by_state(db,a));
 }
 
-string make_table(Request const& page,vector<string> labels,vector<vector<optional<string>>> const& a){
+string make_table(Request const& page,vector<string> const& labels,vector<vector<optional<string>>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<"<tr>";
@@ -520,7 +448,7 @@ string make_table(Request const& page,vector<vector<optional<string>>> const& a)
 	return ss.str();
 }
 
-string show_table(DB db,Request const& page,Table_name name,optional<string> title={}){
+string show_table(DB db,Request const& page,Table_name const& name,optional<string> title={}){
 	auto columns=firsts(query(db,"DESCRIBE "+name));
 	stringstream ss;
 	ss<<h2(title?*title:name);
@@ -539,7 +467,7 @@ string show_table(DB db,Request const& page,Table_name name,optional<string> tit
 	return ss.str();
 }
 
-vector<int> get_ids(DB db,Table_name table){
+vector<int> get_ids(DB db,Table_name const& table){
 	vector<int> r;
 	for(auto row:query(db,"SELECT id FROM "+table)){
 		r|=stoi(*row.at(0));
@@ -552,7 +480,7 @@ std::variant<A,B> parse(const variant<A,B>*,string const& s){
 	return parse((A*)0,s);
 }
 
-State make_state(Part_state a){
+State make_state(Part_state const& a){
 	State r;
 	r.state=a;
 	return r;
@@ -659,7 +587,7 @@ string inner(Subsystems const& a,DB db){
 }
 
 template<typename T>
-string redirect_to(T t){
+string redirect_to(T const& t){
 	stringstream ss;
 	//ss<<"<meta http-equiv = \"refresh\" content = \"2; url = ";
 	ss<<"<meta http-equiv = \"refresh\" content = \"0; url = ";
@@ -670,7 +598,7 @@ string redirect_to(T t){
 }
 
 template<typename T>
-string inner_new(DB db,Table_name table){
+string inner_new(DB db,Table_name const& table){
 	run_cmd(db,"INSERT INTO "+table+" VALUES ()");
 	auto q=query(db,"SELECT LAST_INSERT_ID()");
 	//PRINT(q);
@@ -1047,7 +975,7 @@ string inner(Error const& a,DB db){
 	);
 }
 
-string show_table_user(DB db,Request const& page,Table_name name,User edit_user){
+string show_table_user(DB db,Request const& page,Table_name const& name,User const& edit_user){
 	auto columns=firsts(query(db,"DESCRIBE "+name));
 	stringstream ss;
 	ss<<h2(name);
@@ -1202,7 +1130,7 @@ string inner(Orders const& a,DB db){
 	);
 }
 
-#define EMPTY_PAGE(X) string inner(X x,DB db){ \
+#define EMPTY_PAGE(X) string inner(X const& x,DB db){ \
 	return make_page(\
 		""#X,\
 		as_string(x)+p("Under construction")\
@@ -1214,7 +1142,7 @@ string inner(Orders const& a,DB db){
 #undef EMPTY_PAGE
 
 
-string run(Request req,DB db){
+string run(Request const& req,DB db){
 	#define X(A) if(holds_alternative<A>(req)) return inner(get<A>(req),db);
 	PAGES(X)
 	X(Error)

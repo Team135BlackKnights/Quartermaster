@@ -13,7 +13,7 @@ std::vector<size_t> range(size_t lim){
 	return r;
 }
 
-std::string join(std::string a,std::vector<std::string> b){
+std::string join(std::string const& a,std::vector<std::string> const& b){
 	std::stringstream ss;
 	for(auto [last,elem]:mark_last(b)){
 		ss<<elem;
@@ -22,7 +22,7 @@ std::string join(std::string a,std::vector<std::string> b){
 	return ss.str();
 }
 
-bool prefix(std::string needle,std::string haystack){
+bool prefix(std::string const& needle,std::string const& haystack){
 	if(needle.size()>haystack.size()) return 0;
 	for(auto i:range(needle.size())){
 		if(needle[i]!=haystack[i]){
@@ -32,7 +32,7 @@ bool prefix(std::string needle,std::string haystack){
 	return 1;
 }
 
-std::vector<std::string> split(char delim,std::string s){
+std::vector<std::string> split(char delim,std::string const& s){
 	std::vector<std::string> r;
 	std::stringstream ss;
 	for(auto c:s){
@@ -73,15 +73,15 @@ bool operator!=(std::vector<std::string> const& a,std::vector<const char*> const
 	return !(a==b);
 }
 
-std::string tag(std::string name,std::string body){
+std::string tag(std::string const& name,std::string const& body){
 	std::stringstream ss;
 	ss<<"<"<<name<<">"<<body<<"</"<<name<<">";
 	return ss.str();
 }
 
-std::string h1(std::string s){ return tag("h1",s); }
+std::string h1(std::string const& s){ return tag("h1",s); }
 
-#define TAG(X) std::string X(std::string s){ return tag(""#X,s); }
+#define TAG(X) std::string X(std::string const& s){ return tag(""#X,s); }
 TAG(title)
 TAG(head)
 TAG(html)
@@ -94,7 +94,7 @@ TAG(h2)
 
 using DB=MYSQL*;
 
-void run_cmd(DB db,std::string cmd){
+void run_cmd(DB db,std::string const& cmd){
 	auto q=mysql_query(db,cmd.c_str());
 	if(q){
 		std::cout<<"Fail:"<<mysql_error(db)<<"\n";
@@ -103,7 +103,7 @@ void run_cmd(DB db,std::string cmd){
 	}
 }
 
-std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string query){
+std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string const& query){
 	//this is obviously not the fastest way to do this.
 	run_cmd(db,query);
 	MYSQL_RES *result=mysql_store_result(db);

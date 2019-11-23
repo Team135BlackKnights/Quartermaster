@@ -16,7 +16,7 @@
 #define INST(A,B) A B;
 
 template<typename T>
-std::set<T> to_set(std::vector<T> a){
+std::set<T> to_set(std::vector<T> const& a){
 	return std::set<T>{a.begin(),a.end()};
 }
 
@@ -31,12 +31,12 @@ std::ostream& operator<<(std::ostream& o,std::set<T> const& a){
 
 template<typename T>
 std::vector<T>& operator|=(std::vector<T>& a,T t){
-	a.push_back(t);
+	a.push_back(std::move(t));
 	return a;
 }
 
 template<typename T>
-std::string as_string(T t){
+std::string as_string(T const& t){
 	std::stringstream ss;
 	ss<<t;
 	return ss.str();
@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream& o,std::vector<T> const& a){
 }
 
 template<typename K,typename V>
-std::map<K,V> without_key(std::map<K,V> a,K k){
+std::map<K,V> without_key(std::map<K,V> a,K const& k){
 	auto f=a.find(k);
 	if(f==a.end()) return a;
 	a.erase(f);
@@ -91,12 +91,12 @@ std::ostream& operator<<(std::ostream& o,std::optional<T> const& a){
 }
 
 template<typename A,typename B>
-std::vector<A> firsts(std::vector<std::pair<A,B>> a){
+std::vector<A> firsts(std::vector<std::pair<A,B>> const& a){
 	return mapf([](auto x){ return x.first; },a);
 }
 
 template<typename A,typename B>
-std::vector<B> seconds(std::vector<std::pair<A,B>> a){
+std::vector<B> seconds(std::vector<std::pair<A,B>> const& a){
 	return mapf([](auto x){ return x.second; },a);
 }
 
@@ -106,19 +106,19 @@ template<typename T>
 std::vector<std::pair<bool,T>> mark_last(std::vector<T> a){
 	std::vector<std::pair<bool,T>> r;
 	for(auto i:range(a.size())){
-		r|=make_pair(i==a.size()-1,a[i]);
+		r|=make_pair(i==a.size()-1,std::move(a[i]));
 	}
 	return r;
 }
 
 template<typename T>
-T choose(std::vector<T> a){
+T const& choose(std::vector<T> const& a){
 	assert(a.size());
 	return a[rand()%a.size()];
 }
 
 template<typename Func,typename T>
-auto mapf(Func f,std::vector<T> v){
+auto mapf(Func f,std::vector<T> const& v){
 	std::vector<decltype(f(v[0]))> r;
 	for(auto elem:v){
 		r|=f(elem);
@@ -139,14 +139,14 @@ std::ostream& operator<<(std::ostream& o,std::variant<Ts...> const& a){
 
 template<typename T>
 std::set<T>& operator|=(std::set<T>& a,T t){
-	a.insert(t);
+	a.insert(std::move(t));
 	return a;
 }
 
 template<typename K,typename V>
 std::set<K> keys(std::map<K,V> const& a){
 	std::set<K> r;
-	for(auto [k,v]:a){
+	for(auto& [k,v]:a){
 		(void)v;
 		r|=k;
 	}
@@ -154,7 +154,7 @@ std::set<K> keys(std::map<K,V> const& a){
 }
 
 template<typename T>
-std::set<T> operator-(std::set<T> a,std::set<T> b){
+std::set<T> operator-(std::set<T> a,std::set<T> const& b){
 	for(auto elem:b){
 		a.erase(elem);
 	}
@@ -162,7 +162,7 @@ std::set<T> operator-(std::set<T> a,std::set<T> b){
 }
 
 template<typename K,typename V>
-void diff(std::map<K,V> a,std::map<K,V> b){
+void diff(std::map<K,V> const& a,std::map<K,V> const& b){
 	auto ka=keys(a);
 	auto kb=keys(b);
 	if(ka!=kb){
@@ -193,13 +193,13 @@ std::vector< std::pair<bool,std::pair<const K,V>> > mark_last(std::map<K,V> cons
 }
 
 template<typename T>
-std::vector<T> firsts(std::vector<std::vector<T>> a){
+std::vector<T> firsts(std::vector<std::vector<T>> const& a){
 	return mapf([](auto x){ return x.at(0); },a);
 }
 
 template<typename T>
-std::vector<T> operator+(std::vector<T> a,std::vector<T> b){
-	std::vector<T> r=a;
+std::vector<T> operator+(std::vector<T> a,std::vector<T> const& b){
+	std::vector<T> r=std::move(a);
 	for(auto elem:b) r|=elem;
 	return r;
 }
@@ -221,9 +221,9 @@ void diff(std::variant<Ts...> const& a,std::variant<Ts...> const& b){
 	nyi
 }
 
-std::string join(std::string a,std::vector<std::string> b);
-bool prefix(std::string needle,std::string haystack);
-std::vector<std::string> split(char delim,std::string s);
+std::string join(std::string const&,std::vector<std::string> const&);
+bool prefix(std::string const& needle,std::string const& haystack);
+std::vector<std::string> split(char delim,std::string const&);
 
 float rand(const float*);
 double rand(const double*);
@@ -233,10 +233,10 @@ std::string rand(const std::string*);
 bool operator==(std::vector<std::string> const& a,std::vector<const char*> const& b);
 bool operator!=(std::vector<std::string> const& a,std::vector<const char*> const& b);
 
-std::string tag(std::string name,std::string body);
-std::string h1(std::string s);
+std::string tag(std::string const& name,std::string const& body);
+std::string h1(std::string const&);
 
-#define X(A) std::string A(std::string s);
+#define X(A) std::string A(std::string const&);
 X(title)
 X(head)
 X(html)
@@ -249,7 +249,7 @@ X(h2)
 
 using DB=MYSQL*;
 
-void run_cmd(DB db,std::string cmd);
-std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string query);
+void run_cmd(DB db,std::string const& cmd);
+std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string const& query);
 
 #endif

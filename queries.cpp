@@ -40,7 +40,7 @@ void diff(vector<T> const& a,vector<T> const& b){
 
 Page::~Page(){}
 
-Table_type read(DB db,string name){
+Table_type read(DB db,string const& name){
 	auto q=query(db,"DESCRIBE "+name);
 	Table_type r;
 	for(auto elem:q){
@@ -57,7 +57,7 @@ Table_type read(DB db,string name){
 
 using Table_name=string;
 
-void check_table(DB db,Table_name name,Table_type type){
+void check_table(DB db,Table_name const& name,Table_type const& type){
 	auto r=read(db,name);
 	if(r!=type){
 		cout<<"Table mismatch:"<<name<<"\n";
@@ -85,7 +85,7 @@ string to_db_type(const unsigned*){ return "int(11) unsigned"; }
 string to_db_type(const string*){ return "varchar(100)"; }
 string to_db_type(const double*){ return "double"; }
 
-void create_table(DB db,Table_name name,Table_type type){
+void create_table(DB db,Table_name const& name,Table_type const& type){
 	run_cmd(
 		db,
 		[=](){
@@ -131,7 +131,7 @@ void check_database(DB db){
 
 using P=map<string,vector<string>>;
 
-string to_query(map<string,string> m){
+string to_query(map<string,string> const& m){
 	stringstream ss;
 	for(auto at=begin(m);at!=end(m);++at){
 		auto [k,v]=*at;
@@ -146,9 +146,9 @@ string to_query(map<string,string> m){
 	return ss.str();
 }
 
-unsigned parse(const unsigned*,string s){ return stoi(s); }
+unsigned parse(const unsigned*,string const& s){ return stoi(s); }
 
-bool parse(const bool*,string s){
+bool parse(const bool*,string const& s){
 	//This is how the database keeps track of it
 	if(s=="1") return 1;
 	if(s=="0") return 0;
@@ -161,13 +161,13 @@ bool parse(const bool*,string s){
 	nyi
 }
 
-string parse(const string*,string s){ return s; }
+string parse(const string*,string const& s){ return s; }
 
-float parse(const float*,string s){
+float parse(const float*,string const& s){
 	return stof(s);
 }
 
-double parse(const double*,string s){
+double parse(const double*,string const& s){
 	return stod(s);
 }
 
@@ -220,7 +220,7 @@ unsigned rand(const unsigned*){ return rand()%100; }
 		ITEMS(RAND)\
 		return r;\
 	}\
-	string to_query(T a){\
+	string to_query(T const& a){\
 		map<string,string> r;\
 		r["p"]=STR(T);\
 		ITEMS(TO_Q)\
@@ -228,7 +228,8 @@ unsigned rand(const unsigned*){ return rand()%100; }
 		r["sort_order"]=as_string(a.sort_order);\
 		return to_query(r);\
 	}\
-	optional<T> parse_query(const T*,P p){\
+	optional<T> parse_query(const T*,P const& p1){\
+		auto p=p1;\
 		if(p["p"]!=vector<string>{STR(T)}){ \
 			return {};\
 		}\
@@ -275,7 +276,7 @@ char from_hex(char a,char b){
 	return (hex_digit(a)<<4)+hex_digit(b);
 }
 
-string decode(string s){
+string decode(string const& s){
 	//Remove %20, etc. style escapes
 	//There's got to be a library function for this somewhere
 	stringstream ss;
@@ -300,7 +301,7 @@ string decode(string s){
 	return ss.str();
 }
 
-map<string,vector<string>> parse_query_string(string s){
+map<string,vector<string>> parse_query_string(string const& s){
 	map<string,vector<string>> r;
 	auto at=begin(s);
 	auto end=std::end(s);
@@ -323,7 +324,7 @@ map<string,vector<string>> parse_query_string(string s){
 	return r;
 }
 
-Request parse_query(string s){
+Request parse_query(string const& s){
 	auto m=parse_query_string(s);
 	if(m.empty()) return Home{};
 	//PRINT(m);
@@ -342,7 +343,7 @@ Request parse_query(string s){
 	return r;
 }
 
-string link(Request req,string body){
+string link(Request const& req,string const& body){
 	stringstream ss;
 	ss<<"<a href=\"?"<<to_query(req)<<"\">"<<body<<"</a>";
 	return ss.str();

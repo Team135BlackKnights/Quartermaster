@@ -87,11 +87,11 @@ struct Meeting_data{
 using Column_type=std::pair<std::string,bool>; //type and primary key
 using Table_type=std::vector<std::pair<std::string,Column_type>>;
 
-Table_type read(DB db,std::string name);
+Table_type read(DB db,std::string const& name);
 
 using Table_name=std::string;
 
-void check_table(DB,Table_name,Table_type);
+void check_table(DB,Table_name const&,Table_type const&);
 std::set<Table_name> show_tables(DB);
 
 std::string to_db_type(const bool*);
@@ -99,19 +99,19 @@ std::string to_db_type(const unsigned*);
 std::string to_db_type(const std::string*);
 std::string to_db_type(const double*);
 
-void create_table(DB,Table_name,Table_type);
+void create_table(DB,Table_name const&,Table_type const&);
 
 void check_database(DB);
 
 using P=std::map<std::string,std::vector<std::string>>;
 
-std::string to_query(std::map<std::string,std::string> m);
+std::string to_query(std::map<std::string,std::string> const&);
 
-unsigned parse(const unsigned*,std::string);
+unsigned parse(const unsigned*,std::string const&);
 
-bool parse(const bool*,std::string);
-float parse(const float*,std::string);
-double parse(const double*,std::string);
+bool parse(const bool*,std::string const&);
+float parse(const float*,std::string const&);
+double parse(const double*,std::string const&);
 
 unsigned rand(const unsigned*);
 
@@ -138,8 +138,8 @@ struct Page{
 	bool operator!=(T const& a,T const& b);\
 	std::ostream& operator<<(std::ostream& o,T const& a);\
 	T rand(const T*);\
-	std::string to_query(T a);\
-	std::optional<T> parse_query(const T*,P p);\
+	std::string to_query(T const& a);\
+	std::optional<T> parse_query(const T*,P const&);\
 	void diff(T const& a,T const& b);\
 
 #define HOME_ITEMS(X) \
@@ -253,7 +253,7 @@ using Request=std::variant<
 	Error
 >;
 
-Request parse_query(std::string);
+Request parse_query(std::string const&);
 
 template<
 	#define X(A) typename A,
@@ -266,7 +266,7 @@ std::string to_query(std::variant<
 	PAGES(X)
 	#undef X
 	Z
-> a){
+> const& a){
 	#define X(A) if(std::holds_alternative<A>(a)) return to_query(std::get<A>(a));
 	PAGES(X)
 	X(Z)
@@ -274,6 +274,6 @@ std::string to_query(std::variant<
 	nyi
 }
 
-std::string link(Request req,std::string);
+std::string link(Request const&,std::string const&);
 
 #endif

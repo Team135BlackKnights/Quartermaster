@@ -6,7 +6,7 @@
 #include<decimal/decimal>
 #include "util.h"
 
-std::string parse(const std::string*,std::string);
+std::string parse(const std::string*,std::string const&);
 
 std::string with_suggestions(std::string const& name,std::string const& value,std::vector<std::string> const& suggestions);
 std::string show_input(DB,std::string const& name,std::string const& value);
