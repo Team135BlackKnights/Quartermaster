@@ -14,6 +14,7 @@ std::string show_input(DB,std::string name,int value);
 std::string show_input(DB,std::string name,double value);
 std::string show_input(DB,std::string name,unsigned value);
 std::string show_input(DB,std::string name,bool value);
+std::string to_db_type(const std::string*);
 
 std::string escape(std::string);
 
@@ -40,6 +41,11 @@ bool operator==(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
 template<typename Sub,typename Data>
 bool operator!=(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
 	return a.data!=b.data;
+}
+
+template<typename Sub,typename Data>
+bool operator<(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
+	return a.data<b.data;
 }
 
 template<typename Sub,typename Data>
@@ -80,15 +86,16 @@ std::string show_input(DB db,std::string name,Subsystem_id const& current);
 struct User:Wrap<User,std::string>{};
 std::string to_db_type(const User*);
 
-struct Datetime{
+/*struct Datetime{
 	std::string s;
-};
-
-std::ostream& operator<<(std::ostream&,Datetime const&);
+};*/
+struct Datetime:Wrap<Datetime,std::string>{};
+//std::ostream& operator<<(std::ostream&,Datetime const&);
 std::string to_db_type(const Datetime*);
-Datetime parse(const Datetime*,std::string const&);
+//Datetime parse(const Datetime*,std::string const&);
 
-struct Date{
+struct Date:Wrap<Date,std::string>{};
+/*struct Date{
 	//not just a typedef so that can dispatch on the type
 	std::string s;
 };
@@ -96,17 +103,17 @@ struct Date{
 bool operator==(Date,Date);
 bool operator!=(Date,Date);
 
-std::ostream& operator<<(std::ostream&,Date);
+std::ostream& operator<<(std::ostream&,Date);*/
 
 Date rand(const Date*);
-Date parse(const Date*,std::string);
+//Date parse(const Date*,std::string);
 
 std::string show_input(DB db,std::string name,Date current);
 
-std::string escape(Date);
+//std::string escape(Date);
 std::string to_db_type(const Date*);
 
-struct URL{
+/*struct URL{
 	std::string s;
 };
 
@@ -119,7 +126,8 @@ URL rand(const URL*);
 URL parse(const URL*,std::string const&);
 
 std::string to_db_type(const URL*);
-std::string escape(URL const&);
+std::string escape(URL const&);*/
+struct URL:Wrap<URL,std::string>{};
 
 std::string show_input(DB db,std::string name,URL const& value);
 

@@ -1,6 +1,7 @@
 #ifndef QUERIES_H
 #define QUERIES_H
 
+#include<memory>
 #include "data_types.h"
 
 #define SUBSYSTEM_DATA(X)\
@@ -114,35 +115,24 @@ double parse(const double*,std::string);
 
 unsigned rand(const unsigned*);
 
-#define STR(X) ""#X
+struct Page{
+	std::optional<std::string> sort_by;
+	std::optional<std::string> sort_order;
 
-#define PARSE_ITEM(A,B) { \
-	auto f=p.find(""#B); \
-	if(f==p.end()){\
-		if(""#A==string("bool")){\
-			r.B=A{};\
-		}else{\
-			throw string()+"Failed to find:"#B+as_string(p);\
-		}\
-	}else{\
-		if(f->second.size()!=1){ throw "Multiple values for "#B; }\
-		try{\
-			r.B=parse((A*)nullptr,f->second[0]);\
-		}catch(...){\
-			throw string()+"Failed to parse \""#B+"\" as an "#A+": \""+f->second[0]+"\""; \
-		}\
-		p=without_key(p,string(""#B));\
-	}\
-}
+	virtual ~Page()=0;
+};
+
+#define STR(X) ""#X
 
 #define TO_Q(A,B) r[""#B]=as_string(a.B);
 #define RAND(A,B) rand((const A*)nullptr),
 #define INST_EQ(A,B) if(a.B!=b.B) return 0;
 #define SHOW(A,B) { o<<""#B<<":"<<a.B<<" "; }
 #define DIFF(A,B) if(a.B!=b.B) cout<<""#B<<":"<<a.B<<" "<<b.B<<"\n";
+#define DECL_LIST(A,B) A B,
 
 #define DECL_OPTION(T,ITEMS)\
-	struct T{ \
+	struct T:Page{ \
 		ITEMS(INST) \
 	};\
 	bool operator==(T const& a,T const& b);\
@@ -153,14 +143,14 @@ unsigned rand(const unsigned*);
 	std::optional<T> parse_query(const T*,P p);\
 	void diff(T const& a,T const& b);\
 
-//empty
-#define HOME_ITEMS(X) 
+#define HOME_ITEMS(X) \
 
 #define T Home
 DECL_OPTION(Home,HOME_ITEMS)
 #undef T
 
-#define SUBSYSTEMS_ITEMS(X)
+#define SUBSYSTEMS_ITEMS(X) \
+
 #define T Subsystems
 DECL_OPTION(Subsystems,SUBSYSTEMS_ITEMS)
 #undef T
@@ -169,7 +159,8 @@ DECL_OPTION(Subsystems,SUBSYSTEMS_ITEMS)
 DECL_OPTION(Subsystem_new,SUBSYSTEM_NEW_ITEMS)
 
 #define SUBSYSTEM_EDITOR_ITEMS(X)\
-	X(Subsystem_id,id)
+	X(Subsystem_id,id)\
+
 DECL_OPTION(Subsystem_editor,SUBSYSTEM_EDITOR_ITEMS)
 
 #define SUBSYSTEM_EDIT_ITEMS(X)\
@@ -186,12 +177,14 @@ DECL_OPTION(Parts,PARTS_ITEMS)
 DECL_OPTION(Part_new,PART_NEW_ITEMS)
 
 #define PART_EDITOR_ITEMS(X)\
-	X(Part_id,id)
+	X(Part_id,id)\
+
 DECL_OPTION(Part_editor,PART_EDITOR_ITEMS)
 	
 #define PART_EDIT_ITEMS(X)\
 	X(Id,part_id)\
-	PART_DATA(X)
+	PART_DATA(X)\
+
 DECL_OPTION(Part_edit,PART_EDIT_ITEMS)
 
 #define CALENDAR_ITEMS(X)
@@ -213,7 +206,8 @@ DECL_OPTION(Meeting_edit,MEETING_EDIT_ITEMS)
 	X(std::string,s)
 DECL_OPTION(Error,ERROR_ITEMS)
 
-#define BY_USER_ITEMS(X) X(User,user)
+#define BY_USER_ITEMS(X) \
+	X(User,user)
 DECL_OPTION(By_user,BY_USER_ITEMS)
 
 #define MACHINES_ITEMS(X)
@@ -230,23 +224,26 @@ DECL_OPTION(Machine_page,MACHINE_ITEMS)
 	X(Part_state,state)
 DECL_OPTION(State,STATE_ITEMS)
 
-#define PAGES(X)\
+#define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
 	X(Subsystem_new)\
-	X(Subsystem_editor)\
-	X(Subsystem_edit)\
 	X(Parts)\
 	X(Part_new)\
-	X(Part_editor)\
-	X(Part_edit)\
 	X(Calendar)\
 	X(Meeting_new)\
+	X(Machines)\
+	X(Orders)\
+
+#define PAGES(X)\
+	BASIC_PAGES(X)\
+	X(Subsystem_editor)\
+	X(Subsystem_edit)\
+	X(Part_editor)\
+	X(Part_edit)\
 	X(Meeting_editor)\
 	X(Meeting_edit)\
 	X(By_user)\
-	X(Machines)\
-	X(Orders)\
 	X(Machine_page)\
 	X(State)
 

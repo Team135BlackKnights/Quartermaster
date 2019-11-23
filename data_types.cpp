@@ -87,13 +87,13 @@ string to_db_type(const User*){ return "varchar(11)"; }
 
 string to_db_type(const Datetime*){ return "datetime"; }
 
-Datetime parse(const Datetime*,std::string const& s){ return {s}; }
+/*Datetime parse(const Datetime*,std::string const& s){ return {s}; }
 
 std::ostream& operator<<(std::ostream& o,Datetime const& a){
 	return o<<a.s;
-}
+}*/
 
-bool operator==(Date a,Date b){
+/*bool operator==(Date a,Date b){
 	return a.s==b.s;
 }
 
@@ -109,17 +109,17 @@ Date rand(const Date*){ return {rand((string*)nullptr)}; }
 
 Date parse(const Date*,string s){
 	return {s};
-}
+}*/
 
 string show_input(DB db,string name,Date current){
 	return "<br>"+name+":<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">";
 }
 
-string escape(Date a){ return escape(a.s); }
+//string escape(Date a){ return escape(a.s); }
 
 string to_db_type(const Date*){ return "date"; }
 
-bool operator==(URL a,URL b){
+/*bool operator==(URL a,URL b){
 	return a.s==b.s;
 }
 
@@ -141,17 +141,17 @@ URL parse(const URL*,string const& s){
 
 string to_db_type(const URL*){
 	return "varchar(100)";
-}
+}*/
 
-string escape(URL const& a){
+/*string escape(URL const& a){
 	return escape(a.s);
-}
+}*/
 
 string show_input(DB db,string name,URL const& value){
-	if(prefix("http",value.s)){
-		return "<br><a href=\""+value.s+"\">"+name+":</a><input type=\"text\" name=\""+name+"\" value=\""+value.s+"\">";
+	if(prefix("http",value.data)){
+		return "<br><a href=\""+value.data+"\">"+name+":</a><input type=\"text\" name=\""+name+"\" value=\""+value.data+"\">";
 	}
-	return show_input(db,name,value.s);
+	return show_input(db,name,value.data);
 }
 
 #define E_PRINT(A) if(a==T::A) return o<<""#A;
@@ -286,7 +286,9 @@ string show_input(DB db,string name,Subsystem_id const& current){
 
 	//show the current one that it's part of, color coded
 	//show the other current ones in a drop-down
-	return drop_down(name,as_string(current),m)+link(Subsystem_editor{current},"Current");
+	Subsystem_editor page;
+	page.id=current;
+	return drop_down(name,as_string(current),m)+link(page,"Current");
 }
 
 Dummy parse(const Dummy*,std::string const&){

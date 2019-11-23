@@ -1,3 +1,4 @@
+#include<algorithm>
 #include "util.h"
 #include "data_types.h"
 #include "auth.h"
@@ -128,15 +129,19 @@ string pretty_td(DB,Dummy){
 }
 
 string pretty_td(DB,URL a){
-	return td("<a href=\""+a.s+"\">"+a.s+"</a>");
+	return td("<a href=\""+a.data+"\">"+a.data+"</a>");
 }
 
 string pretty_td(DB,Machine a){
-	return td(link(Machine_page{a},as_string(a)));
+	Machine_page m;
+	m.machine=a;
+	return td(link(m,as_string(a)));
 }
 
 string pretty_td(DB,Part_state a){
-	return td(link(State{a},as_string(a)));
+	State page;
+	page.state=a;
+	return td(link(page,as_string(a)));
 }
 
 string subsystem_name(DB db,Subsystem_id id){
@@ -159,7 +164,9 @@ string subsystem_name(DB db,Subsystem_id id){
 }
 
 string pretty_td(DB db,Subsystem_id a){
-	return td(link(Subsystem_editor{a},subsystem_name(db,a)));
+	Subsystem_editor page;
+	page.id=a;
+	return td(link(page,subsystem_name(db,a)));
 }
 
 string part_name(DB db,Part_id id){
@@ -178,29 +185,172 @@ string part_name(DB db,Part_id id){
 }
 
 string pretty_td(DB db, Part_id a){
-	return td(link(Part_editor{a},part_name(db,a)));
+	Part_editor page;
+	page.id=a;
+	return td(link(page,part_name(db,a)));
 }
 
 string pretty_td(DB,User a){
-	return td(link(By_user{a},as_string(a)));
+	By_user page;
+	page.user=a;
+	return td(link(page,as_string(a)));
+}
+
+//static const char* ARROW_UP="▲";
+//static const char* ARROW_DOWN="▼";
+
+string sortable_labels(Request const& page,vector<string> labels){
+	std::stringstream ss;
+	ss<<"<tr>";
+	for(auto label:labels){
+		ss<<"<th>";
+		auto p2=page;
+		std::visit([&](auto &x){ x.sort_by=label; x.sort_order="asc"; }, p2);
+		auto p3=page;
+		std::visit([&](auto &x){ x.sort_by=label; x.sort_order="desc"; }, p3);
+		//p2.sort_by="dog";
+		ss<<label<<" ";
+		ss<<link(p2,"/\\");
+		ss<<" "<<link(p3,"\\/");
+		ss<<"</th>";
+	}
+	ss<<"</tr>";
+	return ss.str();
+}
+
+template<std::size_t ...S>
+struct seq { };
+
+template<std::size_t N, std::size_t ...S>
+struct gens : gens<N-1, N-1, S...> { };
+
+template<std::size_t ...S>
+struct gens<0, S...> {
+  typedef seq<S...> type;
+};
+
+template <template <typename ...> class Tup1,
+    template <typename ...> class Tup2,
+    typename ...A, typename ...B,
+    std::size_t ...S>
+auto tuple_zip_helper(Tup1<A...> t1, Tup2<B...> t2, seq<S...> s) ->
+decltype(std::make_tuple(std::make_pair(std::get<S>(t1),std::get<S>(t2))...)) {
+  return std::make_tuple( std::make_pair( std::get<S>(t1), std::get<S>(t2) )...);
+}
+
+template <template <typename ...> class Tup1,
+  template <typename ...> class Tup2,
+  typename ...A, typename ...B>
+auto tuple_zip(Tup1<A...> t1, Tup2<B...> t2) ->
+decltype(tuple_zip_helper(t1, t2, typename gens<sizeof...(A)>::type() )) {
+  static_assert(sizeof...(A) == sizeof...(B), "The tuple sizes must be the same");
+  return tuple_zip_helper( t1, t2, typename gens<sizeof...(A)>::type() );
 }
 
 template<typename ... Ts>
-string as_table(DB db,vector<string> labels,vector<tuple<Ts...>> const& a){
+vector<tuple<Ts...>> sort_by_col(vector<tuple<Ts...>> a,unsigned element){
+	std::sort(
+		begin(a),
+		end(a),
+		[element](auto e1,auto e2)->bool{
+
+			auto t=tuple_zip(e1,e2);
+			unsigned at=0;
+			bool result=0;
+			std::apply(
+				[&](auto p){
+					if(at==element) result=( p.first<p.second );
+					at++;
+				},
+				t
+			);
+			return result;
+			//return get<N>(a) < get<N>(b);
+		}
+	);
+	return a;
+}
+
+template<typename T>
+vector<T> sorted(vector<T> a){
+	sort(begin(a),end(a));
+	return a;
+}
+
+template<typename T>
+vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
+	vector<pair<size_t,T>> r;
+	for(size_t i=0;i<a.size();i++){
+		r|=make_pair(i,a[i]);
+	}
+	return r;
+}
+
+template<typename ... Ts>
+string as_table(DB db,Request const& page,vector<string> labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
+	ss<<sortable_labels(page,labels);
+	
+	vector<vector<pair<string,string>>> vv;
 	for(auto row:a){
+		vector<pair<string,string>> v;
+		std::apply(
+			[&](auto&&... x){
+				( (v|=make_pair(as_string(x),pretty_td(db,x))), ... );
+			},
+			row
+		);
+		vv|=v;
+	}
+
+	optional<string> sort_by;
+	std::visit([&](auto x){ sort_by=x.sort_by; },page);
+	optional<string> sort_order;
+	std::visit([&](auto x){ sort_order=x.sort_order; },page);
+	
+	optional<unsigned> index=[=]()->optional<unsigned>{
+		for(auto [i,label]:enumerate(labels)){
+			if(label==sort_by){
+				return i;
+			}
+		}
+		return {};
+	}();
+
+	if(index){
+		sort(
+			begin(vv),
+			end(vv),
+			[index,sort_order](auto e1,auto e2){
+				if(sort_order=="desc"){
+					return e1[*index]>e2[*index];
+				}
+				return e1[*index]<e2[*index];
+			}
+		);
+	}
+
+	for(auto row:vv){
+		ss<<"<tr>";
+		for(auto [tag,elem]:row){
+			(void)tag;
+			ss<<elem;
+		}
+		ss<<"</tr>";
+	}
+
+	/*for(auto row:sorted(a)){
 		ss<<"<tr>";
 		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },row);
 		ss<<"</tr>";
-	}
+	}*/
 	ss<<"</table>";
 	return ss.str();
 }
 
 template<typename ... Ts>
-string table_with_totals(DB db,vector<string> labels,vector<tuple<Ts...>> const& a){
+string table_with_totals(DB db,Request const& page,vector<string> labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<join("",mapf(th,labels));
@@ -220,22 +370,16 @@ string table_with_totals(DB db,vector<string> labels,vector<tuple<Ts...>> const&
 }
 
 template<typename T>
-string as_table(DB db,vector<string> labels,vector<T> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		ss<<pretty_td(db,row);
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-template<typename A,typename B>
-string as_table(vector<string> labels,vector<tuple<A,B>> const&){
-	nyi
+string as_table(DB db,Request const& page,vector<string> labels,vector<T> const& a){
+	return as_string(
+		db,
+		page,
+		labels,
+		mapf(
+			[](auto x){ return make_tuple(x); },
+			a
+		)
+	);
 }
 
 string as_table(vector<string> labels,vector<vector<std::string>> in){
@@ -278,10 +422,9 @@ string title_end(){ return "1425 Parts System"; }
 string nav(){
 	return ""
 		#define X(A) +[]()->string{ \
-			if(sizeof(A)==1) return link(A{},""#A)+" "; \
-			return ""; \
+			return link(A{},""#A)+" "; \
 		}()
-		PAGES(X)
+		BASIC_PAGES(X)
 		#undef X
 	+"<br>"
 	;
@@ -300,7 +443,7 @@ string make_page(string heading,string main_body){
 
 }
 
-string parts_by_state(DB db){
+string parts_by_state(DB db,Request const& page){
 	auto a=qm<Part_state,Subsystem_id,Part_id>(
 		db,
 		"SELECT part_state,subsystem,part_id "
@@ -310,14 +453,14 @@ string parts_by_state(DB db){
 			"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 		"ORDER BY part_state,subsystem "
 	);
-	return as_table(db,{"State","Subsystem","Part"},a);
+	return as_table(db,page,{"State","Subsystem","Part"},a);
 }
 
 string inner(Home const& a,DB db){
-	return make_page("Home",parts_by_state(db));
+	return make_page("Home",parts_by_state(db,a));
 }
 
-string make_table(vector<string> labels,vector<vector<optional<string>>> const& a){
+string make_table(Request const& page,vector<string> labels,vector<vector<optional<string>>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<"<tr>";
@@ -334,7 +477,7 @@ string make_table(vector<string> labels,vector<vector<optional<string>>> const& 
 	return ss.str();
 }
 
-string make_table(vector<vector<optional<string>>> const& a){
+string make_table(Request const& page,vector<vector<optional<string>>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	for(auto row:a){
@@ -348,7 +491,7 @@ string make_table(vector<vector<optional<string>>> const& a){
 	return ss.str();
 }
 
-string show_table(DB db,Table_name name,optional<string> title={}){
+string show_table(DB db,Request const& page,Table_name name,optional<string> title={}){
 	auto columns=firsts(query(db,"DESCRIBE "+name));
 	stringstream ss;
 	ss<<h2(title?*title:name);
@@ -375,20 +518,18 @@ vector<int> get_ids(DB db,Table_name table){
 	return r;
 }
 
-string show_current_subsystems1(DB db){
-	auto q=q1<Subsystem_id>(
-		db,
-                "SELECT subsystem_id FROM subsystem_info WHERE (id) IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid"
-	);
-	return as_table(db,{"Subsystem"},q);
-}
-
 template<typename A,typename B>
 std::variant<A,B> parse(const variant<A,B>*,string const& s){
 	return parse((A*)0,s);
 }
 
-string subsystem_state_count(DB db){
+State make_state(Part_state a){
+	State r;
+	r.state=a;
+	return r;
+}
+
+string subsystem_state_count(DB db,Request const& page){
 	auto q=qm<
 		variant<Subsystem_id,string>,
 		#define X(A) int,
@@ -413,9 +554,10 @@ string subsystem_state_count(DB db){
 	);
 	return h2("Number of parts by state")+table_with_totals(
 		db,
+		page,
 		{
 			"Subsystem"
-			#define X(A) ,link(State{Part_state::A},""#A)
+			#define X(A) ,link(make_state(Part_state::A),""#A)
 			PART_STATES(X)
 			#undef X
 			,"Total"
@@ -424,7 +566,13 @@ string subsystem_state_count(DB db){
 	);
 }
 
-string subsystem_machine_count(DB db){
+Machine_page make_machine_page(Machine a){
+	Machine_page r;
+	r.machine=a;
+	return r;
+}
+
+string subsystem_machine_count(DB db,Request const& page){
 	auto q=qm<
 		variant<Subsystem_id,string>,
 		#define X(A) int,
@@ -449,9 +597,10 @@ string subsystem_machine_count(DB db){
 	);
 	return h2("Number of parts by machine")+"Note: This is regardless of state, so includes finished parts."+table_with_totals(
 		db,
+		page,
 		{
 			"Subsystem"
-			#define X(A) ,link(Machine_page{Machine::A},""#A)
+			#define X(A) ,link(make_machine_page(Machine::A),""#A)
 			MACHINES(X)
 			#undef X
 		},
@@ -459,14 +608,14 @@ string subsystem_machine_count(DB db){
 	);
 }
 
-string show_current_subsystems(DB db){
-	return subsystem_state_count(db)+subsystem_machine_count(db);
+string show_current_subsystems(DB db,Request const& page){
+	return subsystem_state_count(db,page)+subsystem_machine_count(db,page);
 }
 
 string inner(Subsystems const& a,DB db){
 	return make_page(
 		"Subsystems",
-		show_current_subsystems(db)/*+
+		show_current_subsystems(db,a)/*+
 		h2("Debug info")+
 		[=](){
 			stringstream ss;
@@ -476,7 +625,7 @@ string inner(Subsystems const& a,DB db){
 			return ss.str();
 		}()+
 		show_table(db,"subsystem")+*/
-		+show_table(db,"subsystem_info","History")
+		+show_table(db,a,"subsystem_info","History")
 	);
 }
 
@@ -501,9 +650,11 @@ string inner_new(DB db,Table_name table){
 	assert(q[0][0]);
 	auto id=stoi(*q[0][0]);
 
+	T page;
+	page.id={id};
 	return make_page(
 		"Subsystem new",
-		redirect_to(T{id})
+		redirect_to(page)
 	);
 }
 
@@ -511,7 +662,7 @@ string inner(Subsystem_new const&,DB db){
 	return inner_new<Subsystem_editor>(db,"subsystem");
 }
 
-string parts_of_subsystem(DB db,Subsystem_id id){
+string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
 	auto q=qm<Part_id,Part_state,int>(
 		db,
 		"SELECT part_id,part_state,qty "
@@ -520,7 +671,7 @@ string parts_of_subsystem(DB db,Subsystem_id id){
 			"(SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid AND subsystem="+as_string(id)
 	);
-	return h2("Parts in subsystem")+as_table(db,{"Part","State","Qty"},q);
+	return h2("Parts in subsystem")+as_table(db,page,{"Part","State","Qty"},q);
 }
 
 string inner(Subsystem_editor const& a,DB db){
@@ -551,9 +702,10 @@ string inner(Subsystem_editor const& a,DB db){
 			[=](){ if(valid) return "checked=on"; return ""; }()+"\">"+
 		"<br><input type=\"submit\">"+
 		"</form>"
-		+parts_of_subsystem(db,a.id)
+		+parts_of_subsystem(db,a,a.id)
 		+h2("History")
 		+make_table(
+			a,
 			{"edit_date","edit_user","id","name","subsystem_id","valid"},
 			query(db,"SELECT edit_date,edit_user,id,name,subsystem_id,valid FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
 		)
@@ -574,9 +726,11 @@ string inner(Subsystem_edit const& a,DB db){
 		+")";
 	//PRINT(q);
 	run_cmd(db,q);
+	Subsystem_editor page;
+	page.id=Subsystem_id{a.subsystem_id};
 	return make_page(
 		"Subsystem edit",
-		redirect_to(Subsystem_editor{a.subsystem_id})
+		redirect_to(page)
 	);
 }
 
@@ -613,9 +767,10 @@ vector<std::string> operator|=(vector<string> &a,const char *s){
 	return a;
 }
 
-string done(DB db){
+string done(DB db,Request const& page){
 	return h2("Done")+table_with_totals(
 		db,
+		page,
 		{"State","Machine","Time","Subsystem","Part"},
 		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
 			db,
@@ -630,9 +785,10 @@ string done(DB db){
 	);
 }
 
-string to_do(DB db){
+string to_do(DB db,Request const& page){
 	return h2("To do")+table_with_totals(
 		db,
+		page,
 		{"State","Machine","Time","Subsystem","Part"},
 		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
 			db,
@@ -647,44 +803,15 @@ string to_do(DB db){
 	);
 }
 
-string show_current_parts(DB db){
-/*	vector<string> columns;
-	#define X(A,B) columns|=""#B;
-	PART_DATA_INNER(X)
-	#undef X
-	auto query_str="SELECT "+join(",",columns)+",0 "
-		"FROM part_info "
-		"WHERE valid AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
-		"ORDER BY subsystem,part_id"
-	;
-
-	auto q1=qm<
-		#define X(A,B) A,
-		PART_DATA_INNER(X)
-		#undef X
-		Dummy
-	>(
-		db,query_str
-	);
-	return h2("Current state")+as_table(db,columns,q1);
-	*/
-	return h2("Current state")+to_do(db)+done(db);
+std::string show_current_parts(DB db,Request const& page){
+	return h2("Current state")+to_do(db,page)+done(db,page);
 }
 
-string inner(Parts const&,DB db){
+string inner(Parts const& a,DB db){
 	return make_page(
 		"Parts",
-		show_current_parts(db)+
-		//parts_by_machine(db)+
-		/*[=](){
-			stringstream ss;
-			for(auto id:get_ids(db,"part")){
-				ss<<link(Part_editor{id},"Edit "+as_string(id))<<"<br>";
-			}
-			return ss.str();
-		}()+
-		show_table(db,"part")+*/
-		show_table(db,"part_info","History")
+		show_current_parts(db,a)+
+		show_table(db,a,"part_info","History")
 	);
 }
 
@@ -729,6 +856,7 @@ string inner(Part_editor const& a,DB db){
 		"</form>"
 		+h2("History")
 		+make_table(
+			a,
 			all_cols,
 			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+as_string(a.id))
 		)
@@ -776,6 +904,7 @@ string inner(Meeting_editor const& a,DB db){
 		"</form>"
 		+h2("History")
 		+make_table(
+			a,
 			all_cols,
 			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+as_string(a.id))
 		)
@@ -786,7 +915,7 @@ string inner(Meeting_new const&,DB db){
 	return inner_new<Meeting_editor>(db,"meeting");
 }
 
-string current_calendar(DB db){
+string current_calendar(DB db,Request const& page){
 	auto found=qm<Meeting_id,Date,Meeting_length,Color,std::string>(
 		db,
 		"SELECT meeting_id,date,length,color,notes "
@@ -808,7 +937,9 @@ string current_calendar(DB db){
 	ss<<"</tr>";
 	for(auto [meeting_id,date,length,color,notes]:found){
 		ss<<"<tr>";
-		ss<<"<td bgcolor=\""<<color<<"\">"<<link(Meeting_editor{meeting_id},as_string(date))<<"</td>";
+		Meeting_editor page;
+		page.id=meeting_id;
+		ss<<"<td bgcolor=\""<<color<<"\">"<<link(page,as_string(date))<<"</td>";
 		ss<<td(as_string(length));
 		ss<<td(notes);
 		ss<<"</tr>";
@@ -819,16 +950,16 @@ string current_calendar(DB db){
 	ss<<"</tr>";
 	ss<<"</table>";
 	return ss.str();
-	return as_table(db,{"Date","Length","Color"},found);
+	return as_table(db,page,{"Date","Length","Color"},found);
 }
 
-string inner(Calendar const&,DB db){
+string inner(Calendar const& a,DB db){
 	return make_page(
 		"Calendar",
-		current_calendar(db)
-		+to_do(db)
+		current_calendar(db,a)
+		+to_do(db,a)
 		//show_table(db,"meeting")
-		+show_table(db,"meeting_info","History")
+		+show_table(db,a,"meeting_info","History")
 	);
 }
 
@@ -848,9 +979,11 @@ string inner(Part_edit const& a,DB db){
 		+join(",",seconds(v))
 		+")";
 	run_cmd(db,q);
+	Part_editor page;
+	page.id=Part_id{a.part_id};
 	return make_page(
 		area_cap+" edit",
-		redirect_to(Part_editor{a.part_id})
+		redirect_to(page)
 	);
 }
 
@@ -870,9 +1003,11 @@ string inner(Meeting_edit const& a,DB db){
 		+join(",",seconds(v))
 		+")";
 	run_cmd(db,q);
+	Meeting_editor page;
+	page.id=Meeting_id{a.meeting_id};
 	return make_page(
 		area_cap+" edit",
-		redirect_to(Meeting_editor{a.meeting_id})
+		redirect_to(page)
 	);
 }
 
@@ -883,7 +1018,7 @@ string inner(Error const& a,DB db){
 	);
 }
 
-string show_table_user(DB db,Table_name name,User edit_user){
+string show_table_user(DB db,Request const& page,Table_name name,User edit_user){
 	auto columns=firsts(query(db,"DESCRIBE "+name));
 	stringstream ss;
 	ss<<h2(name);
@@ -906,9 +1041,9 @@ string show_table_user(DB db,Table_name name,User edit_user){
 string inner(By_user const& a,DB db){
 	return make_page(
 		"By user \""+as_string(a)+"\"",
-		show_table_user(db,"subsystem_info",a.user)
-		+show_table_user(db,"part_info",a.user)
-		+show_table_user(db,"meeting_info",a.user)
+		show_table_user(db,a,"subsystem_info",a.user)
+		+show_table_user(db,a,"part_info",a.user)
+		+show_table_user(db,a,"meeting_info",a.user)
 	);
 }
 
@@ -917,7 +1052,7 @@ auto get_col(vector<tuple<Ts...>> const& in){
 	return mapf([](auto x){ return get<N>(x); },in);
 }
 
-string by_machine(DB db,Machine const& a){
+string by_machine(DB db,Request const& page,Machine const& a){
 	auto qq=qm<Part_state,Subsystem_id,Part_id,unsigned,Decimal>(
 		db,
 		"SELECT part_state,subsystem,part_id,qty,time "
@@ -929,7 +1064,7 @@ string by_machine(DB db,Machine const& a){
 		"ORDER BY part_state"
 	);
 	return h2(as_string(a))
-		+as_table(db,{"Status","Subsystem","Part","Qty","Time"},qq)
+		+as_table(db,page,{"Status","Subsystem","Part","Qty","Time"},qq)
 		+"Total time:"+as_string(sum(get_col<4>(qq)));
 }
 
@@ -944,13 +1079,14 @@ vector<Machine> machines(){
 string inner(Machines const& a,DB db){
 	return make_page(
 		"Machines",
-		join("",mapf([=](auto x){ return by_machine(db,x); },machines()))
+		join("",mapf([=](auto x){ return by_machine(db,a,x); },machines()))
 	);
 }
 
-string to_order(DB db){
+string to_order(DB db,Request const& page){
 	return h2("To order")+as_table(
 		db,
+		page,
 		{"Subsystem","Part","Supplier","Part #","qty","part_link","price"},
 		qm<Subsystem_id,Part_id,string,string,unsigned,URL,Decimal>(
 			db,
@@ -964,9 +1100,10 @@ string to_order(DB db){
 	);
 }
 
-string on_order(DB db){
+string on_order(DB db,Request const& page){
 	return h2("On order")+as_table(
 		db,
+		page,
 		{"Subsystem","Part","Supplier","Part #","qty","Expected arrival"},
 		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
 			db,
@@ -981,9 +1118,10 @@ string on_order(DB db){
 	);
 }
 
-string arrived(DB db){
+string arrived(DB db,Request const& page){
 	return h2("Arrived")+as_table(
 		db,
+		page,
 		{"Subsystem","Part","Supplier","Part #","qty","Arrival date"},
 		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
 			db,
@@ -1001,7 +1139,7 @@ string arrived(DB db){
 string inner(Machine_page const& a,DB db){
 	return make_page(
 		as_string(a.machine),
-		by_machine(db,a.machine)
+		by_machine(db,a,a.machine)
 	);
 }
 
@@ -1010,6 +1148,7 @@ string inner(State const& a,DB db){
 		as_string(a.state),
 		as_table(
 			db,
+			a,
 			{"Subsystem","Part"},
 			qm<Subsystem_id,Part_id>(
 				db,
@@ -1028,9 +1167,9 @@ string inner(State const& a,DB db){
 string inner(Orders const& a,DB db){
 	return make_page(
 		"Orders",
-		to_order(db)
-		+on_order(db)
-		+arrived(db)
+		to_order(db,a)
+		+on_order(db,a)
+		+arrived(db,a)
 	);
 }
 
@@ -1051,7 +1190,9 @@ string run(Request req,DB db){
 	PAGES(X)
 	X(Error)
 	#undef X
-	return inner(Error{"Could not find page"},db);
+	Error page;
+	page.s="Could not find page";
+	return inner(page,db);
 }
 
 template<

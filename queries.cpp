@@ -1,4 +1,5 @@
 #include "queries.h"
+#include<string.h>
 
 using namespace std;
 
@@ -36,6 +37,8 @@ void diff(vector<T> const& a,vector<T> const& b){
 		}
 	}
 }
+
+Page::~Page(){}
 
 Table_type read(DB db,string name){
 	auto q=query(db,"DESCRIBE "+name);
@@ -177,6 +180,8 @@ unsigned rand(const unsigned*){ return rand()%100; }
 	if(f==p.end()){\
 		if(""#A==string("bool")){\
 			r.B=A{};\
+		}else if(strstr(""#A,"optional")){\
+			r.B=A{};\
 		}else{\
 			throw string()+"Failed to find:"#B+as_string(p);\
 		}\
@@ -211,14 +216,14 @@ unsigned rand(const unsigned*){ return rand()%100; }
 		return o<<")";\
 	}\
 	T rand(const T*){\
-		return T{\
-			ITEMS(RAND)\
-		};\
+		nyi\
 	}\
 	string to_query(T a){\
 		map<string,string> r;\
 		r["p"]=STR(T);\
 		ITEMS(TO_Q)\
+		r["sort_by"]=as_string(a.sort_by);\
+		r["sort_order"]=as_string(a.sort_order);\
 		return to_query(r);\
 	}\
 	optional<T> parse_query(const T*,P p){\
@@ -227,6 +232,8 @@ unsigned rand(const unsigned*){ return rand()%100; }
 		}\
 		p=without_key(p,string{"p"});\
 		T r;\
+		PARSE_ITEM(optional<string>,sort_by)\
+		PARSE_ITEM(optional<string>,sort_order)\
 		ITEMS(PARSE_ITEM)\
 		if(p.size()) return {};\
 		return r;\
@@ -321,12 +328,16 @@ Request parse_query(string s){
 	#define X(A) try{ \
 		auto p=parse_query((A*)nullptr,m); if(p) return *p; \
 	}catch(string s){\
-		return Error{"Invalid argument:"+s};\
+		Error page;\
+		page.s="Invalid argument"+s;\
+		return page;\
 	}
 	PAGES(X)
 	X(Error)
 	#undef X
-	return Error{"Unparsable request"};
+	Error r;
+	r.s="Unparsable request";
+	return r;
 }
 
 string link(Request req,string body){
