@@ -235,6 +235,7 @@ struct Label{
 	optional<Request> url;
 
 	Label(const char *s):text(s){}
+	explicit Label(std::string s):text(move(s)){}
 	Label(string s,Request r):text(std::move(s)),url(std::move(r)){}
 };
 
@@ -470,7 +471,9 @@ string show_table(DB db,Request const& page,Table_name const& name,optional<stri
 	stringstream ss;
 	ss<<h2(title?*title:name);
 	ss<<"<table border>";
-	ss<<"<tr>";
+	//string sortable_labels(Request const& page,vector<Label> const& labels){
+	ss<<sortable_labels(page,mapf([](auto a){ return Label(*a); },columns));
+/*	ss<<"<tr>";
 	for(auto elem:columns) ss<<th(as_string(elem));
 	ss<<"</tr>";
 	for(auto row:query(db,"SELECT * FROM "+name)){
@@ -479,7 +482,43 @@ string show_table(DB db,Request const& page,Table_name const& name,optional<stri
 			ss<<td(as_string(elem));
 		}
 		ss<<"</tr>";
+	}*/
+	ss<<"<tr>";
+
+	auto q=query(db,"SELECT * FROM "+name);
+	optional<string> sort_by;
+	std::visit([&sort_by](auto x){ sort_by=x.sort_by; },page);
+	optional<int> sort_index=[&]()->optional<int>{
+		for(auto [i,name]:enumerate(columns)){
+			if(name==sort_by) return i;
+		}
+		return {};
+	}();
+	bool desc=[=](){
+		std::optional<std::string> sort_order;
+		std::visit([&](auto x){ sort_order=x.sort_order; },page);
+		if(sort_order=="desc") return 1;
+		return 0;
+	}();
+
+	if(sort_index){
+		sort(
+			begin(q),
+			end(q),
+			[sort_index,desc](auto const& e1,auto const& e2){
+				if(desc) return e1[*sort_index]>e2[*sort_index];
+				return e1[*sort_index]<e2[*sort_index];
+			}
+		);
 	}
+	for(auto row:q){
+		ss<<"<tr>";
+		for(auto elem:row){
+			ss<<td(as_string(elem));
+		}
+		ss<<"</tr>";
+	}
+	ss<<"</tr>";
 	ss<<"</table>";
 	return ss.str();
 }
