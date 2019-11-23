@@ -97,13 +97,30 @@ vector<T> q1(DB db,string const& query_string){
 }
 
 template<typename ... Ts>
-vector<tuple<Ts...>> qm(DB db,string const& query_string){
-	auto q=query(db,query_string);
-	return convert<Ts...>(q);
+vector<tuple<Ts...>> qm(DB db,std::string const& query_string){
+	run_cmd(db,query_string);
+	MYSQL_RES *result=mysql_store_result(db);
+	if(result==NULL)nyi
+	int fields=mysql_num_fields(result);
+	using Tup=tuple<Ts...>;
+	vector<Tup> r;
+	MYSQL_ROW row;
+	while((row=mysql_fetch_row(result))){
+		Tup this_row;
+		int i=0;
+		std::apply(
+			[&](auto&&... x){
+				assert(i<fields);
+				assert(row[i]);
+				((x=parse(&x,(row[i++]))), ...);
+			},
+			this_row
+		);
+		r|=this_row;
+	}
+	mysql_free_result(result);
+	return r;
 }
-
-template<typename T>
-vector<optional<T>> operator|=(vector<optional<T>>,T)nyi
 
 template<typename T>
 string pretty_td(DB,T const& t){
