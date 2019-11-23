@@ -443,8 +443,77 @@ string parts_by_state(DB db,Request const& page){
 	return as_table(db,page,vector<Label>{"State","Subsystem","Part"},a);
 }
 
+string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
+	if(parents.count(id)){
+		stringstream ss;
+		ss<<"Loop!"<<id<<" "<<parents;
+		return ss.str();
+	}
+	parents|=id;
+	stringstream ss;
+	ss<<"<table border>";
+	auto data=qm<Subsystem_id,string>(
+		db,
+		"SELECT subsystem_id,name "
+		"FROM subsystem_info "
+		"WHERE "
+			"valid AND "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
+			"parent="+escape(id)
+	);
+	for(auto [subsystem_id,subsystem_name]:data){
+		ss<<"<tr>";
+		Subsystem_editor e;
+		e.id=subsystem_id;
+		ss<<td(link(e,subsystem_name))<<td(sub_table(db,subsystem_id,parents));
+		ss<<"</tr>";
+	}
+	auto data2=qm<Part_id,string,Part_state>(
+		db,
+		"SELECT part_id,name,part_state "
+		"FROM part_info "
+		"WHERE "
+			"valid AND "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) AND "
+			"subsystem="+escape(id)
+	);
+	for(auto [part_id,part_name,state]:data2){
+		ss<<"<tr>";
+		Part_editor e;
+		e.id=part_id;
+		ss<<td(link(e,part_name))<<td(as_string(state));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+string part_tree(DB db){
+	stringstream ss;
+	ss<<h2("Part tree");
+	ss<<"<table border>";
+	auto subs=qm<Subsystem_id,string>(
+		db,
+		"SELECT subsystem_id,name "
+		"FROM subsystem_info "
+		"WHERE "
+			"valid AND "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
+			"parent IS NULL"
+	);
+	for(auto [subsystem_id,subsystem_name]:subs){
+		ss<<"<tr>";
+		Subsystem_editor e;
+		e.id=subsystem_id;
+		ss<<td(link(e,subsystem_name))<<td(sub_table(db,subsystem_id,{}));
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
 string inner(Home const& a,DB db){
-	return make_page("Home",parts_by_state(db,a));
+	return make_page("Home",parts_by_state(db,a)+part_tree(db));
 }
 
 string make_table(Request const& page,vector<string> const& columns,vector<vector<optional<string>>> q){
@@ -753,8 +822,8 @@ string inner(Subsystem_editor const& a,DB db){
 		+h2("History")
 		+make_table(
 			a,
-			{"edit_date","edit_user","id","name","subsystem_id","valid"},
-			query(db,"SELECT edit_date,edit_user,id,name,subsystem_id,valid FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
+			{"edit_date","edit_user","id","name","subsystem_id","valid","parent","prefix"},
+			query(db,"SELECT edit_date,edit_user,id,name,subsystem_id,valid,parent,prefix FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
 		)
 	);
 }
