@@ -96,6 +96,18 @@ vector<T> q1(DB db,string const& query_string){
 	return convert1<T>(q);
 }
 
+template<typename T>
+T parse(T const* t,const char *s){
+	if(!s) throw "Unexpected NULL";
+	return parse(t,string{s});
+}
+
+template<typename T>
+optional<T> parse(std::optional<T> const *t,const char *s){
+	if(!s) return {};
+	return parse(t,string{s});
+}
+
 template<typename ... Ts>
 vector<tuple<Ts...>> qm(DB db,std::string const& query_string){
 	run_cmd(db,query_string);
@@ -435,57 +447,12 @@ string inner(Home const& a,DB db){
 	return make_page("Home",parts_by_state(db,a));
 }
 
-string make_table(Request const& page,vector<string> const& labels,vector<vector<optional<string>>> const& a){
+string make_table(Request const& page,vector<string> const& columns,vector<vector<optional<string>>> q){
 	stringstream ss;
 	ss<<"<table border>";
-	ss<<"<tr>";
-	for(auto elem:labels) ss<<th(elem);
-	ss<<"</tr>";
-	for(auto row:a){
-		ss<<"<tr>";
-		for(auto elem:row){
-			ss<<td(as_string(elem));
-		}
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-string make_table(Request const& page,vector<vector<optional<string>>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
-	for(auto row:a){
-		ss<<"<tr>";
-		for(auto elem:row){
-			ss<<td(as_string(elem));
-		}
-		ss<<"</tr>";
-	}
-	ss<<"</table>";
-	return ss.str();
-}
-
-string show_table(DB db,Request const& page,Table_name const& name,optional<string> title={}){
-	auto columns=firsts(query(db,"DESCRIBE "+name));
-	stringstream ss;
-	ss<<h2(title?*title:name);
-	ss<<"<table border>";
-	//string sortable_labels(Request const& page,vector<Label> const& labels){
-	ss<<sortable_labels(page,mapf([](auto a){ return Label(*a); },columns));
-/*	ss<<"<tr>";
-	for(auto elem:columns) ss<<th(as_string(elem));
-	ss<<"</tr>";
-	for(auto row:query(db,"SELECT * FROM "+name)){
-		ss<<"<tr>";
-		for(auto elem:row){
-			ss<<td(as_string(elem));
-		}
-		ss<<"</tr>";
-	}*/
+	ss<<sortable_labels(page,mapf([](auto a){ return Label(a); },columns));
 	ss<<"<tr>";
 
-	auto q=query(db,"SELECT * FROM "+name);
 	optional<string> sort_by;
 	std::visit([&sort_by](auto x){ sort_by=x.sort_by; },page);
 	optional<int> sort_index=[&]()->optional<int>{
@@ -520,6 +487,29 @@ string show_table(DB db,Request const& page,Table_name const& name,optional<stri
 	}
 	ss<<"</tr>";
 	ss<<"</table>";
+	return ss.str();
+}
+
+string make_table(Request const& page,vector<vector<optional<string>>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	for(auto row:a){
+		ss<<"<tr>";
+		for(auto elem:row){
+			ss<<td(as_string(elem));
+		}
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+string show_table(DB db,Request const& page,Table_name const& name,optional<string> title={}){
+	auto columns=mapf([](auto x){ return *x; },firsts(query(db,"DESCRIBE "+name)));
+	stringstream ss;
+	ss<<h2(title?*title:name);
+	auto q=query(db,"SELECT * FROM "+name);
+	ss<<make_table(page,columns,q);
 	return ss.str();
 }
 
@@ -622,13 +612,7 @@ string subsystem_machine_count(DB db,Request const& page){
 }
 
 string show_current_subsystems(DB db,Request const& page){
-	return subsystem_state_count(db,page)+subsystem_machine_count(db,page);
-}
-
-string inner(Subsystems const& a,DB db){
-	return make_page(
-		"Subsystems",
-		show_current_subsystems(db,a)/*+
+		/*+
 		h2("Debug info")+
 		[=](){
 			stringstream ss;
@@ -638,6 +622,28 @@ string inner(Subsystems const& a,DB db){
 			return ss.str();
 		}()+
 		show_table(db,"subsystem")+*/
+
+	return as_table(
+		db,
+		page,
+		vector<Label>{"Name","Prefix","Parent"},
+		qm<Subsystem_id,Subsystem_prefix,optional<Subsystem_id>>(
+			db,
+			"SELECT subsystem_id,prefix,parent "
+			"FROM subsystem_info "
+			"WHERE "
+				"valid AND "
+				"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id)"
+		)
+	);
+}
+
+string inner(Subsystems const& a,DB db){
+	return make_page(
+		"Subsystems",
+		show_current_subsystems(db,a)
+		+subsystem_state_count(db,a)
+		+subsystem_machine_count(db,a)
 		+show_table(db,a,"subsystem_info","History")
 	);
 }
@@ -687,35 +693,63 @@ string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
 	return h2("Parts in subsystem")+as_table(db,page,vector<Label>{"Part","State","Qty"},q);
 }
 
+template<typename T>
+optional<T> parse(optional<T> const *x,optional<string> const& a){
+	if(!a) return {};
+	return parse(x,*a);
+}
+
+string subsystems_of_subsystem(DB db,Request const& page,Subsystem_id subsystem){
+	return h2("Subsystems in this subsystem")+as_table(
+		db,
+		page,
+		vector<Label>{"Subsystem","Prefix"},
+		qm<Subsystem_id,Subsystem_prefix>(
+			db,
+			"SELECT subsystem_id,prefix "
+			"FROM subsystem_info "
+			"WHERE "
+				"valid AND "
+				"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
+				"parent="+escape(subsystem)
+		)
+	);
+}
+
 string inner(Subsystem_editor const& a,DB db){
 	auto q=query(
 		db,
-		"SELECT name,valid FROM subsystem_info "
+		"SELECT name,valid,prefix,parent FROM subsystem_info "
 		"WHERE subsystem_id="+as_string(a.id)+
 		" ORDER BY edit_date DESC LIMIT 1"
 	);
-	string name;
-	bool valid;
+	Subsystem_data current;
 	if(q.size()==0){
-		name="";
-		valid=1;
+		current.valid=1;
 	}else{
 		assert(q.size()==1);
-		assert(q[0].size()==2);
-		name=*q[0][0];
-		valid=stoi(*q[0][1]);
+		assert(q[0].size()==4);
+		current.name=*q[0][0];
+		current.valid=stoi(*q[0][1]);
+		current.prefix=parse(&current.prefix,*q[0][2]);
+		current.parent=parse(&current.parent,q[0][3]);
 	}
 	return make_page(
 		"Subsystem editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
-		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+as_string(a.id)+"\">"
-		"<br>Name:<input type=\"text\" name=\"name\" value=\""+name+"\">"+
+		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+as_string(a.id)+"\">"+
+		/*"<br>Name:<input type=\"text\" name=\"name\" value=\""+name+"\">"+
 		"<br>Valid:<input type=\"checkbox\" name=\"valid\" "+
 			[=](){ if(valid) return "checked=on"; return ""; }()+"\">"+
+		show_input(db,"*/
+		#define X(A,B) show_input(db,""#B,current.B)+
+		SUBSYSTEM_DATA(X)
+		#undef X
 		"<br><input type=\"submit\">"+
 		"</form>"
 		+parts_of_subsystem(db,a,a.id)
+		+subsystems_of_subsystem(db,a,a.id)
 		+h2("History")
 		+make_table(
 			a,
@@ -1304,7 +1338,9 @@ int main1(int argc,char **argv,char **envp){
 			diff(p,r);
 		}
 		assert(p==r);
-		cout<<run(r,db);
+		PRINT(r);
+		stringstream ss;
+		ss<<run(r,db);
 	}
 	auto q=parse_query("");
 	//PRINT(q);
@@ -1317,6 +1353,8 @@ int main(int argc,char **argv,char **envp){
 	try{
 		return main1(argc,argv,envp);
 	}catch(const char *s){
+		cout<<"Caught:"<<s<<"\n";
+	}catch(std::string const& s){
 		cout<<"Caught:"<<s<<"\n";
 	}
 }

@@ -217,6 +217,8 @@ unsigned rand(const unsigned*){ return rand()%100; }
 	}\
 	T rand(const T*){\
 		T r;\
+		RAND(std::optional<std::string>,sort_by)\
+		RAND(std::optional<std::string>,sort_order)\
 		ITEMS(RAND)\
 		return r;\
 	}\
@@ -311,7 +313,7 @@ map<string,vector<string>> parse_query_string(string const& s){
 			at++;
 		}
 		string key(start,at);
-		assert(at!=end);
+		if(at==end) throw "Error: Invalid cgi query string.  Variable with no value specified.  Name:"+key+" Whole:"+s; //assert(at!=end);
 		at++;
 		start=at;
 		while(at!=end && *at!='&'){
@@ -339,7 +341,7 @@ Request parse_query(string const& s){
 	X(Error)
 	#undef X
 	Error r;
-	r.s="Unparsable request";
+	r.s="Unparsable request:"+as_string(m);
 	return r;
 }
 

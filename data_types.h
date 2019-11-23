@@ -82,6 +82,7 @@ std::string to_db_type(const Part_number*);
 
 struct Subsystem_id:Wrap<Subsystem_id,Id>{};
 std::string show_input(DB db,std::string const& name,Subsystem_id const& current);
+std::string show_input(DB db,std::string const& name,std::optional<Subsystem_id> const& current);
 
 struct User:Wrap<User,std::string>{};
 std::string to_db_type(const User*);
@@ -218,18 +219,24 @@ std::string to_db_type(const std::optional<T>*){
 }
 
 template<typename T>
-T rand(const std::optional<T>*){ return rand((T*)0); }
+std::optional<T> rand(const std::optional<T>*){
+	if(rand()%2) return rand((T*)0);
+	return {};
+}
 
 template<typename T>
-T parse(const std::optional<T>*,std::string const& s){
-	if(s=="") return {};
-	return parse((T*)0,s);
+std::optional<T> parse(const std::optional<T>*,std::string const& s){
+	try{
+		return parse((T*)0,s);
+	}catch(...){
+		return {};
+	}
 }
 
 template<typename T>
 std::string show_input(DB db,std::string const& name,std::optional<T> const& a){
 	if(a) return show_input(db,name,*a);
-	return show_input(db,name,"");
+	return show_input(db,name,T{});
 }
 
 template<typename T>
@@ -241,5 +248,36 @@ std::string escape(std::optional<T> const& a){
 struct Dummy{};
 Dummy parse(const Dummy*,std::string const&);
 std::ostream& operator<<(std::ostream&,Dummy);
+
+class Subsystem_prefix{
+	char a,b;
+
+	public:
+	Subsystem_prefix();
+	Subsystem_prefix(char,char);
+
+	std::string get()const;	
+};
+std::string to_db_type(const Subsystem_prefix*);
+Subsystem_prefix parse(Subsystem_prefix const*,std::string const&);
+std::string show_input(DB,std::string const&,Subsystem_prefix const&);
+std::string escape(Subsystem_prefix const&);
+bool operator==(Subsystem_prefix const&,Subsystem_prefix const&);
+bool operator!=(Subsystem_prefix const&,Subsystem_prefix const&);
+std::ostream& operator<<(std::ostream&,Subsystem_prefix const&);
+Subsystem_prefix rand(Subsystem_prefix const*);
+
+class Part_number_local{
+	//Should look something like:
+	//XX000-1425-2019
+	Subsystem_prefix subsystem_prefix;
+	int num;//three digit
+
+	public:
+	Part_number_local(std::string);
+};
+
+std::ostream& operator<<(std::ostream&,Part_number_local const&);
+
 
 #endif

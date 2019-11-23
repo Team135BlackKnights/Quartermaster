@@ -237,10 +237,91 @@ string show_input(DB db,string const& name,Subsystem_id const& current){
 	return drop_down(name,as_string(current),m)+link(page,"Current");
 }
 
+template<typename T>
+vector<T>& operator|=(vector<T>& a,vector<T> b){
+	for(auto elem:b){
+		a|=elem;
+	}
+	return a;
+}
+
+string show_input(DB db,string const& name,std::optional<Subsystem_id> const& current){
+	auto q=query(
+		db,
+		"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"
+	);
+
+	vector<pair<string,string>> m;
+	m|=pair<string,string>("None","NULL");
+	m|=mapf(
+		[](auto row){
+			assert(row.size()==2);
+			return make_pair(*row[0],*row[1]);
+		},
+		q
+	);
+
+	string out=drop_down(name,as_string(current),m);
+	out+="(optional)";
+	if(current){
+		Subsystem_editor page;
+		page.id=*current;
+		out+=link(page,"Current");
+	}
+	return out;
+}
+
 Dummy parse(const Dummy*,std::string const&){
 	return Dummy{};
 }
 
 std::ostream& operator<<(std::ostream& o,Dummy){
 	return o;
+}
+
+std::string to_db_type(Subsystem_prefix const*){
+	return "varchar(2)";
+}
+
+Subsystem_prefix::Subsystem_prefix():a('A'),b('A'){}
+
+Subsystem_prefix::Subsystem_prefix(char a1,char b1):a(a1),b(b1){
+}
+
+std::string Subsystem_prefix::get()const{
+	return string()+a+b;
+}
+
+std::ostream& operator<<(std::ostream& o,Subsystem_prefix const& a){
+	return o<<a.get();
+}
+
+bool operator==(Subsystem_prefix const& a,Subsystem_prefix const& b){
+	return a.get()==b.get();
+}
+
+bool operator!=(Subsystem_prefix const& a,Subsystem_prefix const& b){
+	return a.get()!=b.get();
+}
+
+Subsystem_prefix rand(Subsystem_prefix const*){
+	return Subsystem_prefix(
+		'A'+(rand()%26),
+		'A'+(rand()%26)
+	);
+}
+
+std::string escape(Subsystem_prefix const& a){
+	return escape(a.get());
+}
+
+Subsystem_prefix parse(Subsystem_prefix const*,std::string const& s){
+	if(s.size()!=2) throw "Bad prefix length";
+	if(s[0]<'A' || s[1]>'Z') throw "Invalid char1";
+	if(s[1]<'A' || s[1]>'Z') throw "Invalid char2";
+	return Subsystem_prefix{s[0],s[1]};
+}
+
+string show_input(DB db,string const& name,Subsystem_prefix const& a){
+	return show_input(db,name,as_string(a))+" Two upper case characters";
 }

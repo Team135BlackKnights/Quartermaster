@@ -7,6 +7,12 @@
 #define SUBSYSTEM_DATA(X)\
 	X(bool,valid)\
 	X(std::string,name)\
+	X(Subsystem_prefix,prefix)\
+	X(std::optional<Subsystem_id>,parent)\
+
+struct Subsystem_data{
+	SUBSYSTEM_DATA(INST)
+};
 
 #define SUBSYSTEM_ROW(X)\
 	X(Subsystem_id,id)\
@@ -164,8 +170,7 @@ DECL_OPTION(Subsystem_editor,SUBSYSTEM_EDITOR_ITEMS)
 
 #define SUBSYSTEM_EDIT_ITEMS(X)\
 	X(Subsystem_id,subsystem_id)\
-	X(bool,valid)\
-	X(std::string,name)
+	SUBSYSTEM_DATA(X)
 
 DECL_OPTION(Subsystem_edit,SUBSYSTEM_EDIT_ITEMS)
 
