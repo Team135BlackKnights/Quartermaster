@@ -225,22 +225,12 @@ string pretty_td(DB,User const& a){
 	return td(link(page,as_string(a)));
 }
 
-//static const char* ARROW_UP="▲";
-//static const char* ARROW_DOWN="▼";
-
 string link(optional<string> const& url,string const& text){
 	if(!url) return text;
 	stringstream ss;
 	ss<<"<a href=\""<<*url<<"\">"<<text<<"</a>";
 	return ss.str();
 }
-
-/*string link(optional<Request> const& a,string text){
-	if(a) return link(*a,text);
-	return text;
-}*/
-
-//string link(Request,const char *s)nyi
 
 struct Label{
 	string text;
@@ -256,27 +246,20 @@ std::ostream& operator<<(std::ostream& o,Label const& a){
 	return o<<a.text;
 }
 
-/*bool operator==(Label const& a,string const& b){
-	nyi//return a.text==b;
-}*/
-
-string sortable_labels(Request const& page,vector<Label> const& labels){
-	std::stringstream ss;
-	ss<<"<tr>";
+void sortable_labels(ostream& o,Request const& page,vector<Label> const& labels){
+	o<<"<tr>";
 	for(auto label:labels){
-		ss<<"<th>";
+		o<<"<th>";
 		auto p2=page;
 		std::visit([&](auto &x){ x.sort_by=label.text; x.sort_order="asc"; }, p2);
 		auto p3=page;
 		std::visit([&](auto &x){ x.sort_by=label.text; x.sort_order="desc"; }, p3);
-		//p2.sort_by="dog";
-		ss<<label<<" ";
-		ss<<link(p2,"/\\");
-		ss<<" "<<link(p3,"\\/");
-		ss<<"</th>";
+		o<<label<<" ";
+		o<<link(p2,"/\\");
+		o<<" "<<link(p3,"\\/");
+		o<<"</th>";
 	}
-	ss<<"</tr>";
-	return ss.str();
+	o<<"</tr>";
 }
 
 template<typename T>
@@ -289,9 +272,8 @@ vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
 }
 
 template<typename ... Ts>
-string table_inner(DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
-	stringstream ss;
-	ss<<sortable_labels(page,labels);
+void table_inner(ostream& o,DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
+	sortable_labels(o,page,labels);
 	
 	vector<vector<pair<string,string>>> vv;
 	for(auto row:a){
@@ -334,22 +316,20 @@ string table_inner(DB db,Request const& page,vector<Label> const& labels,vector<
 	}
 
 	for(auto row:vv){
-		ss<<"<tr>";
+		o<<"<tr>";
 		for(auto [tag,elem]:row){
 			(void)tag;
-			ss<<elem;
+			o<<elem;
 		}
-		ss<<"</tr>";
+		o<<"</tr>";
 	}
-
-	return ss.str();
 }
 
 template<typename ... Ts>
 string as_table(DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
-	ss<<table_inner(db,page,labels,a);
+	table_inner(ss,db,page,labels,a);
 	ss<<"</table>";
 	return ss.str();
 }
@@ -358,7 +338,7 @@ template<typename ... Ts>
 string table_with_totals(DB db,Request const& page,vector<Label> const& labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
-	ss<<table_inner(db,page,labels,a);
+	table_inner(ss,db,page,labels,a);
 	if(!a.empty()){
 		ss<<"<tr>";
 		auto t=sum(a);
@@ -519,7 +499,7 @@ void inner(ostream& o,Home const& a,DB db){
 string make_table(Request const& page,vector<string> const& columns,vector<vector<optional<string>>> q){
 	stringstream ss;
 	ss<<"<table border>";
-	ss<<sortable_labels(page,mapf([](auto a){ return Label(a); },columns));
+	sortable_labels(ss,page,mapf([](auto a){ return Label(a); },columns));
 	ss<<"<tr>";
 
 	optional<string> sort_by;
