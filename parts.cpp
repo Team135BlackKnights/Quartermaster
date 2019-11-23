@@ -319,7 +319,7 @@ vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
 
 template<typename ... Ts>
 string table_inner(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
-	nyi/*stringstream ss;
+	stringstream ss;
 	ss<<sortable_labels(page,labels);
 	
 	vector<vector<pair<string,string>>> vv;
@@ -372,11 +372,10 @@ string table_inner(DB db,Request const& page,vector<Label> labels,vector<tuple<T
 	}
 
 	return ss.str();
-	*/
 }
 
 template<typename ... Ts>
-string as_table(DB db,Request const& page,vector<string> labels,vector<tuple<Ts...>> const& a){
+string as_table(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<table_inner(db,page,labels,a);
@@ -399,7 +398,7 @@ string table_with_totals(DB db,Request const& page,vector<Label> labels,vector<t
 	return ss.str();
 }
 
-template<typename T>
+/*template<typename T>
 string as_table(DB db,Request const& page,vector<Label> labels,vector<T> const& a){
 	return as_table(
 		db,
@@ -410,7 +409,7 @@ string as_table(DB db,Request const& page,vector<Label> labels,vector<T> const& 
 			a
 		)
 	);
-}
+}*/
 
 string as_table(vector<string> labels,vector<vector<std::string>> in){
 	stringstream ss;
