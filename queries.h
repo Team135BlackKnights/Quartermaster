@@ -9,17 +9,17 @@
 	X(std::string,name)\
 
 #define SUBSYSTEM_ROW(X)\
-	X(Id,id)\
+	X(Subsystem_id,id)\
 
 #define SUBSYSTEM_INFO_ROW(X)\
 	X(Id,id)\
-	X(Id,subsystem_id)\
+	X(Subsystem_id,subsystem_id)\
 	X(User,edit_user)\
 	X(Datetime,edit_date)\
 	SUBSYSTEM_DATA(X)
 
 #define PART_ROW(X)\
-	X(Id,id)\
+	X(Part_id,id)\
 
 #define PART_DATA_INNER(X)\
 	X(Subsystem_id,subsystem)\
@@ -61,7 +61,7 @@ struct Part_data{
 	PART_DATA(X)
 
 #define MEETING_ROW(X)\
-	X(Id,id)
+	X(Meeting_id,id)
 
 using Meeting_length=int;
 using Color=std::string;
@@ -163,7 +163,7 @@ DECL_OPTION(Subsystem_new,SUBSYSTEM_NEW_ITEMS)
 DECL_OPTION(Subsystem_editor,SUBSYSTEM_EDITOR_ITEMS)
 
 #define SUBSYSTEM_EDIT_ITEMS(X)\
-	X(Id,subsystem_id)\
+	X(Subsystem_id,subsystem_id)\
 	X(bool,valid)\
 	X(std::string,name)
 
@@ -181,7 +181,7 @@ DECL_OPTION(Part_new,PART_NEW_ITEMS)
 DECL_OPTION(Part_editor,PART_EDITOR_ITEMS)
 	
 #define PART_EDIT_ITEMS(X)\
-	X(Id,part_id)\
+	X(Part_id,part_id)\
 	PART_DATA(X)\
 
 DECL_OPTION(Part_edit,PART_EDIT_ITEMS)
@@ -197,7 +197,7 @@ DECL_OPTION(Meeting_new,MEETING_NEW_ITEMS)
 DECL_OPTION(Meeting_editor,MEETING_EDITOR_ITEMS)
 
 #define MEETING_EDIT_ITEMS(X)\
-	X(Id,meeting_id)\
+	X(Meeting_id,meeting_id)\
 	MEETING_DATA(X)
 DECL_OPTION(Meeting_edit,MEETING_EDIT_ITEMS)
 
