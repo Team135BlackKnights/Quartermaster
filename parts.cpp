@@ -199,15 +199,46 @@ string pretty_td(DB,User a){
 //static const char* ARROW_UP="▲";
 //static const char* ARROW_DOWN="▼";
 
-string sortable_labels(Request const& page,vector<string> labels){
+string link(optional<string> url,string text){
+	if(!url) return text;
+	stringstream ss;
+	ss<<"<a href=\""<<*url<<"\">"<<text<<"</a>";
+	return ss.str();
+}
+
+/*string link(optional<Request> const& a,string text){
+	if(a) return link(*a,text);
+	return text;
+}*/
+
+//string link(Request,const char *s)nyi
+
+struct Label{
+	string text;
+	optional<Request> url;
+
+	Label(const char *s):text(s){}
+	Label(string s,Request r):text(s),url(r){}
+};
+
+std::ostream& operator<<(std::ostream& o,Label const& a){
+	if(a.url) return o<<link(*a.url,a.text);
+	return o<<a.text;
+}
+
+/*bool operator==(Label const& a,string const& b){
+	nyi//return a.text==b;
+}*/
+
+string sortable_labels(Request const& page,vector<Label> labels){
 	std::stringstream ss;
 	ss<<"<tr>";
 	for(auto label:labels){
 		ss<<"<th>";
 		auto p2=page;
-		std::visit([&](auto &x){ x.sort_by=label; x.sort_order="asc"; }, p2);
+		std::visit([&](auto &x){ x.sort_by=label.text; x.sort_order="asc"; }, p2);
 		auto p3=page;
-		std::visit([&](auto &x){ x.sort_by=label; x.sort_order="desc"; }, p3);
+		std::visit([&](auto &x){ x.sort_by=label.text; x.sort_order="desc"; }, p3);
 		//p2.sort_by="dog";
 		ss<<label<<" ";
 		ss<<link(p2,"/\\");
@@ -218,7 +249,7 @@ string sortable_labels(Request const& page,vector<string> labels){
 	return ss.str();
 }
 
-template<std::size_t ...S>
+/*template<std::size_t ...S>
 struct seq { };
 
 template<std::size_t N, std::size_t ...S>
@@ -269,13 +300,13 @@ vector<tuple<Ts...>> sort_by_col(vector<tuple<Ts...>> a,unsigned element){
 		}
 	);
 	return a;
-}
+}*/
 
-template<typename T>
+/*template<typename T>
 vector<T> sorted(vector<T> a){
 	sort(begin(a),end(a));
 	return a;
-}
+}*/
 
 template<typename T>
 vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
@@ -287,9 +318,8 @@ vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
 }
 
 template<typename ... Ts>
-string as_table(DB db,Request const& page,vector<string> labels,vector<tuple<Ts...>> const& a){
-	stringstream ss;
-	ss<<"<table border>";
+string table_inner(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
+	nyi/*stringstream ss;
 	ss<<sortable_labels(page,labels);
 	
 	vector<vector<pair<string,string>>> vv;
@@ -311,19 +341,20 @@ string as_table(DB db,Request const& page,vector<string> labels,vector<tuple<Ts.
 	
 	optional<unsigned> index=[=]()->optional<unsigned>{
 		for(auto [i,label]:enumerate(labels)){
-			if(label==sort_by){
+			if(label.text==sort_by){
 				return i;
 			}
 		}
 		return {};
 	}();
 
+	bool desc=(sort_order=="desc");
 	if(index){
 		sort(
 			begin(vv),
 			end(vv),
-			[index,sort_order](auto e1,auto e2){
-				if(sort_order=="desc"){
+			[index,desc](auto e1,auto e2){
+				if(desc){
 					return e1[*index]>e2[*index];
 				}
 				return e1[*index]<e2[*index];
@@ -340,25 +371,24 @@ string as_table(DB db,Request const& page,vector<string> labels,vector<tuple<Ts.
 		ss<<"</tr>";
 	}
 
-	/*for(auto row:sorted(a)){
-		ss<<"<tr>";
-		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },row);
-		ss<<"</tr>";
-	}*/
+	return ss.str();
+	*/
+}
+
+template<typename ... Ts>
+string as_table(DB db,Request const& page,vector<string> labels,vector<tuple<Ts...>> const& a){
+	stringstream ss;
+	ss<<"<table border>";
+	ss<<table_inner(db,page,labels,a);
 	ss<<"</table>";
 	return ss.str();
 }
 
 template<typename ... Ts>
-string table_with_totals(DB db,Request const& page,vector<string> labels,vector<tuple<Ts...>> const& a){
+string table_with_totals(DB db,Request const& page,vector<Label> labels,vector<tuple<Ts...>> const& a){
 	stringstream ss;
 	ss<<"<table border>";
-	ss<<join("",mapf(th,labels));
-	for(auto row:a){
-		ss<<"<tr>";
-		std::apply([&](auto&&... x){ ((ss<<pretty_td(db,x)),...); },row);
-		ss<<"</tr>";
-	}
+	ss<<table_inner(db,page,labels,a);
 	if(!a.empty()){
 		ss<<"<tr>";
 		auto t=sum(a);
@@ -370,8 +400,8 @@ string table_with_totals(DB db,Request const& page,vector<string> labels,vector<
 }
 
 template<typename T>
-string as_table(DB db,Request const& page,vector<string> labels,vector<T> const& a){
-	return as_string(
+string as_table(DB db,Request const& page,vector<Label> labels,vector<T> const& a){
+	return as_table(
 		db,
 		page,
 		labels,
@@ -453,7 +483,7 @@ string parts_by_state(DB db,Request const& page){
 			"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 		"ORDER BY part_state,subsystem "
 	);
-	return as_table(db,page,{"State","Subsystem","Part"},a);
+	return as_table(db,page,vector<Label>{"State","Subsystem","Part"},a);
 }
 
 string inner(Home const& a,DB db){
@@ -555,12 +585,12 @@ string subsystem_state_count(DB db,Request const& page){
 	return h2("Number of parts by state")+table_with_totals(
 		db,
 		page,
-		{
-			"Subsystem"
-			#define X(A) ,link(make_state(Part_state::A),""#A)
+		vector<Label>{
+			Label{"Subsystem"}
+			#define X(A) ,Label{""#A,make_state(Part_state::A)}
 			PART_STATES(X)
 			#undef X
-			,"Total"
+			,Label{"Total"}
 		},
 		q
 	);
@@ -599,8 +629,8 @@ string subsystem_machine_count(DB db,Request const& page){
 		db,
 		page,
 		{
-			"Subsystem"
-			#define X(A) ,link(make_machine_page(Machine::A),""#A)
+			Label{"Subsystem"}
+			#define X(A) ,Label{""#A,make_machine_page(Machine::A)}
 			MACHINES(X)
 			#undef X
 		},
@@ -671,7 +701,7 @@ string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
 			"(SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid AND subsystem="+as_string(id)
 	);
-	return h2("Parts in subsystem")+as_table(db,page,{"Part","State","Qty"},q);
+	return h2("Parts in subsystem")+as_table(db,page,vector<Label>{"Part","State","Qty"},q);
 }
 
 string inner(Subsystem_editor const& a,DB db){
@@ -771,7 +801,7 @@ string done(DB db,Request const& page){
 	return h2("Done")+table_with_totals(
 		db,
 		page,
-		{"State","Machine","Time","Subsystem","Part"},
+		vector<Label>{Label{"State"},Label{"Machine"},Label{"Time"},Label{"Subsystem"},Label{"Part"}},
 		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
 			db,
 			"SELECT part_state,machine,time,subsystem,part_id "
@@ -789,7 +819,7 @@ string to_do(DB db,Request const& page){
 	return h2("To do")+table_with_totals(
 		db,
 		page,
-		{"State","Machine","Time","Subsystem","Part"},
+		vector<Label>{Label{"State"},Label{"Machine"},"Time","Subsystem","Part"},
 		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
 			db,
 			"SELECT part_state,machine,time,subsystem,part_id "
@@ -950,7 +980,7 @@ string current_calendar(DB db,Request const& page){
 	ss<<"</tr>";
 	ss<<"</table>";
 	return ss.str();
-	return as_table(db,page,{"Date","Length","Color"},found);
+	return as_table(db,page,vector<Label>{"Date","Length","Color"},found);
 }
 
 string inner(Calendar const& a,DB db){
@@ -1064,7 +1094,7 @@ string by_machine(DB db,Request const& page,Machine const& a){
 		"ORDER BY part_state"
 	);
 	return h2(as_string(a))
-		+as_table(db,page,{"Status","Subsystem","Part","Qty","Time"},qq)
+		+as_table(db,page,vector<Label>{"Status","Subsystem","Part","Qty","Time"},qq)
 		+"Total time:"+as_string(sum(get_col<4>(qq)));
 }
 
@@ -1087,7 +1117,7 @@ string to_order(DB db,Request const& page){
 	return h2("To order")+as_table(
 		db,
 		page,
-		{"Subsystem","Part","Supplier","Part #","qty","part_link","price"},
+		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","part_link","price"},
 		qm<Subsystem_id,Part_id,string,string,unsigned,URL,Decimal>(
 			db,
 			"SELECT subsystem,part_id,part_supplier,part_number,qty,part_link,price "
@@ -1104,7 +1134,7 @@ string on_order(DB db,Request const& page){
 	return h2("On order")+as_table(
 		db,
 		page,
-		{"Subsystem","Part","Supplier","Part #","qty","Expected arrival"},
+		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","Expected arrival"},
 		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
 			db,
 			"SELECT subsystem,part_id,part_supplier,part_number,qty,arrival_date "
@@ -1122,7 +1152,7 @@ string arrived(DB db,Request const& page){
 	return h2("Arrived")+as_table(
 		db,
 		page,
-		{"Subsystem","Part","Supplier","Part #","qty","Arrival date"},
+		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","Arrival date"},
 		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
 			db,
 			"SELECT subsystem,part_id,part_supplier,part_number,qty,arrival_date "
@@ -1149,7 +1179,7 @@ string inner(State const& a,DB db){
 		as_table(
 			db,
 			a,
-			{"Subsystem","Part"},
+			vector<Label>{"Subsystem","Part"},
 			qm<Subsystem_id,Part_id>(
 				db,
 				"SELECT subsystem,part_id "
