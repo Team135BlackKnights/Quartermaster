@@ -124,6 +124,12 @@ void inner_new(ostream& o,DB db,Table_name const& table){
 	);
 }
 
+string current_user(){
+	char *s=getenv("REMOTE_USER");
+	if(s) return s;
+	return "no_user";
+}
+
 void inner(ostream& o,Subsystem_new const& a,DB db){
 	//inner_new<Subsystem_editor>(o,db,"subsystem");
 	auto id=new_item(db,"subsystem");
@@ -137,7 +143,7 @@ void inner(ostream& o,Subsystem_new const& a,DB db){
 			"parent "
 			") VALUES ("
 			+escape(id)+","
-			+escape("user1")+","
+			+escape(current_user())+","
 			"now(),"
 			"1,"
 			+escape(a.parent)
@@ -239,7 +245,7 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 void inner(ostream& o,Subsystem_edit const& a,DB db){
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
-	v|=pair<string,string>("edit_user",escape("user1"));
+	v|=pair<string,string>("edit_user",escape(current_user()));
 	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
 	SUBSYSTEM_EDIT_ITEMS(X)
 	#undef X
@@ -272,7 +278,7 @@ void inner(std::ostream& o,Part_new const& a,DB db){
 			"subsystem"
 			") VALUES ("
 			+escape(id)+","
-			+escape("user1")+","
+			+escape(current_user())+","
 			"now(),"
 			"1,"
 			+escape(a.subsystem)
@@ -513,7 +519,7 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
-	v|=pair<string,string>("edit_user",escape("user1"));
+	v|=pair<string,string>("edit_user",escape(current_user()));
 	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
 	PART_EDIT_ITEMS(X)
 	#undef X
@@ -538,7 +544,7 @@ void inner(ostream& o,Meeting_edit const& a,DB db){
 
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
-	v|=pair<string,string>("edit_user",escape("user1"));
+	v|=pair<string,string>("edit_user",escape(current_user()));
 	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
 	MEETING_EDIT_ITEMS(X)
 	#undef X
