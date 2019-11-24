@@ -17,10 +17,14 @@ vector<T> filter(Func f,vector<T> const& v){
 	return r;
 }
 
-/*Subsystem_id& operator+=(Subsystem_id& a,Subsystem_id b){
-	a.data=0;//obviously invalid; real ones start numbering at 1.
-	return a;
-}*/
+template<typename T>
+vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
+	vector<pair<size_t,T>> r;
+	for(size_t i=0;i<a.size();i++){
+		r|=make_pair(i,a[i]);
+	}
+	return r;
+}
 
 template<typename T>
 optional<T>& operator+=(optional<T>& a,optional<T> const& b){
@@ -29,10 +33,21 @@ optional<T>& operator+=(optional<T>& a,optional<T> const& b){
 }
 
 template<typename T>
-variant<T,string>& operator+=(std::variant<T,string>& a,std::variant<T,string> const&){
-	a="Total";
-	return a;
+T sum(vector<T> const& v){
+	T r{};
+	for(auto elem:v){
+		r+=elem;
+	}
+	return r;
 }
+
+template<typename ... Ts>
+std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
+	o<<"( ";
+	std::apply([&](auto&&... x){ ((o<<x<<" "), ...); },a);
+	return o<<")";
+}
+
 
 Dummy& operator+=(Dummy& a,Dummy){
 	return a;
@@ -51,19 +66,9 @@ tuple<Ts...>& operator+=(tuple<Ts...>& a,tuple<Ts...> const& b){
 }
 
 template<typename T>
-T sum(vector<T> const& v){
-	T r{};
-	for(auto elem:v){
-		r+=elem;
-	}
-	return r;
-}
-
-template<typename ... Ts>
-std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
-	o<<"( ";
-	std::apply([&](auto&&... x){ ((o<<x<<" "), ...); },a);
-	return o<<")";
+variant<T,string>& operator+=(std::variant<T,string>& a,std::variant<T,string> const&){
+	a="Total";
+	return a;
 }
 
 string link(Request const& r,optional<string> s){
@@ -111,6 +116,11 @@ vector<T> convert1(vector<vector<optional<string>>> const& in){
 	);
 }
 
+vector<std::string> operator|=(vector<string> &a,const char *s){
+	a.push_back(s);
+	return a;
+}
+
 template<typename ... Ts>
 tuple<Ts...> convert_row(vector<optional<string>> const& row){
 	tuple<Ts...> t;
@@ -127,7 +137,6 @@ vector<tuple<Ts...>> convert(vector<vector<optional<string>>> const& in){
 template<typename T>
 vector<T> q1(DB db,string const& query_string){
 	auto q=query(db,query_string);
-	//PRINT(q);
 	return convert1<T>(q);
 }
 
@@ -283,15 +292,6 @@ void sortable_labels(ostream& o,Request const& page,vector<Label> const& labels)
 		o<<"</th>";
 	}
 	o<<"</tr>";
-}
-
-template<typename T>
-vector<pair<size_t,T>> enumerate(std::vector<T> const& a){
-	vector<pair<size_t,T>> r;
-	for(size_t i=0;i<a.size();i++){
-		r|=make_pair(i,a[i]);
-	}
-	return r;
 }
 
 template<typename ... Ts>
@@ -1099,11 +1099,6 @@ string subsystem_name(DB db,Id subsystem_id){
 	return f[0].second;
 }
 
-vector<std::string> operator|=(vector<string> &a,const char *s){
-	a.push_back(s);
-	return a;
-}
-
 string done(DB db,Request const& page){
 	return h2("Done")+table_with_totals(
 		db,
@@ -1168,10 +1163,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		" ORDER BY edit_date DESC LIMIT 1"
 	);
 	Part_data current{};
-	/*string name;
-	bool valid;*/
 	if(q.size()==0){
-		//name="";
 		current.valid=1;
 	}else{
 		assert(q.size()==1);
@@ -1221,10 +1213,7 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 		" ORDER BY edit_date DESC LIMIT 1"
 	);
 	Meeting_data current{};
-	/*string name;
-	bool valid;*/
 	if(q.size()==0){
-		//name="";
 		current.valid=1;
 	}else{
 		assert(q.size()==1);
@@ -1270,8 +1259,6 @@ string current_calendar(DB db,Request const& page){
 			"AND date>now() "
 		"ORDER BY date"
 	);
-//(id) IN "
-  //                      "(SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+as_string(id)+") "
 
 	stringstream ss;
 	ss<<h2("Remaining meetings");
@@ -1294,7 +1281,6 @@ string current_calendar(DB db,Request const& page){
 	ss<<"</tr>";
 	ss<<"</table>";
 	return ss.str();
-	return as_table(db,page,vector<Label>{"Date","Length","Color"},found);
 }
 
 void inner(std::ostream& o,Calendar const& a,DB db){
@@ -1303,7 +1289,6 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 		"Calendar",
 		current_calendar(db,a)
 		+to_do(db,a)
-		//show_table(db,"meeting")
 		+show_table(db,a,"meeting_info","History")
 	);
 }
