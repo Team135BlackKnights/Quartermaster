@@ -247,6 +247,7 @@ X(p)
 X(td)
 X(th)
 X(h2)
+X(h3)
 X(tr)
 #undef X
 

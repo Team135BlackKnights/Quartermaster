@@ -105,7 +105,7 @@ void create_table(DB db,Table_name const& name,Table_type const& type){
 	);
 }
 
-void check_database(DB db){
+map<Table_name,Table_type> expected_tables(){
 	map<Table_name,Table_type> tables;
 	#define COLUMN_INFO(A,B) {""#B,{to_db_type((A*)nullptr),""#B==string{"id"}}},
 	#define TABLE(NAME,ITEMS) tables[NAME]={ ITEMS(COLUMN_INFO)};
@@ -115,11 +115,14 @@ void check_database(DB db){
 	TABLE("part_info",PART_INFO_ROW)
 	TABLE("subsystem",SUBSYSTEM_ROW)
 	TABLE("subsystem_info",SUBSYSTEM_INFO_ROW)
+	return tables;
+}
+
+void check_database(DB db){
 
 	auto t=show_tables(db);
-	//PRINT(t);
 
-	for(auto table:tables){
+	for(auto table:expected_tables()){
 		if(!t.count(table.first)){
 			cout<<"Missing table:"<<table.first<<"\n";
 			create_table(db,table.first,table.second);

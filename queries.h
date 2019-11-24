@@ -283,5 +283,6 @@ std::string to_query(std::variant<
 }
 
 std::string link(Request const&,std::string const&);
+std::map<Table_name,Table_type> expected_tables();
 
 #endif

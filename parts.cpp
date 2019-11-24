@@ -620,15 +620,33 @@ void inner(ostream& o,Orders const& a,DB db){
 	);
 }
 
+void show_expected_tables(std::ostream& o){
+	o<<h2("Expected database tables");
+	for(auto [name,contents]:expected_tables()){
+		o<<h3(name);
+		o<<"<table border>";
+		o<<tr(th("Name")+th("Type")+th("Primary key"));
+		for(auto a:contents){
+			o<<tr(td(a.first)+td(a.second.first)+td(as_string(a.second.second)));
+		}
+		o<<"</table>";
+	}
+}
+
 extern char **environ;
 
 void inner(ostream& o,Extra const&,DB){
 	stringstream ss;
+
 	ss<<export_links();
+
 	ss<<h2("Current environment variables");
 	for(unsigned i=1;environ[i];i++){
 		ss<<environ[i]<<"<br>\n";
 	}
+
+	show_expected_tables(ss);
+
 	make_page(
 		o,
 		"Extra info",
