@@ -1285,6 +1285,17 @@ void inner(ostream& o,Orders const& a,DB db){
 	);
 }
 
+void inner(ostream& o,Extra const&,DB){
+	stringstream ss;
+	ss<<"extra!";
+	system("env");
+	make_page(
+		o,
+		"Extra info",
+		ss.str()
+	);
+}
+
 #define EMPTY_PAGE(X) void inner(ostream& o,X const& x,DB db){ \
 	make_page(\
 		""#X,\
