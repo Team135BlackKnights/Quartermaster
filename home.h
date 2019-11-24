@@ -147,4 +147,6 @@ std::string as_table(DB db,Request const& page,std::vector<Label> const& labels,
 
 void make_page(std::ostream& o,std::string const& heading,std::string const& main_body);
 
+std::string indent_sub_table(DB db,unsigned indent,Subsystem_id id,std::set<Subsystem_id> parents);
+
 #endif

@@ -131,7 +131,6 @@ string current_user(){
 }
 
 void inner(ostream& o,Subsystem_new const& a,DB db){
-	//inner_new<Subsystem_editor>(o,db,"subsystem");
 	auto id=new_item(db,"subsystem");
 
 	if(a.parent){
@@ -168,11 +167,11 @@ string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
 			"(SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid AND subsystem="+as_string(id)
 	);
-	return h2("Parts in subsystem")+as_table(db,page,vector<Label>{"Part","State","Qty"},q);
+	return h2("Parts directly in subsystem")+as_table(db,page,vector<Label>{"Part","State","Qty"},q);
 }
 
 string subsystems_of_subsystem(DB db,Request const& page,Subsystem_id subsystem){
-	return h2("Subsystems in this subsystem")+as_table(
+	return h2("Subsystems directly in this subsystem")+as_table(
 		db,
 		page,
 		vector<Label>{"Subsystem","Prefix"},
@@ -222,15 +221,23 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
 		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+as_string(a.id)+"\">"+
-		/*"<br>Name:<input type=\"text\" name=\"name\" value=\""+name+"\">"+
-		"<br>Valid:<input type=\"checkbox\" name=\"valid\" "+
-			[=](){ if(valid) return "checked=on"; return ""; }()+"\">"+
-		show_input(db,"*/
 		#define X(A,B) show_input(db,""#B,current.B)+
 		SUBSYSTEM_DATA(X)
 		#undef X
 		"<br><input type=\"submit\">"+
 		"</form>"
+		+h2("Overview")
+		+[=](){
+			stringstream ss;
+			Subsystem_new sub_new;
+			sub_new.parent=a.id;
+			ss<<link(sub_new,"New Subsystem")<<" ";
+			Part_new part_new;
+			part_new.subsystem=a.id;
+			ss<<link(part_new,"New Part");
+			return ss.str();
+		}()
+		+"<table border><tr>"+th("Name")+th("Status")+"</tr>"+indent_sub_table(db,0,a.id,{})+"</table>"
 		+parts_of_subsystem(db,a,a.id)
 		+subsystems_of_subsystem(db,a,a.id)
 		+h2("History")

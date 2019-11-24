@@ -275,6 +275,11 @@ string indent_sub_table(DB db,unsigned indent,Subsystem_id id,set<Subsystem_id> 
 		Subsystem_editor e;
 		e.id=subsystem_id;
 		ss<<td(indent_space(indent)+link(e,subsystem_name));
+		Subsystem_new new_sub;
+		new_sub.parent=subsystem_id;
+		Part_new new_part;
+		new_part.subsystem=subsystem_id;
+                ss<<td(link(new_sub,"New subsystem")+" "+link(new_part,"New part"));
 		ss<<"</tr>";
 		ss<<indent_sub_table(db,indent+1,subsystem_id,parents);
 	}
