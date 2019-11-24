@@ -2,7 +2,7 @@ CXX=g++
 CXXFLAGS=-std=c++17 -Wall -Werror -g
 LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient
 
-DEPS:=auth.o data_types.o parts.o queries.o util.o export.o home.o subsystems.o subsystem.o
+DEPS:=auth.o data_types.o parts.o queries.o util.o export.o home.o subsystems.o subsystem.o part.o
 
 all: parts
 
