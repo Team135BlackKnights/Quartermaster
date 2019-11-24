@@ -35,6 +35,8 @@ std::vector<T>& operator|=(std::vector<T>& a,T t){
 	return a;
 }
 
+std::vector<std::string> operator|=(std::vector<std::string>&,const char *);
+
 template<typename T>
 std::string as_string(T const& t){
 	std::stringstream ss;

@@ -131,3 +131,8 @@ std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string con
 	return r;
 }
 
+std::vector<std::string> operator|=(std::vector<std::string> &a,const char *s){
+    assert(s);
+	a.push_back(s);
+	return a;
+}
