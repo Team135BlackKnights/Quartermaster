@@ -127,7 +127,7 @@ string show_current_subsystems(DB db,Request const& page){
 string subsystem_machine_count(DB db,Request const& page){
 	auto q=qm<
 		variant<Subsystem_id,string>,
-		#define X(A) int,
+		#define X(A) optional<int>,
 		MACHINES(X)
 		#undef X
 		Dummy

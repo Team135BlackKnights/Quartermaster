@@ -349,7 +349,7 @@ string to_do(DB db,Request const& page){
 		db,
 		page,
 		vector<Label>{Label{"State"},Label{"Machine"},"Time","Subsystem","Part"},
-		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
+		qm<variant<Part_state,string>,optional<Machine>,optional<Decimal>,optional<Subsystem_id>,optional<Part_id>>(
 			db,
 			"SELECT part_state,machine,time,subsystem,part_id "
 			"FROM part_info "
@@ -373,6 +373,62 @@ void inner(ostream& o,Parts const& a,DB db){
 		show_current_parts(db,a)+
 		show_table(db,a,"part_info","History")
 	);
+}
+
+bool should_show(Part_state state,string name){
+	if(name=="valid") return 1;
+	if(name=="subsystem") return 1;
+	if(name=="name") return 1;
+	if(name=="part_number") return 1;
+	if(name=="part_state") return 1;
+	if(name=="length" || name=="width" || name=="thickness" || name=="material"){
+		return state!=Part_state::in_design;
+	}
+	if(name=="qty") return 1;
+	if(name=="time"){
+		return state!=Part_state::buy_list && state!=Part_state::ordered && state!=Part_state::arrived;
+	}
+	if(name=="manufacture_date" || name=="who_manufacture"){
+		return state!=Part_state::in_design &&
+			state!=Part_state::need_prints &&
+			state!=Part_state::buy_list &&
+			state!=Part_state::ordered &&
+			state!=Part_state::arrived;
+	}
+	if(name=="machine"){
+		return state!=Part_state::find &&
+			state!=Part_state::found &&
+			state!=Part_state::buy_list &&
+			state!=Part_state::ordered &&
+			state!=Part_state::arrived;
+	}
+	if(name=="place"){
+		return state==Part_state::find ||
+			state==Part_state::found ||
+			state==Part_state::fabbed ||
+			state==Part_state::arrived;
+	}
+	if(name=="bent" || name=="bend_type"){
+		return state==Part_state::in_design ||
+			state==Part_state::need_prints ||
+			state==Part_state::need_to_cam ||
+			state==Part_state::cut_list ||
+			state==Part_state::fabbed;
+	}
+	if(name=="drawing_link") return 1;
+	if(name=="cam_link"){
+		return state==Part_state::need_to_cam ||
+			state==Part_state::cut_list ||
+			state==Part_state::fab ||
+			state==Part_state::fabbed ||
+			state==Part_state::_3d_print;
+	}
+	if(name=="part_supplier" || name=="part_link" || name=="arrival_date" || name=="price"){
+		return state==Part_state::buy_list ||
+			state==Part_state::ordered ||
+			state==Part_state::arrived;
+	}
+	return 1;
 }
 
 void inner(ostream& o,Part_editor const& a,DB db){
@@ -410,8 +466,8 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		area_cap+" editor",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
-		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"
-		#define X(A,B) "<br>"+show_input(db,""#B,current.B)+
+		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"+
+		#define X(A,B) [&]()->string{ if(should_show(current.part_state,""#B)) return show_input(db,""#B,current.B); else return ""; }()+
 		PART_DATA(X)
 		#undef X
 		"<br><input type=\"submit\">"+
@@ -742,7 +798,8 @@ extern char **environ;
 
 void inner(ostream& o,Extra const&,DB){
 	stringstream ss;
-	ss<<"<p>Current environment variables:</p>";
+	ss<<export_links();
+	ss<<h2("Current environment variables");
 	for(unsigned i=1;environ[i];i++){
 		ss<<environ[i]<<"<br>\n";
 	}
@@ -860,8 +917,8 @@ int main1(int argc,char **argv,char **envp){
 	for(auto _:range(100)){
 		(void)_;
 		auto r=rand((Request*)nullptr);
-		//PRINT(r);
-		//PRINT(to_query(r));
+		PRINT(r);
+		PRINT(to_query(r));
 		auto p=parse_query(to_query(r));
 		if(p!=r){
 			PRINT(p);

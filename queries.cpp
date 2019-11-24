@@ -173,6 +173,16 @@ double parse(const double*,string const& s){
 
 unsigned rand(const unsigned*){ return rand()%100; }
 
+template<typename T>
+void diff(T const& a,T const& b){
+	if(a!=b){
+		cout<<"type:"<<typeid(a).name()<<"\n";
+		PRINT(a);
+		PRINT(b);
+		nyi
+	}
+}
+
 #define STR(X) ""#X
 
 #define PARSE_ITEM(A,B) { \
@@ -196,11 +206,24 @@ unsigned rand(const unsigned*){ return rand()%100; }
 	}\
 }
 
-#define TO_Q(A,B) r[""#B]=as_string(a.B);
+template<typename T>
+void to_q(map<string,string> &r,string name,T t){
+	r[name]=as_string(t);
+}
+
+template<typename T>
+void to_q(map<string,string> &r,string name,optional<T> t){
+	if(t) to_q(r,name,*t);
+}
+
+//#define TO_Q(A,B) r[""#B]=as_string(a.B);
+#define TO_Q(A,B) to_q(r,""#B,a.B);
 #define RAND(A,B) r.B=rand((const A*)nullptr);
 #define INST_EQ(A,B) if(a.B!=b.B) return 0;
 #define SHOW(A,B) { o<<""#B<<":"<<a.B<<" "; }
-#define DIFF(A,B) if(a.B!=b.B) cout<<""#B<<":"<<a.B<<" "<<b.B<<"\n";
+//#define DIFF(A,B) if(a.B!=b.B) cout<<""#B<<":"<<a.B<<" "<<b.B<<"\n";
+
+#define DIFF(A,B) diff(a.B,b.B);
 
 #define DEF_OPTION(T,ITEMS)\
 	bool operator==(T const& a,T const& b){\

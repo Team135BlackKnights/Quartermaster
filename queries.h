@@ -32,24 +32,24 @@ struct Subsystem_data{
 	X(std::string,name)\
 	X(Part_number,part_number)\
 	X(Part_state,part_state)\
-	X(std::string,length)\
-	X(std::string,width)\
-	X(std::string,thickness)\
-	X(Material,material)\
+	X(std::optional<std::string>,length)\
+	X(std::optional<std::string>,width)\
+	X(std::optional<std::string>,thickness)\
+	X(std::optional<Material>,material)\
 	X(unsigned,qty)\
-	X(Decimal,time)\
-	X(Date,manufacture_date)\
-	X(User,who_manufacture)\
-	X(Machine,machine)\
-	X(std::string,place)\
-	X(std::string,bent)\
-	X(Bend_type,bend_type)\
-	X(URL,drawing_link)\
-	X(URL,cam_link)\
-	X(Supplier,part_supplier)\
-	X(URL,part_link)\
-	X(Date,arrival_date)\
-	X(Decimal,price)
+	X(std::optional<Decimal>,time)\
+	X(std::optional<Date>,manufacture_date)\
+	X(std::optional<User>,who_manufacture)\
+	X(std::optional<Machine>,machine)\
+	X(std::optional<std::string>,place)\
+	X(std::optional<std::string>,bent)\
+	X(std::optional<Bend_type>,bend_type)\
+	X(std::optional<URL>,drawing_link)\
+	X(std::optional<URL>,cam_link)\
+	X(std::optional<Supplier>,part_supplier)\
+	X(std::optional<URL>,part_link)\
+	X(std::optional<Date>,arrival_date)\
+	X(std::optional<Decimal>,price)
 
 #define PART_DATA(X)\
 	X(bool,valid)\
@@ -124,10 +124,8 @@ struct Page{
 
 #define STR(X) ""#X
 
-#define TO_Q(A,B) r[""#B]=as_string(a.B);
 #define INST_EQ(A,B) if(a.B!=b.B) return 0;
 #define SHOW(A,B) { o<<""#B<<":"<<a.B<<" "; }
-#define DIFF(A,B) if(a.B!=b.B) cout<<""#B<<":"<<a.B<<" "<<b.B<<"\n";
 #define DECL_LIST(A,B) A B,
 
 #define DECL_OPTION(T,ITEMS)\

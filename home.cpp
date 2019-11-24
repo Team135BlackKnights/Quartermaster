@@ -343,7 +343,7 @@ string parts_by_state(DB db,Request const& page){
 			"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 		"ORDER BY part_state,subsystem "
 	);
-	return as_table(db,page,vector<Label>{"State","Subsystem","Part"},a);
+	return h2("Parts by state")+as_table(db,page,vector<Label>{"State","Subsystem","Part"},a);
 }
 
 void inner(ostream& o,Home const& a,DB db){
@@ -352,8 +352,7 @@ void inner(ostream& o,Home const& a,DB db){
 		"Home",
 		parts_by_state(db,a)+
 		part_tree(db)+
-		indent_part_tree(db)+
-		export_links()
+		indent_part_tree(db)
 	);
 }
 
