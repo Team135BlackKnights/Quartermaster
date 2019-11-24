@@ -785,17 +785,6 @@ string subsystem_machine_count(DB db,Request const& page){
 }
 
 string show_current_subsystems(DB db,Request const& page){
-		/*+
-		h2("Debug info")+
-		[=](){
-			stringstream ss;
-			for(auto id:get_ids(db,"subsystem")){
-				ss<<link(Subsystem_editor{id},"Edit "+as_string(id));
-			}
-			return ss.str();
-		}()+
-		show_table(db,"subsystem")+*/
-
 	return as_table(
 		db,
 		page,
@@ -815,10 +804,10 @@ void inner(ostream& o,Subsystems const& a,DB db){
 	return make_page(
 		o,
 		"Subsystems",
-		""//show_current_subsystems(db,a)
-		//+subsystem_state_count(db,a)
-		//+subsystem_machine_count(db,a)
-		//+show_table(db,a,"subsystem_info","History")
+		show_current_subsystems(db,a)
+		+subsystem_state_count(db,a)
+		+subsystem_machine_count(db,a)
+		+show_table(db,a,"subsystem_info","History")
 	);
 }
 
