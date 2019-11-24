@@ -228,6 +228,9 @@ DECL_OPTION(State,STATE_ITEMS)
 	X(Export_item,export_item)
 DECL_OPTION(CSV_export,CSV_EXPORT_ITEMS)
 
+#define EXTRA_ITEMS(X)
+DECL_OPTION(Extra,EXTRA_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -238,7 +241,8 @@ DECL_OPTION(CSV_export,CSV_EXPORT_ITEMS)
 	X(Meeting_new)\
 	X(Machines)\
 	X(Orders)\
-
+	X(Extra)
+	
 #define PAGES(X)\
 	BASIC_PAGES(X)\
 	X(Subsystem_editor)\

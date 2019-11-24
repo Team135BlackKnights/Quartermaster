@@ -267,6 +267,7 @@ DEF_OPTION(Orders,ORDERS_ITEMS)
 DEF_OPTION(Machine_page,MACHINE_ITEMS)
 DEF_OPTION(State,STATE_ITEMS)
 DEF_OPTION(CSV_export,CSV_EXPORT_ITEMS)
+DEF_OPTION(Extra,EXTRA_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';
