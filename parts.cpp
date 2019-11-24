@@ -725,10 +725,14 @@ void inner(ostream& o,Orders const& a,DB db){
 	);
 }
 
+extern char **environ;
+
 void inner(ostream& o,Extra const&,DB){
 	stringstream ss;
-	ss<<"extra!";
-	//system("env");
+	ss<<"<p>Current environment variables:</p>";
+	for(unsigned i=1;environ[i];i++){
+		ss<<environ[i]<<"<br>\n";
+	}
 	make_page(
 		o,
 		"Extra info",
