@@ -253,4 +253,45 @@ using DB=MYSQL*;
 void run_cmd(DB db,std::string const& cmd);
 std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string const& query);
 
+template<typename Func,typename T>
+std::vector<T> filter(Func f,std::vector<T> const& v){
+	std::vector<T> r;
+	for(auto const& elem:v){
+		if(f(elem)) r|=elem;
+	}
+	return r;
+}
+
+template<typename T>
+std::vector<std::pair<size_t,T>> enumerate(std::vector<T> const& a){
+	std::vector<std::pair<size_t,T>> r;
+	for(size_t i=0;i<a.size();i++){
+		r|=std::make_pair(i,a[i]);
+	}
+	return r;
+}
+
+template<typename T>
+std::optional<T>& operator+=(std::optional<T>& a,std::optional<T> const& b){
+	if(b) a={};
+	return a;
+}
+
+template<typename T>
+T sum(std::vector<T> const& v){
+	T r{};
+	for(auto elem:v){
+		r+=elem;
+	}
+	return r;
+}
+
+template<typename ... Ts>
+std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
+	o<<"( ";
+	std::apply([&](auto&&... x){ ((o<<x<<" "), ...); },a);
+	return o<<")";
+}
+
+
 #endif
