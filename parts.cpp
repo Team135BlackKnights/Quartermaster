@@ -1,4 +1,5 @@
 #include<algorithm>
+#include<string.h>
 #include "util.h"
 #include "data_types.h"
 #include "auth.h"
@@ -65,11 +66,45 @@ std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
 	return o<<")";
 }
 
+string link(Request const& r,optional<string> s){
+	if(s) return link(r,*s);
+	return link(r,string{"NULL"});
+}
+
+string link(Request const& r,const char *s){
+	return link(r,s?string(s):"NULL");
+}
+
+template<typename A,typename B>
+std::variant<A,B> parse(const variant<A,B>*,string const& s){
+	return parse((A*)0,s);
+}
+
+template<typename T>
+T parse(T const* t,const char *s){
+	if(!s) return {};//throw "Unexpected NULL";
+	return parse(t,string{s});
+}
+
+template<typename T>
+optional<T> parse(std::optional<T> const *t,const char *s){
+	if(!s) return {};
+	return parse(t,string{s});
+}
+
+template<typename T>
+optional<T> parse(optional<T> const *x,optional<string> const& a){
+	if(!a) return {};
+	return parse(x,*a);
+}
+
 template<typename T>
 vector<T> convert1(vector<vector<optional<string>>> const& in){
 	return mapf(
 		[](auto x){
 			assert(x.size()==1);
+			if(!x[0]) return T{};
+			assert(x[0]);
 			return parse((T*)0,*x[0]);
 		},
 		in
@@ -96,18 +131,6 @@ vector<T> q1(DB db,string const& query_string){
 	return convert1<T>(q);
 }
 
-template<typename T>
-T parse(T const* t,const char *s){
-	if(!s) throw "Unexpected NULL";
-	return parse(t,string{s});
-}
-
-template<typename T>
-optional<T> parse(std::optional<T> const *t,const char *s){
-	if(!s) return {};
-	return parse(t,string{s});
-}
-
 template<typename ... Ts>
 vector<tuple<Ts...>> qm(DB db,std::string const& query_string){
 	run_cmd(db,query_string);
@@ -123,7 +146,7 @@ vector<tuple<Ts...>> qm(DB db,std::string const& query_string){
 		std::apply(
 			[&](auto&&... x){
 				assert(i<fields);
-				assert(row[i]);
+				//assert(row[i]);
 				((x=parse(&x,(row[i++]))), ...);
 			},
 			this_row
@@ -398,6 +421,8 @@ string nav(){
 }
 
 void make_page(std::ostream& o,string const& heading,string const& main_body){
+	o<<"Content-type: text/html\n\n";
+
 	string name=heading+" - "+title_end();
 	o<<html(
 		head(
@@ -411,7 +436,7 @@ void make_page(std::ostream& o,string const& heading,string const& main_body){
 }
 
 string parts_by_state(DB db,Request const& page){
-	auto a=qm<Part_state,Subsystem_id,Part_id>(
+	auto a=qm<optional<Part_state>,Subsystem_id,Part_id>(
 		db,
 		"SELECT part_state,subsystem,part_id "
 		"FROM part_info "
@@ -423,6 +448,18 @@ string parts_by_state(DB db,Request const& page){
 	return as_table(db,page,vector<Label>{"State","Subsystem","Part"},a);
 }
 
+string link(Part_state a){
+	State r;
+	r.state=a;
+	return link(r,as_string(a));
+}
+
+template<typename T>
+string link(optional<T> a){
+	if(a) return link(*a);
+	return "NULL";
+}
+
 string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 	if(parents.count(id)){
 		stringstream ss;
@@ -432,7 +469,7 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 	parents|=id;
 	stringstream ss;
 	ss<<"<table border>";
-	auto data=qm<Subsystem_id,string>(
+	auto data=qm<Subsystem_id,optional<string>>(
 		db,
 		"SELECT subsystem_id,name "
 		"FROM subsystem_info "
@@ -448,7 +485,7 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 		ss<<td(link(e,subsystem_name))<<td(sub_table(db,subsystem_id,parents));
 		ss<<"</tr>";
 	}
-	auto data2=qm<Part_id,string,Part_state>(
+	auto data2=qm<Part_id,optional<string>,optional<Part_state>>(
 		db,
 		"SELECT part_id,name,part_state "
 		"FROM part_info "
@@ -461,7 +498,7 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 		ss<<"<tr>";
 		Part_editor e;
 		e.id=part_id;
-		ss<<td(link(e,part_name))<<td(as_string(state));
+		ss<<td(link(e,part_name))<<td(link(state));
 		ss<<"</tr>";
 	}
 	ss<<"</table>";
@@ -472,7 +509,7 @@ string part_tree(DB db){
 	stringstream ss;
 	ss<<h2("Part tree");
 	ss<<"<table border>";
-	auto subs=qm<Subsystem_id,string>(
+	auto subs=qm<Subsystem_id,optional<string>>(
 		db,
 		"SELECT subsystem_id,name "
 		"FROM subsystem_info "
@@ -492,8 +529,154 @@ string part_tree(DB db){
 	return ss.str();
 }
 
+string indent_space(unsigned indent){
+	stringstream ss;
+	for(auto _:range(indent*4)){
+		(void)_;
+		ss<<"&nbsp;";
+	}
+	return ss.str();
+}
+
+string indent_sub_table(DB db,unsigned indent,Subsystem_id id,set<Subsystem_id> parents){
+	if(parents.count(id)){
+		stringstream ss;
+		ss<<"Loop!"<<id<<" "<<parents;
+		return ss.str();
+	}
+	parents|=id;
+	stringstream ss;
+	auto data=qm<Subsystem_id,optional<string>>(
+		db,
+		"SELECT subsystem_id,name "
+		"FROM subsystem_info "
+		"WHERE "
+			"valid AND "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
+			"parent="+escape(id)
+	);
+	for(auto [subsystem_id,subsystem_name]:data){
+		ss<<"<tr>";
+		Subsystem_editor e;
+		e.id=subsystem_id;
+		ss<<td(indent_space(indent)+link(e,subsystem_name));
+		ss<<"</tr>";
+		ss<<indent_sub_table(db,indent+1,subsystem_id,parents);
+	}
+	auto data2=qm<Part_id,string,Part_state>(
+		db,
+		"SELECT part_id,name,part_state "
+		"FROM part_info "
+		"WHERE "
+			"valid AND "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) AND "
+			"subsystem="+escape(id)
+	);
+	for(auto [part_id,part_name,state]:data2){
+		ss<<"<tr>";
+		Part_editor e;
+		e.id=part_id;
+		ss<<td(indent_space(indent)+link(e,part_name))<<td(link(state));
+		ss<<"</tr>";
+	}
+	return ss.str();
+}
+
+string indent_part_tree(DB db){
+	stringstream ss;
+	ss<<h2("BOM-style tree");
+	ss<<"<table border>";
+	ss<<tr(th("Name")+th("State"));
+	auto subs=qm<Subsystem_id,optional<string>>(
+		db,
+		"SELECT subsystem_id,name "
+		"FROM subsystem_info "
+		"WHERE "
+			"valid AND "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
+			"parent IS NULL"
+	);
+	for(auto [subsystem_id,subsystem_name]:subs){
+		ss<<"<tr>";
+		Subsystem_editor e;
+		e.id=subsystem_id;
+		ss<<td(link(e,subsystem_name));
+		Subsystem_new new_sub;
+		new_sub.parent=subsystem_id;
+		Part_new new_part;
+		new_part.subsystem=subsystem_id;
+		ss<<td(link(new_sub,"New subsystem")+" "+link(new_part,"New part"));
+		ss<<"</tr>";
+		ss<<indent_sub_table(db,1,subsystem_id,{});
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+string csv_escape(string s){
+	if(strstr(s.c_str(),",")){
+		stringstream ss;
+		ss<<"\"";
+		for(auto c:s){
+			if(c=='"'){
+				ss<<"\\"<<c;
+			}else if(c=='\\'){
+				ss<<"\\\\";
+			}else{
+				ss<<c;
+			}
+		}
+		ss<<"\"";
+		return ss.str();
+	}
+	return s;
+}
+
+string as_csv(DB db,string table_name){
+	auto columns=mapf([](auto x){ return *x; },firsts(query(db,"DESCRIBE "+table_name)));
+	auto q=query(db,"SELECT * FROM "+table_name);
+	stringstream ss;
+	for(auto col:columns){
+		ss<<col<<",";
+	}
+	ss<<"\n";
+	for(auto row:q){
+		for(auto elem:row){
+			if(elem){
+				ss<<csv_escape(*elem)<<",";
+			}else{
+				ss<<""; //empty
+			}
+		}
+		ss<<"\n";
+	}
+	return ss.str();
+}
+
+string link(Export_item a){
+	CSV_export e;
+	e.export_item=a;
+	return link(e,as_string(a));
+}
+
+string export_links(){
+	stringstream ss;
+	ss<<h2("CSV export");
+	#define X(A) ss<<link(Export_item::A)<<"<br>";
+	EXPORT_ITEMS(X)
+	#undef X
+	return ss.str();
+}
+
 void inner(ostream& o,Home const& a,DB db){
-	make_page(o,"Home",parts_by_state(db,a)+part_tree(db));
+	make_page(
+		o,
+		"Home",
+		parts_by_state(db,a)+
+		part_tree(db)+
+		indent_part_tree(db)+
+		export_links()
+	);
 }
 
 string make_table(Request const& page,vector<string> const& columns,vector<vector<optional<string>>> q){
@@ -568,11 +751,6 @@ vector<int> get_ids(DB db,Table_name const& table){
 		r|=stoi(*row.at(0));
 	}
 	return r;
-}
-
-template<typename A,typename B>
-std::variant<A,B> parse(const variant<A,B>*,string const& s){
-	return parse((A*)0,s);
 }
 
 State make_state(Part_state const& a){
@@ -691,10 +869,10 @@ void inner(ostream& o,Subsystems const& a,DB db){
 	return make_page(
 		o,
 		"Subsystems",
-		show_current_subsystems(db,a)
-		+subsystem_state_count(db,a)
-		+subsystem_machine_count(db,a)
-		+show_table(db,a,"subsystem_info","History")
+		""//show_current_subsystems(db,a)
+		//+subsystem_state_count(db,a)
+		//+subsystem_machine_count(db,a)
+		//+show_table(db,a,"subsystem_info","History")
 	);
 }
 
@@ -709,8 +887,7 @@ string redirect_to(T const& t){
 	return ss.str();
 }
 
-template<typename T>
-void inner_new(ostream& o,DB db,Table_name const& table){
+Id new_item(DB db,Table_name const& table){
 	run_cmd(db,"INSERT INTO "+table+" VALUES ()");
 	auto q=query(db,"SELECT LAST_INSERT_ID()");
 	//PRINT(q);
@@ -718,18 +895,48 @@ void inner_new(ostream& o,DB db,Table_name const& table){
 	assert(q[0].size()==1);
 	assert(q[0][0]);
 	auto id=stoi(*q[0][0]);
+	return id;
+}
 
+template<typename T>
+void inner_new(ostream& o,DB db,Table_name const& table){
+	auto id=new_item(db,table);
 	T page;
 	page.id={id};
 	make_page(
 		o,
-		"Subsystem new",
+		"New item",
 		redirect_to(page)
 	);
 }
 
-void inner(ostream& o,Subsystem_new const&,DB db){
-	inner_new<Subsystem_editor>(o,db,"subsystem");
+void inner(ostream& o,Subsystem_new const& a,DB db){
+	//inner_new<Subsystem_editor>(o,db,"subsystem");
+	auto id=new_item(db,"subsystem");
+
+	if(a.parent){
+		auto q="INSERT INTO subsystem_info ("
+			"subsystem_id,"
+			"edit_user,"
+			"edit_date,"
+			"valid,"
+			"parent "
+			") VALUES ("
+			+escape(id)+","
+			+escape("user1")+","
+			"now(),"
+			"1,"
+			+escape(a.parent)
+			+")";
+		run_cmd(db,q);
+	}
+	Subsystem_editor page;
+	page.id={id};
+	make_page(
+		o,
+		"New subsystem",
+		redirect_to(page)
+	);
 }
 
 string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
@@ -742,12 +949,6 @@ string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
 			"AND valid AND subsystem="+as_string(id)
 	);
 	return h2("Parts in subsystem")+as_table(db,page,vector<Label>{"Part","State","Qty"},q);
-}
-
-template<typename T>
-optional<T> parse(optional<T> const *x,optional<string> const& a){
-	if(!a) return {};
-	return parse(x,*a);
 }
 
 string subsystems_of_subsystem(DB db,Request const& page,Subsystem_id subsystem){
@@ -780,9 +981,19 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 	}else{
 		assert(q.size()==1);
 		assert(q[0].size()==4);
-		current.name=*q[0][0];
-		current.valid=stoi(*q[0][1]);
-		current.prefix=parse(&current.prefix,*q[0][2]);
+		if(q[0][0]){
+			current.name=*q[0][0];
+		}
+
+		if(q[0][1]){
+			current.valid=stoi(*q[0][1]);
+		}else{
+			current.valid=1;
+		}
+
+		if(q[0][2]){
+			current.prefix=parse(&current.prefix,*q[0][2]);
+		}
 		current.parent=parse(&current.parent,q[0][3]);
 	}
 	make_page(
@@ -835,7 +1046,33 @@ void inner(ostream& o,Subsystem_edit const& a,DB db){
 }
 
 void inner(std::ostream& o,Part_new const& a,DB db){
-	return inner_new<Part_editor>(o,db,"part");
+	//inner_new<Subsystem_editor>(o,db,"subsystem");
+	auto id=new_item(db,"part");
+
+	if(a.subsystem){
+		auto q="INSERT INTO part_info ("
+			"part_id,"
+			"edit_user,"
+			"edit_date,"
+			"valid,"
+			"subsystem"
+			") VALUES ("
+			+escape(id)+","
+			+escape("user1")+","
+			"now(),"
+			"1,"
+			+escape(a.subsystem)
+			+")";
+		run_cmd(db,q);
+	}
+	Part_editor page;
+	page.id={id};
+	make_page(
+		o,
+		"New part",
+		redirect_to(page)
+	);
+	//return inner_new<Part_editor>(o,db,"part");
 }
 
 vector<pair<Id,string>> current_subsystems(DB db){
@@ -940,7 +1177,11 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		assert(q.size()==1);
 		assert(q[0].size()==data_cols.size());
 		int i=0;
-		#define X(A,B) current.B=parse((A*)nullptr,*q[0][i]); i++;
+		#define X(A,B) {\
+			auto x=parse((optional<A>*)nullptr,q[0][i]); \
+			if(x) current.B=*x;\
+			i++;\
+		}
 		PART_DATA(X)
 		#undef X
 	}
@@ -1285,6 +1526,32 @@ void inner(ostream& o,Orders const& a,DB db){
 	);
 }
 
+void inner(ostream& o,CSV_export const& a,DB db){
+	o<<"Content-type: text/csv\n\n";
+	switch(a.export_item){
+		case Export_item::SUBSYSTEM:
+			o<<as_csv(db,"subsystem");
+			return;
+		case Export_item::SUBSYSTEM_INFO:
+			o<<as_csv(db,"subsystem_info");
+			return;
+		case Export_item::PART:
+			o<<as_csv(db,"part");
+			return;
+		case Export_item::PART_INFO:
+			o<<as_csv(db,"part_info");
+			return;
+		case Export_item::MEETING:
+			o<<as_csv(db,"meeting");
+			return;
+		case Export_item::MEETING_INFO:
+			o<<as_csv(db,"meeting_info");
+			return;
+		default:
+			assert(0);
+	}
+}
+
 #define EMPTY_PAGE(X) void inner(ostream& o,X const& x,DB db){ \
 	make_page(\
 		""#X,\
@@ -1355,8 +1622,6 @@ struct DB_connection{
 };
 
 int main1(int argc,char **argv,char **envp){
-	cout<<"Content-type: text/html\n\n";
-
 	/*for(int i=0;envp[i];i++){
 		cout<<"env:"<<envp[i]<<"<br>\n";
 	}*/
@@ -1413,6 +1678,12 @@ int main1(int argc,char **argv,char **envp){
 	return 0;
 }
 
+std::ostream& operator<<(std::ostream& o,std::invalid_argument const& a){
+	o<<"invalid_argument(";
+	o<<a.what();
+	return o<<")";
+}
+
 int main(int argc,char **argv,char **envp){
 	try{
 		return main1(argc,argv,envp);
@@ -1420,5 +1691,7 @@ int main(int argc,char **argv,char **envp){
 		cout<<"Caught:"<<s<<"\n";
 	}catch(std::string const& s){
 		cout<<"Caught:"<<s<<"\n";
+	}catch(std::invalid_argument const& a){
+		cout<<"Caught:"<<a<<"\n";
 	}
 }

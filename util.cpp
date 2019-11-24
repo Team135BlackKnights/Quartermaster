@@ -90,6 +90,7 @@ TAG(p)
 TAG(td)
 TAG(th)
 TAG(h2)
+TAG(tr)
 #undef TAG
 
 using DB=MYSQL*;

@@ -245,6 +245,7 @@ X(p)
 X(td)
 X(th)
 X(h2)
+X(tr)
 #undef X
 
 using DB=MYSQL*;

@@ -266,6 +266,7 @@ DEF_OPTION(Machines,MACHINES_ITEMS)
 DEF_OPTION(Orders,ORDERS_ITEMS)
 DEF_OPTION(Machine_page,MACHINE_ITEMS)
 DEF_OPTION(State,STATE_ITEMS)
+DEF_OPTION(CSV_export,CSV_EXPORT_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';
@@ -347,7 +348,13 @@ Request parse_query(string const& s){
 
 string link(Request const& req,string const& body){
 	stringstream ss;
-	ss<<"<a href=\"?"<<to_query(req)<<"\">"<<body<<"</a>";
+	ss<<"<a href=\"?"<<to_query(req)<<"\">";
+	if(body.size()){
+		ss<<body; //could check that not all blank.
+	}else{
+		ss<<"[]";
+	}
+	ss<<"</a>";
 	return ss.str();
 }
 

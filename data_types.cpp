@@ -120,7 +120,7 @@ string show_input(DB db,string const& name,URL const& value){
 	}\
 	NAME parse(const NAME*,string const& s){\
 		OPTIONS(E_PARSE)\
-		throw std::invalid_argument{""#NAME};\
+		throw std::invalid_argument{""#NAME+string()+": "+s};\
 	}\
 	string show_input(DB db,string const& name,T const& value){\
 		return drop_down(name,value,options(&value));\
@@ -147,6 +147,10 @@ ENUM_DEFS(Machine,MACHINES)
 
 #define T Bend_type
 ENUM_DEFS(Bend_type,BEND_TYPES)
+#undef T
+
+#define T Export_item
+ENUM_DEFS(Export_item,EXPORT_ITEMS)
 #undef T
 
 using Decimal=decimal::decimal32;
@@ -225,7 +229,9 @@ string show_input(DB db,string const& name,Subsystem_id const& current){
 	auto m=mapf(
 		[](auto row){
 			assert(row.size()==2);
-			return make_pair(*row[0],*row[1]);
+			assert(row[0]);
+			//assert(row[1]);
+			return make_pair(*row[0],row[1]?*row[1]:"Untitled");
 		},
 		q
 	);
@@ -256,7 +262,9 @@ string show_input(DB db,string const& name,std::optional<Subsystem_id> const& cu
 	m|=mapf(
 		[](auto row){
 			assert(row.size()==2);
-			return make_pair(*row[0],*row[1]);
+			assert(row[0]);
+			//assert(row[1]);
+			return make_pair(*row[0],row[1]?*row[1]:"Untitled");
 		},
 		q
 	);

@@ -113,12 +113,6 @@ using P=std::map<std::string,std::vector<std::string>>;
 
 std::string to_query(std::map<std::string,std::string> const&);
 
-unsigned parse(const unsigned*,std::string const&);
-
-bool parse(const bool*,std::string const&);
-float parse(const float*,std::string const&);
-double parse(const double*,std::string const&);
-
 unsigned rand(const unsigned*);
 
 struct Page{
@@ -160,7 +154,8 @@ DECL_OPTION(Home,HOME_ITEMS)
 DECL_OPTION(Subsystems,SUBSYSTEMS_ITEMS)
 #undef T
 
-#define SUBSYSTEM_NEW_ITEMS(X)
+#define SUBSYSTEM_NEW_ITEMS(X)\
+	X(std::optional<Subsystem_id>,parent)
 DECL_OPTION(Subsystem_new,SUBSYSTEM_NEW_ITEMS)
 
 #define SUBSYSTEM_EDITOR_ITEMS(X)\
@@ -177,7 +172,8 @@ DECL_OPTION(Subsystem_edit,SUBSYSTEM_EDIT_ITEMS)
 #define PARTS_ITEMS(X)
 DECL_OPTION(Parts,PARTS_ITEMS)
 
-#define PART_NEW_ITEMS(X)
+#define PART_NEW_ITEMS(X)\
+	X(std::optional<Subsystem_id>,subsystem)
 DECL_OPTION(Part_new,PART_NEW_ITEMS)
 
 #define PART_EDITOR_ITEMS(X)\
@@ -228,6 +224,10 @@ DECL_OPTION(Machine_page,MACHINE_ITEMS)
 	X(Part_state,state)
 DECL_OPTION(State,STATE_ITEMS)
 
+#define CSV_EXPORT_ITEMS(X)\
+	X(Export_item,export_item)
+DECL_OPTION(CSV_export,CSV_EXPORT_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -249,7 +249,8 @@ DECL_OPTION(State,STATE_ITEMS)
 	X(Meeting_edit)\
 	X(By_user)\
 	X(Machine_page)\
-	X(State)
+	X(State)\
+	X(CSV_export)\
 
 using Request=std::variant<
 	#define X(A) A,

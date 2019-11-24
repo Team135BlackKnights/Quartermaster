@@ -7,6 +7,10 @@
 #include "util.h"
 
 std::string parse(const std::string*,std::string const&);
+bool parse(const bool*,std::string const&);
+unsigned parse(const unsigned*,std::string const&);
+float parse(const float*,std::string const&);
+double parse(const double*,std::string const&);
 
 std::string with_suggestions(std::string const& name,std::string const& value,std::vector<std::string> const& suggestions);
 std::string show_input(DB,std::string const& name,std::string const& value);
@@ -141,6 +145,15 @@ ENUM_DECL(Machine,MACHINES)
 
 #define BEND_TYPES(X) X(none) X(easy_90) X(complex_not_90_or_mult)
 ENUM_DECL(Bend_type,BEND_TYPES)
+
+#define EXPORT_ITEMS(X)\
+	X(SUBSYSTEM)\
+	X(SUBSYSTEM_INFO)\
+	X(PART)\
+	X(PART_INFO)\
+	X(MEETING)\
+	X(MEETING_INFO)
+ENUM_DECL(Export_item,EXPORT_ITEMS)
 
 using Decimal=std::decimal::decimal32;
 
