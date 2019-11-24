@@ -113,7 +113,7 @@ string show_current_subsystems(DB db,Request const& page){
 		db,
 		page,
 		vector<Label>{"Name","Prefix","Parent"},
-		qm<optional<Subsystem_id>,optional<Subsystem_prefix>,optional<Subsystem_id>>(
+		qm<Subsystem_id,optional<Subsystem_prefix>,optional<Subsystem_id>>(
 			db,
 			"SELECT subsystem_id,prefix,parent "
 			"FROM subsystem_info "

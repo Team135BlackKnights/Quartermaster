@@ -55,6 +55,33 @@ std::vector<std::tuple<Ts...>> qm(DB db,std::string const& query_string){
 	return r;
 }
 
+template<typename T>
+std::string pretty_td(DB,T const& t){
+	return td(as_string(t));
+}
+
+template<typename A,typename B>
+std::string pretty_td(DB db,std::variant<A,B> const& a){
+	if(std::holds_alternative<A>(a)){
+		return pretty_td(db,std::get<A>(a));
+	}
+	return pretty_td(db,std::get<B>(a));
+}
+
+template<typename T>
+std::string pretty_td(DB db,std::optional<T> const& a){
+	if(a) return pretty_td(db,*a);
+	return td("-");
+}
+
+std::string pretty_td(DB,Dummy);
+std::string pretty_td(DB,URL const&);
+std::string pretty_td(DB,Machine);
+std::string pretty_td(DB,Part_state);
+std::string pretty_td(DB,Part_id);
+std::string pretty_td(DB,Subsystem_id);
+
+
 template<typename ... Ts>
 void table_inner(std::ostream& o,DB db,Request const& page,std::vector<Label> const& labels,std::vector<std::tuple<Ts...>> const& a){
 	sortable_labels(o,page,labels);
@@ -119,29 +146,5 @@ std::string as_table(DB db,Request const& page,std::vector<Label> const& labels,
 }
 
 void make_page(std::ostream& o,std::string const& heading,std::string const& main_body);
-
-template<typename T>
-std::string pretty_td(DB,T const& t){
-	return td(as_string(t));
-}
-
-template<typename A,typename B>
-std::string pretty_td(DB db,std::variant<A,B> const& a){
-	if(std::holds_alternative<A>(a)){
-		return pretty_td(db,std::get<A>(a));
-	}
-	return pretty_td(db,std::get<B>(a));
-}
-
-template<typename T>
-std::string pretty_td(DB db,std::optional<T> const& a){
-	if(a) return pretty_td(db,*a);
-	return td("-");
-}
-
-std::string pretty_td(DB,Dummy);
-std::string pretty_td(DB,URL const&);
-std::string pretty_td(DB,Machine);
-std::string pretty_td(DB,Part_state);
 
 #endif
