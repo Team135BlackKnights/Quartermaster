@@ -1,5 +1,6 @@
 #include<algorithm>
 #include<string.h>
+#include<functional>
 #include "util.h"
 #include "data_types.h"
 #include "auth.h"
@@ -12,9 +13,21 @@
 using namespace std;
 
 template<typename T>
-T parse(T const* t,const char *s){
-	if(!s) return {};
-	return parse(t,string{s});
+vector<T> operator|(vector<T> a,T b){
+	a|=b;
+	return a;
+}
+
+template<typename T>
+set<T> operator-(set<T> a,T t){
+	a.erase(t);
+	return a;
+}
+
+template<typename T>
+vector<T>& operator|=(vector<T> &a,optional<T> t){
+	if(t) a|=*t;
+	return a;
 }
 
 template<typename ... Ts>
@@ -128,35 +141,20 @@ void inner(std::ostream& o,Part_new const& a,DB db){
 	//return inner_new<Part_editor>(o,db,"part");
 }
 
-vector<pair<Id,string>> current_subsystems(DB db){
-	auto q=query(db,"SELECT subsystem_id,name FROM subsystem_info WHERE (id) IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid");
-	vector<pair<Id,string>> r;
+vector<pair<Subsystem_id,string>> current_subsystems(DB db){
+	auto q=qm<Subsystem_id,string>(db,"SELECT subsystem_id,name FROM subsystem_info WHERE (id) IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid");
+	vector<pair<Subsystem_id,string>> r;
 	for(auto row:q){
-		r|=make_pair(stoi(*row[0]),*row[1]);
+		r|=make_pair(get<0>(row),get<1>(row));
 	}
 	return r;
-}
-
-string subsystem_name(DB db,Id subsystem_id){
-	//query(db,"SELECT name FROM subsystem_info");
-	//query(db,"SELECT subsystem_part_id,name FROM part_info WHERE (id) IN (SELECT MAX(id) FROM part_info GROUP BY part_id) AND valid"
-	//auto q=query(db,"SELECT * FROM ");
-	auto f=filter(
-		[=](auto x){ return x.first==subsystem_id; },
-		current_subsystems(db)
-	);
-	if(f.empty()){
-		return "Not found ("+as_string(subsystem_id)+")";
-	}
-	assert(f.size()==1);
-	return f[0].second;
 }
 
 string done(DB db,Request const& page){
 	return h2("Done")+table_with_totals(
 		db,
 		page,
-		vector<Label>{Label{"State"},Label{"Machine"},Label{"Time"},Label{"Subsystem"},Label{"Part"}},
+		vector<Label>{Label{"State"},Label{"Machine",Machines{}},Label{"Time",Calendar{}},Label{"Subsystem",Subsystems{}},Label{"Part"}},
 		qm<variant<Part_state,string>,optional<Machine>,Decimal,optional<Subsystem_id>,optional<Part_id>>(
 			db,
 			"SELECT part_state,machine,time,subsystem,part_id "
@@ -174,7 +172,7 @@ string to_do(DB db,Request const& page){
 	return h2("To do")+table_with_totals(
 		db,
 		page,
-		vector<Label>{Label{"State"},Label{"Machine"},"Time","Subsystem","Part"},
+		vector<Label>{Label{"State"},Label{"Machine",Machines{}},Label{"Time",Calendar{}},Label{"Subsystem",Subsystems{}},"Part"},
 		qm<variant<Part_state,string>,optional<Machine>,optional<Decimal>,optional<Subsystem_id>,optional<Part_id>>(
 			db,
 			"SELECT part_state,machine,time,subsystem,part_id "
@@ -186,6 +184,185 @@ string to_do(DB db,Request const& page){
 			"ORDER BY part_state,machine "
 		)
 	);
+}
+
+string check_part_numbers(DB db){
+	auto asm_info=qm<Subsystem_id,optional<string>,optional<Subsystem_id>,Subsystem_prefix>(
+		db,
+		"SELECT subsystem_id,name,parent,prefix "
+		"FROM subsystem_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			"AND valid"
+	);
+	//for every assembly, its parent should either be NULL or something that will eventually get to NULL.
+	//if this is not true, don't bother caring about the part prefixes
+
+	map<Subsystem_id,optional<Subsystem_id>> parents;
+	for(auto q:asm_info){
+		parents[get<0>(q)]=get<2>(q);
+	}
+
+	std::function<optional<vector<Subsystem_id>>(Subsystem_id,vector<Subsystem_id>)> find_loop;
+
+	//auto find_loop=[&](Subsystem_id at,vector<Subsystem_id> visited)->optional<vector<Subsystem_id>>{
+	find_loop=[&](Subsystem_id at,vector<Subsystem_id> visited)->optional<vector<Subsystem_id>>{
+		auto n=parents[at];
+		if(!n) return {};
+		auto next_visited=visited|*n;
+		if(to_set(visited).count(*n)){
+			return next_visited;
+		}
+		return find_loop(*n,next_visited);
+	};
+
+	vector<vector<Subsystem_id>> loops;
+	for(auto [subsystem,parent]:parents){
+		(void)parent;
+		auto f=find_loop(subsystem,{});
+		loops|=f;
+	}
+	if(loops.size()){
+		stringstream ss;
+		ss<<"Found loops:<br>\n";
+		for(auto l:loops){
+			ss<<l<<"<br>";
+			for(auto id:l){
+				ss<<subsystem_name(db,id)<<" ";
+			}
+			ss<<"<br>\n";
+		}
+		return ss.str();
+	}
+
+	map<Subsystem_prefix,set<Subsystem_id>> id_by_prefix;
+	map<Subsystem_id,Subsystem_prefix> prefix_by_id;
+	for(auto [id,name,parent,prefix]:asm_info){
+		(void)name;
+		(void)parent;
+		id_by_prefix[prefix]|=id;
+		prefix_by_id[id]=prefix;
+	}
+
+	auto path=[&](Subsystem_id a)->vector<Subsystem_id>{
+		//the path between a subsystem id and the root.
+		vector<Subsystem_id> r;
+		optional<Subsystem_id> at=a;
+		while(at){
+			at=parents[*at];
+			if(at) r|=*at;
+		}
+		return r;
+	};
+
+	auto child=[&](Subsystem_id a,Subsystem_id b){
+		//see if b is a child of a.
+		return to_set(path(b)).count(a);
+	};
+
+	stringstream errors;
+	vector<string> bad_prefix;
+	//for an assembly, its prefix should either be the same as its parent, or not exist in anything besides its children
+	for(auto a:asm_info){
+		auto id=get<0>(a);
+		auto parent=get<2>(a);
+		auto prefix=get<3>(a);
+		if(parent && prefix_by_id[*parent]==prefix){
+			continue;
+		}
+		for(auto other:id_by_prefix[prefix]-id){
+			if(!child(id,other)){
+				stringstream ss;
+				ss<<"Shared prefix:"<<a<<" "<<other<<"\n";
+				bad_prefix|=ss.str();
+			}
+		}
+	}
+	if(bad_prefix.size()){
+		errors<<"Bad assembly prefixes:<br>";
+		for(auto elem:bad_prefix){
+			errors<<elem<<"<br>";
+		}
+	}
+
+	//for every part in the design, see if the part number looks ok & is unique, consistent with its assembly, etc.
+	auto part_info=qm<Part_id,string,Part_number,Subsystem_id,Part_state>(
+		db,
+		"SELECT part_id,name,part_number,subsystem,part_state "
+		"FROM part_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+			"AND valid "
+	);
+
+	//part number the same -> name the same
+	map<Part_number,set<string>> name_by_number;
+	for(auto [id,name,pn,sub,state]:part_info){
+		(void)id;
+		(void)sub;
+		(void)state;
+		name_by_number[pn]|=name;
+	}
+
+	for(auto [pn,names]:name_by_number){
+		if(names.size()>1){
+			errors<<"Multiple names for part #("<<pn<<"):"<<names<<"<br>\n";
+		}
+	}
+
+	//prefix is consistent w/ some subsystem
+	for(auto [id,name,pn,sub,state]:part_info){
+		(void)id;
+		(void)name;
+		(void)sub;
+		(void)state;
+		optional<Part_number_local> pnl;
+		try{
+			pnl=Part_number_local(pn);
+		}catch(...){
+		}
+		if(pnl){
+			cout<<"PN:"<<pnl<<"\n";
+		}
+	}
+
+	//looks like one of our part numbers if something that we're supposed to build.
+	for(auto [id,name,pn,sub,state]:part_info){
+		(void)id;
+		(void)sub;
+		switch(state){
+			case Part_state::need_prints:
+			case Part_state::need_to_cam:
+			case Part_state::cut_list:
+			case Part_state::_3d_print:
+			case Part_state::fab:
+			case Part_state::fabbed:{
+				//must have own part number
+				optional<Part_number_local> pnl;
+				try{
+					pnl=Part_number_local(pn);
+				}catch(string const& s){
+					errors<<"Expected local part number but not found for "<<name<<" ("<<pn<<"):\""<<s<<"\"<br>\n";
+				}catch(const char *s){
+					errors<<"Expected local part number but not found for "<<name<<" ("<<pn<<"):\""<<s<<"\"<br>\n";
+				}
+				break;
+			}
+			case Part_state::in_design:
+			case Part_state::find:
+			case Part_state::found:
+			case Part_state::buy_list:
+			case Part_state::ordered:
+			case Part_state::arrived:
+				//not required to have own part number
+				//so don't check anything
+				break;
+			default:
+				assert(0);
+		}
+	}
+
+	return errors.str();
 }
 
 std::string show_current_parts(DB db,Request const& page){
@@ -293,7 +470,12 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"+
-		#define X(A,B) [&]()->string{ if(should_show(current.part_state,""#B)) return show_input(db,""#B,current.B); else return ""; }()+
+		#define X(A,B) [&]()->string{ \
+			if(should_show(current.part_state,""#B)) \
+				return show_input(db,""#B,current.B); \
+			else \
+				return ""; \
+		}()+
 		PART_DATA(X)
 		#undef X
 		"<br><input type=\"submit\">"+
@@ -402,6 +584,47 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 	);
 }
 
+Subsystem_prefix get_prefix(DB db,Subsystem_id subsystem){
+	auto q=qm<Subsystem_prefix>(
+		db,
+		"SELECT prefix "
+		"FROM subsystem_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			"AND valid "
+			"AND subsystem_id="+escape(subsystem)
+	);
+	assert(q.size()==1);
+	return get<0>(q[0]);
+}
+
+string escape(Part_number_local a){
+	stringstream ss;
+	ss<<"'"<<a<<"'";
+	return ss.str();
+}
+
+template<typename T>
+pair<string,string> part_entry(DB db,optional<Subsystem_id> subsystem_id,Part_state state,T t){
+	if( (as_string(t)=="" || as_string(t)=="NULL") && subsystem_id ){
+		//give it the next free part number for whatever assembly it's in.
+		auto prefix=get_prefix(db,*subsystem_id);
+		auto q=qm<optional<Part_number>>(
+			db,
+			"SELECT MAX(part_number) FROM part_info WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2020'"
+		);
+		PRINT(q);
+		assert(q.size()==1);
+		if(get<0>(q[0])){
+			Part_number_local a(*get<0>(q[0]));
+			return make_pair("part_number",escape(next(a)));
+		}else{
+			return make_pair("Part_number","'"+as_string(prefix)+"000-1425-2020"+"'");
+		}
+	}
+	return make_pair("part_number",escape(t));
+}
+
 void inner(std::ostream& o,Part_edit const& a,DB db){
 	string area_lower="part";
 	string area_cap="Part";
@@ -409,7 +632,7 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
-	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
+	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.part_state,a.B); else v|=pair<string,string>(""#B,escape(a.B));
 	PART_EDIT_ITEMS(X)
 	#undef X
 	auto q="INSERT INTO "+area_lower+"_info ("
@@ -635,7 +858,7 @@ void show_expected_tables(std::ostream& o){
 
 extern char **environ;
 
-void inner(ostream& o,Extra const&,DB){
+void inner(ostream& o,Extra const&,DB db){
 	stringstream ss;
 
 	ss<<export_links();
@@ -646,6 +869,8 @@ void inner(ostream& o,Extra const&,DB){
 	}
 
 	show_expected_tables(ss);
+
+	ss<<h2("Data consistency")<<check_part_numbers(db);
 
 	make_page(
 		o,
@@ -758,6 +983,9 @@ int main1(int argc,char **argv,char **envp){
 		run(cout,parse_query(g),db);
 		return 0;
 	}
+	auto s=check_part_numbers(db);
+	PRINT(s);
+	//nyi
 	for(auto _:range(100)){
 		(void)_;
 		auto r=rand((Request*)nullptr);

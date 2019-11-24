@@ -277,20 +277,33 @@ std::string show_input(DB,std::string const&,Subsystem_prefix const&);
 std::string escape(Subsystem_prefix const&);
 bool operator==(Subsystem_prefix const&,Subsystem_prefix const&);
 bool operator!=(Subsystem_prefix const&,Subsystem_prefix const&);
+bool operator<(Subsystem_prefix const&,Subsystem_prefix const&);
 std::ostream& operator<<(std::ostream&,Subsystem_prefix const&);
 Subsystem_prefix rand(Subsystem_prefix const*);
 
-class Part_number_local{
+class Three_digit{
+	int value;//000-999 only.
+
+	public:
+	Three_digit& operator=(int);
+	operator int()const;
+};
+std::ostream& operator<<(std::ostream& o,Three_digit);
+
+struct Part_number_local{
 	//Should look something like:
 	//XX000-1425-2019
 	Subsystem_prefix subsystem_prefix;
-	int num;//three digit
+	Three_digit num;
 
-	public:
-	Part_number_local(std::string);
+	explicit Part_number_local(std::string const&);
+	explicit Part_number_local(Part_number const&);
+
+	std::string get()const;
 };
 
 std::ostream& operator<<(std::ostream&,Part_number_local const&);
 
+Part_number_local next(Part_number_local);
 
 #endif

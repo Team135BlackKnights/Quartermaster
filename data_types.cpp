@@ -304,6 +304,10 @@ std::ostream& operator<<(std::ostream& o,Subsystem_prefix const& a){
 	return o<<a.get();
 }
 
+bool operator<(Subsystem_prefix const& a,Subsystem_prefix const& b){
+	return a.get()<b.get();
+}
+
 bool operator==(Subsystem_prefix const& a,Subsystem_prefix const& b){
 	return a.get()==b.get();
 }
@@ -332,4 +336,59 @@ Subsystem_prefix parse(Subsystem_prefix const*,std::string const& s){
 
 string show_input(DB db,string const& name,Subsystem_prefix const& a){
 	return show_input(db,name,as_string(a))+" Two upper case characters";
+}
+
+Part_number_local::Part_number_local(std::string const& a){
+	//XX000-1425-2020
+	//15 chars
+	if(a.size()!=15) throw "Part_number_local: wrong length ("+as_string(a.size())+" , expected 15)";
+	subsystem_prefix=Subsystem_prefix(a[0],a[1]);
+
+	auto n=a.substr(2,3);
+	for(auto c:n){
+		if(!isdigit(c)){
+			throw "Part_number_local: expected digit";
+		}
+	}
+	num=stoi(n);
+
+	auto suffix=a.substr(5,100);
+	if(suffix!="-1425-2020"){
+		throw "Part_number_local: wrong suffix";
+	}
+}
+
+Part_number_local::Part_number_local(Part_number const& a):
+	Part_number_local(a.data)
+{}
+
+std::string Part_number_local::get()const{
+	stringstream ss;
+	ss<<subsystem_prefix<<num<<"-1425-2020";
+	return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& o,Part_number_local const& a){
+	return o<<a.get();
+}
+
+Part_number_local next(Part_number_local a){
+	a.num=a.num+1;
+	return a;
+}
+
+Three_digit& Three_digit::operator=(int i){
+	if(i<0 || i>999) throw "Invalid Three_digit";
+	value=i;
+	return *this;
+}
+
+Three_digit::operator int()const{
+	return value;
+}
+
+ostream& operator<<(std::ostream& o,Three_digit a){
+	char s[10];
+	sprintf(s,"%03d",int(a));
+	return o<<s;
 }

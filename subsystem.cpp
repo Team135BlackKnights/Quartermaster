@@ -5,8 +5,17 @@
 using namespace std;
 
 string current_user(){
-	char *s=getenv("REMOTE_USER");
-	if(s) return s;
+	{
+		//In normal operation, this should always be set
+		char *s=getenv("REMOTE_USER");
+		if(s) return s;
+	}
+	{
+		//When running on dev server w/o user auth enabled
+		char *s=getenv("SERVER_NAME");
+		if(s) return s;
+	}
+	//When running directly from command line
 	return "no_user";
 }
 

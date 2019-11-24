@@ -29,6 +29,12 @@ std::optional<T> parse(std::optional<T> const *x,std::optional<std::string> cons
 	return parse(x,*a);
 }
 
+template<typename T>
+T parse(T const* t,const char *s){
+	if(!s) return {};
+	return parse(t,std::string{s});
+}
+
 template<typename ... Ts>
 std::vector<std::tuple<Ts...>> qm(DB db,std::string const& query_string){
 	run_cmd(db,query_string);
@@ -148,5 +154,6 @@ std::string as_table(DB db,Request const& page,std::vector<Label> const& labels,
 void make_page(std::ostream& o,std::string const& heading,std::string const& main_body);
 
 std::string indent_sub_table(DB db,unsigned indent,Subsystem_id id,std::set<Subsystem_id> parents);
+std::string subsystem_name(DB,Subsystem_id);
 
 #endif
