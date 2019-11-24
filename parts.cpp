@@ -21,18 +21,6 @@ T parse(T const* t,const char *s){
 	return parse(t,string{s});
 }
 
-template<typename T>
-optional<T> parse(std::optional<T> const *t,const char *s){
-	if(!s) return {};
-	return parse(t,string{s});
-}
-
-template<typename T>
-optional<T> parse(optional<T> const *x,optional<string> const& a){
-	if(!a) return {};
-	return parse(x,*a);
-}
-
 template<typename ... Ts>
 tuple<Ts...> convert_row(vector<optional<string>> const& row){
 	tuple<Ts...> t;

@@ -17,6 +17,18 @@ struct Label{
 
 void sortable_labels(std::ostream&,Request const&,std::vector<Label> const&);
 
+template<typename T>
+std::optional<T> parse(std::optional<T> const *t,const char *s){
+	if(!s) return {};
+	return parse(t,std::string{s});
+}
+
+template<typename T>
+std::optional<T> parse(std::optional<T> const *x,std::optional<std::string> const& a){
+	if(!a) return {};
+	return parse(x,*a);
+}
+
 template<typename ... Ts>
 std::vector<std::tuple<Ts...>> qm(DB db,std::string const& query_string){
 	run_cmd(db,query_string);
