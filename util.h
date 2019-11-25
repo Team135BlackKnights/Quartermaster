@@ -276,7 +276,13 @@ std::vector<std::pair<size_t,T>> enumerate(std::vector<T> const& a){
 
 template<typename T>
 std::optional<T>& operator+=(std::optional<T>& a,std::optional<T> const& b){
-	if(b) a={};
+	if(a){
+		if(b){
+			a=*a+*b;
+		}
+	}else{
+		if(b) a=b;
+	}
 	return a;
 }
 

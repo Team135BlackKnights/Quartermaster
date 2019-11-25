@@ -164,7 +164,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 	vector<string> all_cols=vector<string>{"edit_date","edit_user","id",area_lower+"_id"}+data_cols;
 	make_page(
 		o,
-		area_cap+" editor",
+		as_string(current.name)+" (part)",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"+

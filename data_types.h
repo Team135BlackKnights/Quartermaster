@@ -101,6 +101,10 @@ std::string to_db_type(const Date*);
 struct URL:Wrap<URL,std::string>{};
 std::string show_input(DB db,std::string const& name,URL const& value);
 
+#define NO_ADD(X) std::optional<X>& operator+=(std::optional<X>& a,std::optional<X> const&);
+NO_ADD(Subsystem_id)
+NO_ADD(Part_id)
+
 #define PART_STATES(X)\
 	X(in_design)\
 	X(need_prints)\
@@ -139,6 +143,7 @@ std::string show_input(DB db,std::string const& name,URL const& value);
 	std::string show_input(DB db,std::string const& name,NAME const& value);\
 	std::string escape(NAME const&);\
 	std::string to_db_type(const NAME*);\
+	std::optional<NAME>& operator+=(std::optional<NAME>&,std::optional<NAME>);\
 
 ENUM_DECL(Part_state,PART_STATES)
 ENUM_DECL(Machine,MACHINES)

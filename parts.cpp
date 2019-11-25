@@ -20,6 +20,14 @@ vector<T> operator|(vector<T> a,T b){
 }
 
 template<typename T>
+set<T> operator|(set<T> a,set<T> const& b){
+	for(auto elem:b){
+		a|=elem;
+	}
+	return a;
+}
+
+template<typename T>
 set<T> operator-(set<T> a,T t){
 	a.erase(t);
 	return a;
@@ -377,7 +385,7 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 	vector<string> all_cols=vector<string>{"edit_date","edit_user","id",area_lower+"_id"}+data_cols;
 	make_page(
 		o,
-		area_cap+" editor",
+		as_string(current.date)+" (meeting)",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"
@@ -500,7 +508,7 @@ string show_table_user(DB db,Request const& page,Table_name const& name,User con
 void inner(std::ostream& o,By_user const& a,DB db){
 	make_page(
 		o,
-		"By user \""+as_string(a)+"\"",
+		"By user \""+as_string(a.user)+"\"",
 		show_table_user(db,a,"subsystem_info",a.user)
 		+show_table_user(db,a,"part_info",a.user)
 		+show_table_user(db,a,"meeting_info",a.user)
@@ -650,12 +658,43 @@ void show_expected_tables(std::ostream& o){
 	}
 }
 
+set<User> users(DB db,string table){
+	auto q=qm<User>(
+		db,
+		"SELECT edit_user "
+		"FROM "+table+" "
+		"GROUP BY edit_user"
+	);
+	return to_set(mapf(
+		[](auto x){ return get<0>(x); },
+		q
+	));
+}
+
+string link(User u){
+	By_user page;
+	page.user=u;
+	return link(page,as_string(u));
+}
+
+string user_links(DB db){
+	stringstream ss;
+	ss<<h2("Active users");
+	auto u=users(db,"part_info")|users(db,"meeting_info")|users(db,"subsystem_info");
+	for(auto user:u){
+		ss<<link(user)<<"<br>\n";
+	}
+	return ss.str();
+}
+
 extern char **environ;
 
 void inner(ostream& o,Extra const&,DB db){
 	stringstream ss;
 
 	ss<<export_links();
+
+	ss<<user_links(db);
 
 	ss<<h2("Current environment variables");
 	for(unsigned i=1;environ[i];i++){
@@ -679,9 +718,6 @@ void inner(ostream& o,Extra const&,DB db){
 		as_string(x)+p("Under construction")\
 	); \
 }
-//EMPTY_PAGE(Meeting_editor)
-//EMPTY_PAGE(Meeting_edit)
-//EMPTY_PAGE(By_user)
 #undef EMPTY_PAGE
 
 

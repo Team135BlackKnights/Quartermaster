@@ -86,6 +86,7 @@ std::string pretty_td(DB,Machine);
 std::string pretty_td(DB,Part_state);
 std::string pretty_td(DB,Part_id);
 std::string pretty_td(DB,Subsystem_id);
+std::string pretty_td(DB,User const&);
 
 
 template<typename ... Ts>

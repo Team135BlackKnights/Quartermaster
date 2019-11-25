@@ -135,6 +135,10 @@ string show_input(DB db,string const& name,URL const& value){
 		ss<<join(",",values);\
 		ss<<")";\
 		return ss.str();\
+	}\
+	std::optional<T>& operator+=(std::optional<T>& a,std::optional<T> b){\
+		a={};\
+		return a;\
 	}
 
 #define T Part_state
@@ -392,3 +396,11 @@ ostream& operator<<(std::ostream& o,Three_digit a){
 	sprintf(s,"%03d",int(a));
 	return o<<s;
 }
+
+#define NO_ADD_IMPL(X) \
+	std::optional<X>& operator+=(std::optional<X>& a,std::optional<X> const&){\
+		a={};\
+		return a;\
+	}
+NO_ADD_IMPL(Subsystem_id)
+NO_ADD_IMPL(Part_id)

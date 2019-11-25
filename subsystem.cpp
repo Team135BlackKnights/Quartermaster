@@ -117,7 +117,7 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 	}
 	make_page(
 		o,
-		"Subsystem editor",
+		as_string(current.name)+" Subsystem",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
 		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+as_string(a.id)+"\">"+
