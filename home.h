@@ -1,8 +1,8 @@
 #ifndef HOME_H
 #define HOME_H
 
-#include "queries.h"
 #include<algorithm>
+#include "queries.h"
 
 void inner(std::ostream&,Home const&,DB);
 
@@ -19,13 +19,13 @@ void sortable_labels(std::ostream&,Request const&,std::vector<Label> const&);
 
 template<typename T>
 std::optional<T> parse(std::optional<T> const *t,const char *s){
-	if(!s) return {};
+	if(!s) return std::nullopt;
 	return parse(t,std::string{s});
 }
 
 template<typename T>
 std::optional<T> parse(std::optional<T> const *x,std::optional<std::string> const& a){
-	if(!a) return {};
+	if(!a) return std::nullopt;
 	return parse(x,*a);
 }
 
@@ -117,7 +117,7 @@ void table_inner(std::ostream& o,DB db,Request const& page,std::vector<Label> co
 				return i;
 			}
 		}
-		return {};
+		return std::nullopt;
 	}();
 
 	bool desc=(sort_order=="desc");

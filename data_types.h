@@ -239,7 +239,7 @@ std::string to_db_type(const std::optional<T>*){
 template<typename T>
 std::optional<T> rand(const std::optional<T>*){
 	if(rand()%2) return rand((T*)0);
-	return {};
+	return std::nullopt;
 }
 
 template<typename T>
@@ -247,7 +247,7 @@ std::optional<T> parse(const std::optional<T>*,std::string const& s){
 	try{
 		return parse((T*)0,s);
 	}catch(...){
-		return {};
+		return std::nullopt;
 	}
 }
 

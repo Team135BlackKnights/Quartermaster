@@ -19,7 +19,7 @@ string make_table(Request const& page,vector<string> const& columns,vector<vecto
 		for(auto [i,name]:enumerate(columns)){
 			if(name==sort_by) return i;
 		}
-		return {};
+		return std::nullopt;
 	}();
 	bool desc=[=](){
 		std::optional<std::string> sort_order;
