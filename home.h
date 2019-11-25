@@ -88,6 +88,7 @@ std::string pretty_td(DB,Part_id);
 std::string pretty_td(DB,Subsystem_id);
 std::string pretty_td(DB,User const&);
 std::string pretty_td(DB,Part_checkbox const&);
+std::string pretty_td(DB,Supplier const&);
 
 template<typename ... Ts>
 void table_inner(std::ostream& o,DB db,Request const& page,std::vector<Label> const& labels,std::vector<std::tuple<Ts...>> const& a){

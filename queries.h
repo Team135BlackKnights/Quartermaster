@@ -240,6 +240,10 @@ DECL_OPTION(Order_edit,ORDER_EDIT_ITEMS)
 	X(Part_id,part)
 DECL_OPTION(Arrived,ARRIVED_ITEMS)
 
+#define BY_SUPPLIER_ITEMS(X)\
+	X(Supplier,supplier)
+DECL_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -266,6 +270,7 @@ DECL_OPTION(Arrived,ARRIVED_ITEMS)
 	X(CSV_export)\
 	X(Order_edit)\
 	X(Arrived)\
+	X(By_supplier)\
 
 using Request=std::variant<
 	#define X(A) A,

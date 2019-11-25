@@ -13,7 +13,7 @@ string to_order(DB db,Request const& page){
 		db,
 		page,
 		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","part_link","price","In new order"},
-		qm<Subsystem_id,Part_id,string,string,unsigned,URL,Decimal,Part_checkbox>(
+		qm<Subsystem_id,Part_id,Supplier,Part_number,unsigned,URL,Decimal,Part_checkbox>(
 			db,
 			"SELECT subsystem,part_id,part_supplier,part_number,qty,part_link,price,part_id "
 			"FROM part_info "
@@ -48,13 +48,13 @@ string on_order(DB db,Request const& page){
 		db,
 		page,
 		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","Expected arrival","Update"},
-		qm<Subsystem_id,Part_id,string,string,unsigned,Date,Arrived_button>(
+		qm<Subsystem_id,Part_id,Supplier,Part_number,unsigned,Date,Arrived_button>(
 			db,
 			"SELECT subsystem,part_id,part_supplier,part_number,qty,arrival_date,part_id "
 			"FROM part_info "
 			"WHERE "
-				"valid "
-				"AND id IN (SELECT max(id) FROM part_info GROUP BY part_id) "
+				"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+				"AND valid "
 				"AND part_state='ordered' "
 			"ORDER BY arrival_date"
 		)
@@ -66,7 +66,7 @@ string arrived(DB db,Request const& page){
 		db,
 		page,
 		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","Arrival date"},
-		qm<Subsystem_id,Part_id,string,string,unsigned,Date>(
+		qm<Subsystem_id,Part_id,Supplier,Part_number,unsigned,Date>(
 			db,
 			"SELECT subsystem,part_id,part_supplier,part_number,qty,arrival_date "
 			"FROM part_info "

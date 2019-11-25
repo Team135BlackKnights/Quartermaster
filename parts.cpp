@@ -514,6 +514,28 @@ void inner(ostream& o,Extra const&,DB db){
 	);
 }
 
+void inner(ostream& o,By_supplier const& a,DB db){
+	make_page(
+		o,
+		as_string(a.supplier)+" (Supplier)",
+		as_table(
+			db,
+			a,
+			{"State","Subsystem","Part","Part number","qty","Link","Price","Arrival date"},
+			qm<Part_state,Subsystem_id,Part_id,Part_number,int,URL,Decimal,Date>(
+				db,
+				"SELECT part_state,subsystem,part_id,part_number,qty,part_link,price,arrival_date "
+				"FROM part_info "
+				"WHERE "
+				" id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)"
+				" AND valid "
+				" AND part_supplier="+escape(a.supplier)+" "
+				" ORDER BY part_state"
+			)
+		)
+	);
+}
+
 #define EMPTY_PAGE(X) void inner(ostream& o,X const& x,DB db){ \
 	make_page(\
 		o,\
