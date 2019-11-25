@@ -236,6 +236,10 @@ DECL_OPTION(Extra,EXTRA_ITEMS)
 	X(std::vector<Part_id>,part_checkbox)
 DECL_OPTION(Order_edit,ORDER_EDIT_ITEMS)
 
+#define ARRIVED_ITEMS(X)\
+	X(Part_id,part)
+DECL_OPTION(Arrived,ARRIVED_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -261,7 +265,8 @@ DECL_OPTION(Order_edit,ORDER_EDIT_ITEMS)
 	X(State)\
 	X(CSV_export)\
 	X(Order_edit)\
-	
+	X(Arrived)\
+
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)
