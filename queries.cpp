@@ -38,6 +38,14 @@ void diff(vector<T> const& a,vector<T> const& b){
 	}
 }
 
+std::ostream& operator<<(std::ostream& o,Part_data const& a){
+	o<<"Part_data(\n";
+	#define X(A,B) o<<"\t"#B<<":"<<a.B<<"\n";
+	PART_DATA(X)
+	#undef X
+	return o<<")";
+}
+
 Page::~Page(){}
 
 Table_type read(DB db,string const& name){
@@ -134,15 +142,22 @@ void check_database(DB db){
 
 using P=map<string,vector<string>>;
 
-string to_query(map<string,string> const& m){
+string to_query(map<string,vector<string>> const& m){
+	vector<pair<string,string>> v;
+	for(auto e1:m){
+		string k=e1.first;
+		for(string elem:e1.second){
+			v|=pair<string,string>(k,elem);
+		}
+	}
 	stringstream ss;
-	for(auto at=begin(m);at!=end(m);++at){
-		auto [k,v]=*at;
+	for(auto at=begin(v);at!=end(v);++at){
+		auto [k,value]=*at;
 		//could try to do some fancier encoding in here.
-		ss<<k<<"="<<v;
+		ss<<k<<"="<<value;
 		auto next=at;
 		next++;
-		if(next!=end(m)){
+		if(next!=end(v)){
 			ss<<"&";
 		}
 	}
@@ -186,6 +201,23 @@ void diff(T const& a,T const& b){
 	}
 }
 
+vector<Part_id> parse(vector<Part_id> const*,std::string const& s){
+	return {parse((Part_id*)0,s)};
+}
+
+template<typename T>
+T parse(const T*,vector<string> v){
+	throw "Unexpectedly multiple values";
+}
+
+template<typename T>
+vector<T> parse(const vector<T>*,vector<string> v){
+	return mapf(
+		[](auto x){ return parse((T*)0,x); },
+		v
+	);
+}
+
 #define STR(X) ""#X
 
 #define PARSE_ITEM(A,B) { \
@@ -195,12 +227,14 @@ void diff(T const& a,T const& b){
 			r.B=A{};\
 		}else if(strstr(""#A,"optional")){\
 			r.B=A{};\
+		}else if(strstr(""#A,"vector")){\
+			r.B=A{};\
 		}else{\
 			throw string()+"Failed to find:"#B+as_string(p);\
 		}\
 	}else{\
-		if(f->second.size()!=1){ throw "Multiple values for "#B; }\
-		try{\
+		if(f->second.size()!=1) r.B=parse((A*)nullptr,f->second);\
+		else try{\
 			r.B=parse((A*)nullptr,f->second[0]);\
 		}catch(...){\
 			throw string()+"Failed to parse \""#B+"\" as an "#A+": \""+f->second[0]+"\""; \
@@ -210,13 +244,30 @@ void diff(T const& a,T const& b){
 }
 
 template<typename T>
-void to_q(map<string,string> &r,string name,T t){
-	r[name]=as_string(t);
+void to_q(map<string,vector<string>> &r,string name,T t){
+	r[name]|=as_string(t);
 }
 
 template<typename T>
-void to_q(map<string,string> &r,string name,optional<T> t){
+void to_q(map<string,vector<string>> &r,string name,optional<T> t){
 	if(t) to_q(r,name,*t);
+}
+
+template<typename T>
+void to_q(map<string,vector<string>> &r,string name,vector<T> const& t){
+	for(auto elem:t){
+		to_q(r,name,elem);
+	}
+}
+
+template<typename T>
+vector<T> rand(vector<T> const*){
+	vector<T> r;
+	for(auto _:range(rand()%4)){
+		(void)_;
+		r|=rand((T*)0);
+	}
+	return r;
 }
 
 //#define TO_Q(A,B) r[""#B]=as_string(a.B);
@@ -249,11 +300,11 @@ void to_q(map<string,string> &r,string name,optional<T> t){
 		return r;\
 	}\
 	string to_query(T const& a){\
-		map<string,string> r;\
-		r["p"]=STR(T);\
+		map<string,vector<string>> r;\
+		r["p"]|=STR(T);\
 		ITEMS(TO_Q)\
-		r["sort_by"]=as_string(a.sort_by);\
-		r["sort_order"]=as_string(a.sort_order);\
+		r["sort_by"]|=as_string(a.sort_by);\
+		r["sort_order"]|=as_string(a.sort_order);\
 		return to_query(r);\
 	}\
 	optional<T> parse_query(const T*,P const& p1){\
@@ -294,6 +345,7 @@ DEF_OPTION(Machine_page,MACHINE_ITEMS)
 DEF_OPTION(State,STATE_ITEMS)
 DEF_OPTION(CSV_export,CSV_EXPORT_ITEMS)
 DEF_OPTION(Extra,EXTRA_ITEMS)
+DEF_OPTION(Order_edit,ORDER_EDIT_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';

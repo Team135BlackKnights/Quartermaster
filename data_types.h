@@ -311,4 +311,7 @@ std::ostream& operator<<(std::ostream&,Part_number_local const&);
 
 Part_number_local next(Part_number_local);
 
+struct Part_checkbox:Wrap<Part_checkbox,Part_id>{};
+std::string show_input(DB,std::string const&,Part_checkbox const&);
+
 #endif

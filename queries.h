@@ -59,6 +59,8 @@ struct Part_data{
 	PART_DATA(INST)
 };
 
+std::ostream& operator<<(std::ostream&,Part_data const&);
+
 #define PART_INFO_ROW(X)\
 	X(Id,id)\
 	X(Part_id,part_id)\
@@ -229,6 +231,11 @@ DECL_OPTION(CSV_export,CSV_EXPORT_ITEMS)
 #define EXTRA_ITEMS(X)
 DECL_OPTION(Extra,EXTRA_ITEMS)
 
+#define ORDER_EDIT_ITEMS(X)\
+	X(Date,arrival_date)\
+	X(std::vector<Part_id>,part_checkbox)
+DECL_OPTION(Order_edit,ORDER_EDIT_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -253,7 +260,8 @@ DECL_OPTION(Extra,EXTRA_ITEMS)
 	X(Machine_page)\
 	X(State)\
 	X(CSV_export)\
-
+	X(Order_edit)\
+	
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)

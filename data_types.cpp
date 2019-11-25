@@ -404,3 +404,7 @@ ostream& operator<<(std::ostream& o,Three_digit a){
 	}
 NO_ADD_IMPL(Subsystem_id)
 NO_ADD_IMPL(Part_id)
+
+string show_input(DB,std::string const& name,Part_checkbox const& a){
+        return "<br><input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">";
+}

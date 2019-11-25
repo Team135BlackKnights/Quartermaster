@@ -79,7 +79,7 @@ std::vector<std::pair<A,B>> zip(std::vector<A> const& a,std::vector<B> const& b)
 	auto a_end=end(a);
 	auto b_end=end(b);
 	while(a_at!=a_end && b_at!=b_end){
-		r|=make_pair(*a_at,*b_at);
+		r|=std::make_pair(*a_at,*b_at);
 		a_at++;
 		b_at++;
 	}
@@ -108,7 +108,7 @@ template<typename T>
 std::vector<std::pair<bool,T>> mark_last(std::vector<T> a){
 	std::vector<std::pair<bool,T>> r;
 	for(auto i:range(a.size())){
-		r|=make_pair(i==a.size()-1,std::move(a[i]));
+		r|=std::make_pair(i==a.size()-1,std::move(a[i]));
 	}
 	return r;
 }
@@ -220,7 +220,9 @@ void diff(std::variant<Ts...> const& a,std::variant<Ts...> const& b){
 		a
 	);
 	if(found) return;
-	nyi
+	std::cout<<"variant types differ";
+	PRINT(a);
+	PRINT(b);
 }
 
 std::string join(std::string const&,std::vector<std::string> const&);

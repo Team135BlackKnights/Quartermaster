@@ -14,6 +14,13 @@
 using namespace std;
 
 template<typename T>
+void print_lines(T t){
+	for(auto elem:t){
+		cout<<elem<<"\n";
+	}
+}
+
+template<typename T>
 vector<T> operator|(vector<T> a,T b){
 	a|=b;
 	return a;
@@ -552,14 +559,24 @@ void inner(std::ostream& o,Machines const& a,DB db){
 	);
 }
 
+/*struct Part_checkbox:Wrap<Part_checkbox,Part_id>{};
+
+string show_input(DB,std::string const& name,Part_checkbox const& a){
+	return "<br><input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">";
+}*/
+
 string to_order(DB db,Request const& page){
-	return h2("To order")+as_table(
+	stringstream ss;
+	ss<<h2("To order");
+	ss<<"<form>";
+	ss<<"<input type=\"hidden\" name=\"p\" value=\"Order_edit\">";
+	ss<<as_table(
 		db,
 		page,
-		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","part_link","price"},
-		qm<Subsystem_id,Part_id,string,string,unsigned,URL,Decimal>(
+		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","part_link","price","In new order"},
+		qm<Subsystem_id,Part_id,string,string,unsigned,URL,Decimal,Part_checkbox>(
 			db,
-			"SELECT subsystem,part_id,part_supplier,part_number,qty,part_link,price "
+			"SELECT subsystem,part_id,part_supplier,part_number,qty,part_link,price,part_id "
 			"FROM part_info "
 			"WHERE "
 				"valid "
@@ -567,6 +584,10 @@ string to_order(DB db,Request const& page){
 				"AND part_state='buy_list'"
 		)
 	);
+	ss<<"<br>New order: Arrival date:<input type=\"date\" name=\"arrival_date\">";
+	ss<<" <input type=\"submit\" value=\"Order made\">";
+	ss<<"</form>";
+	return ss.str();
 }
 
 string on_order(DB db,Request const& page){
@@ -712,12 +733,125 @@ void inner(ostream& o,Extra const&,DB db){
 	);
 }
 
+template<typename T>
+string join(string delim,vector<T> v){
+	stringstream ss;
+	for(auto [last,elem]:mark_last(v)){
+		ss<<elem;
+		if(!last) ss<<delim;
+	}
+	return ss.str();
+}
+
+void inner(std::ostream& o,Order_edit const& a,DB db){
+	if(as_string(a.arrival_date)==""){
+		make_page(
+			o,
+			"Order edit error",
+			"Error: Order not recorded because no arrival date specified."
+		);
+		return;
+	}
+	if(a.part_checkbox.size()==0){
+		make_page(
+			o,
+			"Order edit error",
+			"No change made because no parts were selected"
+		);
+		return;
+	}
+
+	//edit each of the parts
+
+	vector<string> part_members;
+	#define X(A,B) part_members|=""#B;
+	PART_DATA(X)
+	#undef X
+	
+	//pull the data out
+	auto q=query(
+		db,
+		[=](){
+			stringstream ss;
+			ss<<"SELECT part_id,";
+			ss<<join(",",part_members);
+			ss<<" ,0";
+			ss<<" FROM part_info ";
+			ss<<" WHERE ";
+			ss<<"  valid AND";
+			ss<<"  id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)";
+			ss<<"  AND part_id IN (";
+			ss<<join(",",a.part_checkbox);
+			ss<<"  )";
+			return ss.str();
+		}()
+	);
+
+	vector<pair<Part_id,Part_data>> found;
+	for(auto row:q){
+		assert(row[0]);
+		Part_id part_id=parse((Part_id*)0,*row[0]);
+		Part_data current;
+		int i=1;
+		#define X(A,B) {\
+			auto x=parse((optional<A>*)0,row[i]);\
+			if(x) current.B=*x;\
+			i++;\
+		}
+		PART_DATA(X)
+		#undef X
+		found|=make_pair(part_id,current);
+	}
+
+	//change a couple of fields
+	for(auto &item:found){
+		item.second.part_state=Part_state::ordered;
+		item.second.arrival_date=a.arrival_date;
+	}
+
+	//print_lines(found);
+
+	//write it back
+	for(auto [part_id,row]:found){
+		stringstream ss;
+		ss<<"INSERT INTO part_info ";
+		ss<<"(";
+		ss<<"part_id,edit_user,edit_date,";
+		ss<<join(",",part_members);
+		ss<<") VALUES ";
+		ss<<"(";
+		ss<<escape(part_id)<<",";
+		ss<<escape(current_user())<<",";
+		ss<<"now(),";
+		unsigned i=0;
+		#define X(A,B) {\
+			ss<<escape(row.B);\
+			i++;\
+			if(i!=part_members.size()) ss<<",";\
+		}
+		PART_DATA(X)
+		#undef X
+		ss<<")";
+		/*if(!last){
+			ss<<",";
+		}*/
+		//PRINT(ss.str());
+		run_cmd(db,ss.str());
+	}
+	//ss<<")";
+	
+	//redirect to the orders page
+	make_page(o,"Order update",redirect_to(Orders{}));
+}
+
 #define EMPTY_PAGE(X) void inner(ostream& o,X const& x,DB db){ \
 	make_page(\
+		o,\
 		""#X,\
 		as_string(x)+p("Under construction")\
 	); \
 }
+//EMPTY_PAGE(Order_edit)
 #undef EMPTY_PAGE
 
 
