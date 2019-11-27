@@ -111,10 +111,29 @@ string part_name(DB db,Part_id id){
 	return q[0];
 }
 
+pair<string,string> part_info(DB db,Part_id id){
+	auto q=qm<optional<string>,optional<string>>(
+		db,
+		"SELECT part_number,name "
+		"FROM part_info "
+		"WHERE (id) IN "
+			"(SELECT MAX(id) FROM part_info WHERE part_id="+as_string(id)+") "
+			"AND valid"
+	);
+	if(q.empty()) return make_pair("?","No part name found");
+	//PRINT(q);
+	assert(q.size()==1);
+	auto row=q[0];
+	string pn=get<0>(row)?*get<0>(row):string("?");
+	string name=get<1>(row)?*get<1>(row):string("No part name found");
+	return make_pair(pn,name);
+}
+
 string pretty_td(DB db, Part_id a){
 	Part_editor page;
 	page.id=a;
-	return td(link(page,part_name(db,a)));
+	auto info=part_info(db,a);
+	return td(link(page,info.first)+" "+info.second);
 }
 
 string pretty_td(DB,User const& a){

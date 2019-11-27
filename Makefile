@@ -1,4 +1,7 @@
-CXX=g++
+#Note:
+#If the optimization is turned up on g++ 7 it print warnings
+#which go away if g++ 9 is used.
+
 CXXFLAGS=-std=c++17 -Wall -Werror -g
 LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient
 

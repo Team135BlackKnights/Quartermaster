@@ -9,8 +9,8 @@ std::vector<std::pair<std::optional<A>,std::optional<B>>> zip_extend(std::vector
 	std::vector<std::pair<std::optional<A>,std::optional<B>>> r;
 	for(auto i:range(max(a.size(),b.size()))){
 		r|=make_pair(
-			[=]()->optional<A>{ if(i<a.size()) return a[i]; return {}; }(),
-			[=]()->optional<B>{ if(i<b.size()) return b[i]; return {}; }()
+			[=]()->optional<A>{ if(i<a.size()) return a[i]; return nullopt; }(),
+			[=]()->optional<B>{ if(i<b.size()) return b[i]; return nullopt; }()
 		);
 	}
 	return r;
@@ -310,14 +310,14 @@ vector<T> rand(vector<T> const*){
 	optional<T> parse_query(const T*,P const& p1){\
 		auto p=p1;\
 		if(p["p"]!=vector<string>{STR(T)}){ \
-			return {};\
+			return nullopt;\
 		}\
 		p=without_key(p,string{"p"});\
 		T r;\
 		PARSE_ITEM(optional<string>,sort_by)\
 		PARSE_ITEM(optional<string>,sort_order)\
 		ITEMS(PARSE_ITEM)\
-		if(p.size()) return {};\
+		if(p.size()) return nullopt;\
 		return r;\
 	}\
 	void diff(T const& a,T const& b){\
