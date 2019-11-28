@@ -604,14 +604,103 @@ struct DB_connection{
 	}
 };
 
-int main1(int argc,char **argv,char **envp){
-	/*for(int i=0;envp[i];i++){
-		cout<<"env:"<<envp[i]<<"<br>\n";
-	}*/
+struct Args{
+	bool help=0;
+	bool tables=0;
+	bool alter_tables=0;
+};
 
-	/*auto g1=getenv("HTTP_REFERER");
-	auto p=parse_referer(g1);
-	cout<<"ref from:"<<p<<"\n";*/
+void help(){
+	cout<<"Arguments:\n";
+	cout<<"--help\n";
+	cout<<"\tShow this message.\n";
+	cout<<"--tables\n";
+	cout<<"\tShow current tables in db & expected\n";
+	cout<<"--alter_tables\n";
+	cout<<"\tTry to change the database to match what this program expects.\n";
+}
+
+Args parse_args(int argc,char **argv){
+	Args r;
+	for(int i=1;argv[i];i++){
+		string s=argv[i];
+		if(s=="--help"){
+			r.help=1;
+		}else if(s=="--tables"){
+			r.tables=1;
+		}else if(s=="--alter_tables"){
+			r.alter_tables=1;
+		}else{
+			cerr<<"Unexpected argument:"<<argv[i]<<"\n";
+			help();
+			exit(1);
+		}
+	}
+	return r;
+}
+
+int tables(DB db){
+	cout<<"Expected database tables\n";
+	for(auto [name,contents]:expected_tables()){
+		cout<<name<<"\n";
+		cout<<"\tName\t"<<"Type\t"<<"Primary key\n";
+		for(auto a:contents){
+			cout<<"\t"<<a.first<<"\t"<<a.second.first<<"\t"<<a.second.second<<"\n";
+		}
+
+		auto f=read(db,name);
+		if(contents!=f){
+			cout<<"Start diff:\n";
+			//diff(contents,f);
+			//PRINT(f);
+			for(auto [e1,e2]:zip_extend(f,contents)){
+				if(e1!=e2)
+				cout<<"\t"<<e1<<" "<<e2<<"\n";
+			}
+		}
+	}
+	return 0;
+}
+
+int alter_tables(DB db){
+	//First, create a list of all the edits to make; don't start if don't know what want to do for each of the changes
+	vector<string> queries;
+
+	//not going to worry about missing tables here to start with.
+	for(auto [table_name,after]:expected_tables()){
+		auto current=read(db,table_name);
+		for(auto [e1,e2]:zip_extend(current,after)){
+			if(e1!=e2){
+				if(!e1){
+					//add columns at the end
+					stringstream ss;
+					ss<<"ALTER TABLE "+table_name+" ADD "+e2->first+" "+e2->second.first;
+					if(e2->second.second){
+						ss<<" UNIQUE PRIMARY KEY";
+					}
+					queries|=ss.str();
+				}else{
+					//change already-existing columns
+					//or delete columns
+					nyi
+				}
+			}
+		}
+	}
+
+	print_lines(queries);
+
+	//Now apply all the changes...
+	for(auto q:queries) run_cmd(db,q);
+	return 0;
+}
+
+int main1(int argc,char **argv,char **envp){
+	auto args=parse_args(argc,argv);
+	if(args.help){
+		help();
+		return 0;
+	}
 
 	DB db=mysql_init(NULL);
 	assert(db);
@@ -631,6 +720,16 @@ int main1(int argc,char **argv,char **envp){
 		exit(1);
 	}
 	DB_connection con{db};
+
+	if(args.tables){
+		return tables(db);
+	}
+	if(args.alter_tables){
+		return alter_tables(db);
+	}
+	/*auto g1=getenv("HTTP_REFERER");
+	auto p=parse_referer(g1);
+	cout<<"ref from:"<<p<<"\n";*/
 
 	check_database(db);
 

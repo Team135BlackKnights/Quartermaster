@@ -1,6 +1,7 @@
 #include "subsystem.h"
 #include "home.h"
 #include "subsystems.h"
+#include "part.h"
 
 using namespace std;
 
@@ -88,9 +89,26 @@ string subsystems_of_subsystem(DB db,Request const& page,Subsystem_id subsystem)
 }
 
 void inner(ostream& o,Subsystem_editor const& a,DB db){
+	vector<string> info_col_names;
+	#define X(A,B) info_col_names|=""#B;
+	SUBSYSTEM_INFO_ROW(X)
+	#undef X
+
+	vector<string> data_col_names;
+	#define X(A,B) data_col_names|=""#B;
+	SUBSYSTEM_DATA(X)
+	#undef X
+
+	/*auto q=qm<
+		#define X(A,B) A,
+		SUBSYSTEM_DATA(X)
+		#undef X
+		Dummy
+	>(*/
 	auto q=query(
 		db,
-		"SELECT name,valid,prefix,parent FROM subsystem_info "
+		"SELECT "+join(",",data_col_names)+
+		" FROM subsystem_info "
 		"WHERE subsystem_id="+as_string(a.id)+
 		" ORDER BY edit_date DESC LIMIT 1"
 	);
@@ -99,22 +117,16 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		current.valid=1;
 	}else{
 		assert(q.size()==1);
-		assert(q[0].size()==4);
-		if(q[0][0]){
-			current.name=*q[0][0];
+		auto row=q[0];
+		unsigned i=0;
+		#define X(A,B) { \
+			if(row[i]) current.B=parse((A*)0,*row[i]); \
+			i++;\
 		}
-
-		if(q[0][1]){
-			current.valid=stoi(*q[0][1]);
-		}else{
-			current.valid=1;
-		}
-
-		if(q[0][2]){
-			current.prefix=parse(&current.prefix,*q[0][2]);
-		}
-		current.parent=parse(&current.parent,q[0][3]);
+		SUBSYSTEM_DATA(X)
+		#undef X
 	}
+
 	make_page(
 		o,
 		as_string(current.name)+" Subsystem",
@@ -143,8 +155,18 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		+h2("History")
 		+make_table(
 			a,
-			{"edit_date","edit_user","id","name","subsystem_id","valid","parent","prefix"},
-			query(db,"SELECT edit_date,edit_user,id,name,subsystem_id,valid,parent,prefix FROM subsystem_info WHERE subsystem_id="+as_string(a.id))
+			{
+				//"edit_date","edit_user","id","name","subsystem_id","valid","parent","prefix"
+				#define X(A,B) ""#B,
+				SUBSYSTEM_INFO_ROW(X)
+				#undef X
+			},
+			query(
+				db,
+				"SELECT "+join(",",info_col_names)+
+				//"edit_date,edit_user,id,name,subsystem_id,valid,parent,prefix"
+				" FROM subsystem_info WHERE subsystem_id="+as_string(a.id)
+			)
 		)
 	);
 }
@@ -153,7 +175,7 @@ void inner(ostream& o,Subsystem_edit const& a,DB db){
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
-	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
+	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.parent,a.B); else v|=pair<string,string>(""#B,escape(a.B));
 	SUBSYSTEM_EDIT_ITEMS(X)
 	#undef X
 	auto q="INSERT INTO subsystem_info ("

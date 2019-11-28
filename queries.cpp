@@ -3,41 +3,6 @@
 
 using namespace std;
 
-//move to util
-template<typename A,typename B>
-std::vector<std::pair<std::optional<A>,std::optional<B>>> zip_extend(std::vector<A> const& a,std::vector<B> const& b){
-	std::vector<std::pair<std::optional<A>,std::optional<B>>> r;
-	for(auto i:range(max(a.size(),b.size()))){
-		r|=make_pair(
-			[=]()->optional<A>{ if(i<a.size()) return a[i]; return nullopt; }(),
-			[=]()->optional<B>{ if(i<b.size()) return b[i]; return nullopt; }()
-		);
-	}
-	return r;
-}
-
-//move to util.
-template<typename T>
-void diff(vector<T> const& a,vector<T> const& b){
-	if(a.size()!=b.size()){
-		auto z=zip_extend(a,b);
-		for(auto [a1,b1]:zip(a,b)){
-			if(a1!=b1){
-				cout<<"a:"<<a1<<"\n";
-				cout<<"b:"<<b1<<"\n";
-			}
-		}
-		return;
-	}
-
-	for(auto [a1,b1]:zip(a,b)){
-		if(a1!=b1){
-			cout<<"a:"<<a1<<"\n";
-			cout<<"b:"<<b1<<"\n";
-		}
-	}
-}
-
 std::ostream& operator<<(std::ostream& o,Part_data const& a){
 	o<<"Part_data(\n";
 	#define X(A,B) o<<"\t"#B<<":"<<a.B<<"\n";

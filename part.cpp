@@ -55,25 +55,22 @@ string escape(Part_number_local a){
 	return ss.str();
 }
 
-template<typename T>
-pair<string,string> part_entry(DB db,optional<Subsystem_id> subsystem_id,Part_state state,T t){
-	if( (as_string(t)=="" || as_string(t)=="NULL") && subsystem_id ){
-		//give it the next free part number for whatever assembly it's in.
-		auto prefix=get_prefix(db,*subsystem_id);
+Part_number_local next_part_number(DB db,Subsystem_id subsystem){
+	auto prefix=get_prefix(db,subsystem);
+	auto from_table=[&](string table)->optional<Part_number_local>{
 		auto q=qm<optional<Part_number>>(
 			db,
-			"SELECT MAX(part_number) FROM part_info WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2020'"
+			"SELECT MAX(part_number) FROM "+table+" WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2020'"
 		);
-		PRINT(q);
 		assert(q.size()==1);
-		if(get<0>(q[0])){
-			Part_number_local a(*get<0>(q[0]));
-			return make_pair("part_number",escape(next(a)));
-		}else{
-			return make_pair("Part_number","'"+as_string(prefix)+"000-1425-2020"+"'");
-		}
-	}
-	return make_pair("part_number",escape(t));
+		auto found=get<0>(q[0]);
+		if(!found) return std::nullopt;
+		return Part_number_local(*found);
+	};
+
+	auto latest=max(from_table("part_info"),from_table("subsystem_info"));
+	if(latest) return next(*latest);
+	return Part_number_local{get_prefix(db,subsystem),Three_digit{0}};
 }
 
 bool should_show(Part_state state,string name){
@@ -194,7 +191,7 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
-	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.part_state,a.B); else v|=pair<string,string>(""#B,escape(a.B));
+	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.B); else v|=pair<string,string>(""#B,escape(a.B));
 	PART_EDIT_ITEMS(X)
 	#undef X
 	auto q="INSERT INTO "+area_lower+"_info ("

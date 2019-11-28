@@ -9,6 +9,10 @@
 	X(std::string,name)\
 	X(Subsystem_prefix,prefix)\
 	X(std::optional<Subsystem_id>,parent)\
+	X(Part_number,part_number)\
+	X(Decimal,time)\
+	X(Assembly_state,state)\
+	X(bool,on_robot)\
 
 struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)
@@ -302,5 +306,38 @@ std::string to_query(std::variant<
 
 std::string link(Request const&,std::string const&);
 std::map<Table_name,Table_type> expected_tables();
+
+template<typename A,typename B>
+std::vector<std::pair<std::optional<A>,std::optional<B>>> zip_extend(std::vector<A> const& a,std::vector<B> const& b){
+	std::vector<std::pair<std::optional<A>,std::optional<B>>> r;
+	for(auto i:range(std::max(a.size(),b.size()))){
+		r|=make_pair(
+			[=]()->std::optional<A>{ if(i<a.size()) return a[i]; return std::nullopt; }(),
+			[=]()->std::optional<B>{ if(i<b.size()) return b[i]; return std::nullopt; }()
+		);
+	}
+	return r;
+}
+
+template<typename T>
+void diff(std::vector<T> const& a,std::vector<T> const& b){
+	if(a.size()!=b.size()){
+		auto z=zip_extend(a,b);
+		for(auto [a1,b1]:zip(a,b)){
+			if(a1!=b1){
+				std::cout<<"a:"<<a1<<"\n";
+				std::cout<<"b:"<<b1<<"\n";
+			}
+		}
+		return;
+	}
+
+	for(auto [a1,b1]:zip(a,b)){
+		if(a1!=b1){
+			std::cout<<"a:"<<a1<<"\n";
+			std::cout<<"b:"<<b1<<"\n";
+		}
+	}
+}
 
 #endif

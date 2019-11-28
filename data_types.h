@@ -151,6 +151,13 @@ ENUM_DECL(Machine,MACHINES)
 #define BEND_TYPES(X) X(none) X(easy_90) X(complex_not_90_or_mult)
 ENUM_DECL(Bend_type,BEND_TYPES)
 
+#define ASSEMBLY_STATES(X)\
+	X(in_design)\
+	X(parts)\
+	X(assembly)\
+	X(done)
+ENUM_DECL(Assembly_state,ASSEMBLY_STATES)
+
 #define EXPORT_ITEMS(X)\
 	X(SUBSYSTEM)\
 	X(SUBSYSTEM_INFO)\
@@ -283,6 +290,7 @@ std::string escape(Subsystem_prefix const&);
 bool operator==(Subsystem_prefix const&,Subsystem_prefix const&);
 bool operator!=(Subsystem_prefix const&,Subsystem_prefix const&);
 bool operator<(Subsystem_prefix const&,Subsystem_prefix const&);
+bool operator>(Subsystem_prefix const&,Subsystem_prefix const&);
 std::ostream& operator<<(std::ostream&,Subsystem_prefix const&);
 Subsystem_prefix rand(Subsystem_prefix const*);
 
@@ -290,6 +298,8 @@ class Three_digit{
 	int value;//000-999 only.
 
 	public:
+	Three_digit();
+	explicit Three_digit(int);
 	Three_digit& operator=(int);
 	operator int()const;
 };
@@ -303,12 +313,14 @@ struct Part_number_local{
 
 	explicit Part_number_local(std::string const&);
 	explicit Part_number_local(Part_number const&);
+	Part_number_local(Subsystem_prefix,Three_digit);
 
 	std::string get()const;
 };
 
 std::ostream& operator<<(std::ostream&,Part_number_local const&);
-
+bool operator<(Part_number_local const&,Part_number_local const&);
+std::string escape(Part_number_local const&);
 Part_number_local next(Part_number_local);
 
 struct Part_checkbox:Wrap<Part_checkbox,Part_id>{};

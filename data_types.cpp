@@ -157,6 +157,10 @@ ENUM_DEFS(Bend_type,BEND_TYPES)
 ENUM_DEFS(Export_item,EXPORT_ITEMS)
 #undef T
 
+#define T Assembly_state
+ENUM_DEFS(Assembly_state,ASSEMBLY_STATES)
+#undef T
+
 using Decimal=decimal::decimal32;
 
 string to_db_type(const Decimal*){
@@ -312,6 +316,10 @@ bool operator<(Subsystem_prefix const& a,Subsystem_prefix const& b){
 	return a.get()<b.get();
 }
 
+bool operator>(Subsystem_prefix const& a,Subsystem_prefix const& b){
+	return a.get()<b.get();
+}
+
 bool operator==(Subsystem_prefix const& a,Subsystem_prefix const& b){
 	return a.get()==b.get();
 }
@@ -366,6 +374,10 @@ Part_number_local::Part_number_local(Part_number const& a):
 	Part_number_local(a.data)
 {}
 
+Part_number_local::Part_number_local(Subsystem_prefix a,Three_digit b):
+	subsystem_prefix(a),num(b)
+{}
+
 std::string Part_number_local::get()const{
 	stringstream ss;
 	ss<<subsystem_prefix<<num<<"-1425-2020";
@@ -376,9 +388,27 @@ std::ostream& operator<<(std::ostream& o,Part_number_local const& a){
 	return o<<a.get();
 }
 
+bool operator<(Part_number_local const& a,Part_number_local const& b){
+	#define X(A) if(a.A<b.A) return 1; if(a.A>b.A) return 0;
+	X(subsystem_prefix)
+	X(num)
+	#undef X
+	return 0;
+}
+
+std::string escape(Part_number_local const& a){
+	return "'"+a.get()+"'";
+}
+
 Part_number_local next(Part_number_local a){
 	a.num=a.num+1;
 	return a;
+}
+
+Three_digit::Three_digit():value(0){}
+
+Three_digit::Three_digit(int x):value(x){
+	assert(x>=0 && x<=999);
 }
 
 Three_digit& Three_digit::operator=(int i){
