@@ -12,7 +12,7 @@
 	X(Part_number,part_number)\
 	X(Decimal,time)\
 	X(Assembly_state,state)\
-	X(bool,on_robot)\
+	X(bool,dni)\
 
 struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)
@@ -53,8 +53,12 @@ struct Subsystem_data{
 	X(std::optional<Supplier>,part_supplier)\
 	X(std::optional<URL>,part_link)\
 	X(std::optional<Date>,arrival_date)\
-	X(std::optional<Decimal>,price)
-
+	X(std::optional<Decimal>,price)\
+	X(std::optional<bool>,dni)\
+	X(std::optional<Weight>,weight)\
+	X(std::optional<Bom_exemption>,bom_exemption)\
+	X(std::optional<Decimal>,bom_cost_override)\
+	
 #define PART_DATA(X)\
 	X(bool,valid)\
 	PART_DATA_INNER(X)
@@ -311,10 +315,9 @@ template<typename A,typename B>
 std::vector<std::pair<std::optional<A>,std::optional<B>>> zip_extend(std::vector<A> const& a,std::vector<B> const& b){
 	std::vector<std::pair<std::optional<A>,std::optional<B>>> r;
 	for(auto i:range(std::max(a.size(),b.size()))){
-		r|=make_pair(
-			[=]()->std::optional<A>{ if(i<a.size()) return a[i]; return std::nullopt; }(),
-			[=]()->std::optional<B>{ if(i<b.size()) return b[i]; return std::nullopt; }()
-		);
+		auto a1=[=]()->std::optional<A>{ if(i<a.size()) return a[i]; return std::nullopt; }();
+		auto b1=[=]()->std::optional<B>{ if(i<b.size()) return b[i]; return std::nullopt; }();
+		r|=std::make_pair(a1,b1);
 	}
 	return r;
 }
@@ -323,11 +326,13 @@ template<typename T>
 void diff(std::vector<T> const& a,std::vector<T> const& b){
 	if(a.size()!=b.size()){
 		auto z=zip_extend(a,b);
-		for(auto [a1,b1]:zip(a,b)){
+		for(auto p:z){
+			auto [a1,b1]=p;
 			if(a1!=b1){
 				std::cout<<"a:"<<a1<<"\n";
 				std::cout<<"b:"<<b1<<"\n";
 			}
+			PRINT(std::make_pair(a1,b1));
 		}
 		return;
 	}

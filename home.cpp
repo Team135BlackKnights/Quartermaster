@@ -1,5 +1,6 @@
 #include "home.h"
 #include<algorithm>
+#include<functional>
 #include "export.h"
 
 using namespace std;
@@ -43,6 +44,9 @@ void make_page(std::ostream& o,string const& heading,string const& main_body){
 	o<<html(
 		head(
 			title(name)
+			+"<style>"
+			"body{ background: grey; }"
+			"</style>"
 		)+
 		body(
 			h1(heading)+nav()+main_body
@@ -263,6 +267,7 @@ string part_tree(DB db){
 	ss<<"</table>";
 	return ss.str();
 }
+
 string indent_space(unsigned indent){
 	stringstream ss;
 	for(auto _:range(indent*4)){
@@ -352,6 +357,161 @@ string indent_part_tree(DB db){
 	return ss.str();
 }
 
+#define BOM_ITEM_ITEMS(X)\
+	X(string,name)\
+	X(string,supplier)\
+	X(Part_number,part_number)\
+	X(unsigned,qty)\
+	X(Decimal,actual_cost)\
+	X(Bom_category,category)\
+	X(Decimal,official_cost)\
+	X(vector<BOM_item>,children)
+struct BOM_item{
+	BOM_ITEM_ITEMS(INST)
+};
+
+BOM_item bom_data(DB db){
+	auto asms=qm<optional<Subsystem_id>,Subsystem_id,string,Part_number,bool>(
+		db,
+		"SELECT parent,subsystem_id,name,part_number,dni "
+		"FROM subsystem_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			"AND valid"
+	);
+
+	map<optional<Subsystem_id>,vector<Subsystem_id>> asm_by_parent;
+	using Asm_info=tuple<string,Part_number,bool>;
+	map<Subsystem_id,Asm_info> asm_by_id;
+	for(auto elem:asms){
+		asm_by_parent[get<0>(elem)]|=get<1>(elem);
+		asm_by_id[get<1>(elem)]=make_tuple(get<2>(elem),get<3>(elem),get<4>(elem));
+	}
+
+	auto parts=qm<Subsystem_id,string,string,string,unsigned,bool,Decimal,Bom_exemption,Decimal>(
+		db,
+		"SELECT subsystem,name,part_supplier,part_number,qty,dni,price,bom_exemption,bom_cost_override "
+		"FROM part_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)"
+			" AND valid"
+	);
+
+	map<Subsystem_id,vector<BOM_item>> parts_by_parent;
+	for(auto elem:parts){
+		auto [subsystem,name,supplier,part_number,qty,dni,price,bom_exemption,bom_cost_override]=elem;
+		auto category=[=](){
+			if(dni) return Bom_category::DNI;
+			switch(bom_exemption){
+				case Bom_exemption::none:
+					if(price/qty<5){
+						return Bom_category::SUB_5D;
+					}
+					return Bom_category::STANDARD;
+				case Bom_exemption::KOP:
+					return Bom_category::KOP;
+				case Bom_exemption::FIRST_Choice:
+					return Bom_category::FIRST_Choice;
+				default: assert(0);
+			}
+		}();
+		auto official_cost=[=]()->Decimal{
+			if(bom_cost_override!=0){
+				return bom_cost_override;
+			}
+			if(category!=Bom_category::STANDARD) return 0;
+			return price;
+		}();
+		parts_by_parent[subsystem]|=BOM_item{
+			name,
+			supplier,
+			part_number,
+			dni?0:qty,
+			price,
+			category,
+			official_cost
+		};
+	}
+
+	std::function<BOM_item(optional<Subsystem_id>)> f;
+
+	f=[&](optional<Subsystem_id> a)->BOM_item{
+		BOM_item r;
+		bool dni;
+		if(a){
+			auto x=asm_by_id[*a];
+			r.name=get<0>(x);
+			r.part_number=get<1>(x);
+			dni=get<2>(x);
+		}else{
+			r.name="Root";
+			dni=0;
+		}
+
+		for(auto id:asm_by_parent[a]){
+			r.children|=f(id);
+		}
+		if(a){
+			r.children|=parts_by_parent[*a];
+		}
+		//now sum them up
+		r.actual_cost=sum(mapf(
+			[](auto x){
+				return x.actual_cost;
+			},
+			r.children
+		));
+		if(dni){
+			r.qty=0;
+			r.category=Bom_category::DNI;
+			r.official_cost=0;
+			return r;
+		}else{
+			r.qty=1;
+			r.category=Bom_category::STANDARD;
+			r.official_cost=sum(mapf([](auto x){ return x.official_cost; },r.children));
+		}
+		return r;
+	};
+
+	return f(std::nullopt);
+}
+
+template<typename Func,typename T>
+void mapv(Func f,T t){
+	for(auto const& elem:t){
+		f(elem);
+	}
+}
+
+string bom(DB db){
+	stringstream ss;
+	ss<<h2("BOM");
+	ss<<"<table border>";
+	ss<<tr(join("",mapf(th,vector<string>{
+		"Part name","Supplier","Part number","Qty","Actual cost","Rule Category","BOM cost"
+	})));
+	auto x=bom_data(db);
+	std::function<void(unsigned,BOM_item)> f;
+	f=[&](unsigned indent,BOM_item const& b){
+		ss<<"<tr>";
+		ss<<td(indent_space(indent)+b.name);
+		ss<<td(b.supplier);
+		ss<<td(as_string(b.part_number));
+		ss<<td(as_string(b.qty))<<td(as_string(b.actual_cost));
+		ss<<td(as_string(b.category));
+		ss<<td(as_string(b.official_cost));
+		ss<<"</tr>";
+		//mapv(f,b.children);
+		for(auto x:b.children){
+			f(indent+1,x);
+		}
+	};
+	f(0,x);
+	ss<<"</table>";
+	return ss.str();
+}
+
 string parts_by_state(DB db,Request const& page){
 	auto a=qm<optional<Part_state>,Subsystem_id,Part_id>(
 		db,
@@ -371,7 +531,7 @@ void inner(ostream& o,Home const& a,DB db){
 		"Home",
 		parts_by_state(db,a)+
 		part_tree(db)+
-		indent_part_tree(db)
+		indent_part_tree(db)+bom(db)
 	);
 }
 

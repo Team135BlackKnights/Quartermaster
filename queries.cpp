@@ -36,6 +36,7 @@ void check_table(DB db,Table_name const& name,Table_type const& type){
 		cout<<"Table mismatch:"<<name<<"\n";
 		PRINT(r);
 		PRINT(type);
+		cout<<"Diff:\n";
 		diff(r,type);
 	}
 	assert(r==type);

@@ -161,6 +161,14 @@ ENUM_DEFS(Export_item,EXPORT_ITEMS)
 ENUM_DEFS(Assembly_state,ASSEMBLY_STATES)
 #undef T
 
+#define T Bom_exemption
+ENUM_DEFS(Bom_exemption,BOM_EXEMPTION_OPTIONS)
+#undef T
+
+#define T Bom_category
+ENUM_DEFS(Bom_category,BOM_CATEGORY_OPTIONS)
+#undef T
+
 using Decimal=decimal::decimal32;
 
 string to_db_type(const Decimal*){
@@ -231,7 +239,7 @@ string escape(Material const& s){
 string show_input(DB db,string const& name,Subsystem_id const& current){
 	auto q=query(
 		db,
-		"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"
+		"SELECT subsystem_id,name FROM subsystem_info WHERE id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid"
 	);
 
 	auto m=mapf(
@@ -251,18 +259,13 @@ string show_input(DB db,string const& name,Subsystem_id const& current){
 	return drop_down(name,as_string(current),m)+link(page,"Current");
 }
 
-template<typename T>
-vector<T>& operator|=(vector<T>& a,vector<T> b){
-	for(auto elem:b){
-		a|=elem;
-	}
-	return a;
-}
-
 string show_input(DB db,string const& name,std::optional<Subsystem_id> const& current){
 	auto q=query(
 		db,
-		"SELECT subsystem_id,name FROM subsystem_info WHERE (subsystem_id,edit_date) IN (SELECT subsystem_id,MAX(edit_date) FROM subsystem_info GROUP BY subsystem_id) AND valid"
+		"SELECT subsystem_id,name FROM subsystem_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			" AND valid"
 	);
 
 	vector<pair<string,string>> m;

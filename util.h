@@ -304,5 +304,19 @@ std::ostream& operator<<(std::ostream& o,std::tuple<Ts...> const& a){
 	return o<<")";
 }
 
+template<typename T>
+void print_lines(T const& t){
+	for(auto elem:t){
+		std::cout<<elem<<"\n";
+	}
+}
+
+template<typename T>
+std::vector<T>& operator|=(std::vector<T>& a,std::vector<T> const& b){
+	for(auto elem:b){
+		a|=elem;
+	}
+	return a;
+}
 
 #endif

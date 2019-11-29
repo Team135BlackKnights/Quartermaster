@@ -19,6 +19,7 @@ std::string show_input(DB,std::string const& name,double value);
 std::string show_input(DB,std::string const& name,unsigned value);
 std::string show_input(DB,std::string const& name,bool value);
 std::string to_db_type(const std::string*);
+std::string to_db_type(bool const*);
 
 std::string escape(std::string const&);
 
@@ -26,6 +27,15 @@ std::string escape(int);
 int parse(const int*,std::string const&);
 std::string to_db_type(const int*);
 int rand(const int*);
+
+using Decimal=std::decimal::decimal32;
+
+std::ostream& operator<<(std::ostream&,Decimal const&);
+Decimal rand(const Decimal*);
+Decimal parse(const Decimal*,std::string const&);
+std::string to_db_type(Decimal const *);
+std::string show_input(DB db,std::string const& name,Decimal value);
+std::string escape(Decimal a);
 
 template<typename Sub,typename Data>
 struct Wrap{
@@ -167,14 +177,19 @@ ENUM_DECL(Assembly_state,ASSEMBLY_STATES)
 	X(MEETING_INFO)
 ENUM_DECL(Export_item,EXPORT_ITEMS)
 
-using Decimal=std::decimal::decimal32;
+#define BOM_EXEMPTION_OPTIONS(X)\
+	X(none)\
+	X(KOP)\
+	X(FIRST_Choice)
+ENUM_DECL(Bom_exemption,BOM_EXEMPTION_OPTIONS)
 
-std::ostream& operator<<(std::ostream&,Decimal const&);
-Decimal rand(const Decimal*);
-Decimal parse(const Decimal*,std::string const&);
-std::string to_db_type(const Decimal*);
-std::string show_input(DB db,std::string const& name,Decimal value);
-std::string escape(Decimal a);
+#define BOM_CATEGORY_OPTIONS(X)\
+	X(STANDARD)\
+	X(DNI)\
+	X(SUB_5D)\
+	X(KOP)\
+	X(FIRST_Choice)
+ENUM_DECL(Bom_category,BOM_CATEGORY_OPTIONS)
 
 template<typename T>
 struct Suggest{
@@ -325,5 +340,7 @@ Part_number_local next(Part_number_local);
 
 struct Part_checkbox:Wrap<Part_checkbox,Part_id>{};
 std::string show_input(DB,std::string const&,Part_checkbox const&);
+
+struct Weight:Wrap<Weight,Decimal>{};
 
 #endif

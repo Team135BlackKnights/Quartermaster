@@ -16,13 +16,6 @@
 using namespace std;
 
 template<typename T>
-void print_lines(T t){
-	for(auto elem:t){
-		cout<<elem<<"\n";
-	}
-}
-
-template<typename T>
 vector<T> operator|(vector<T> a,T b){
 	a|=b;
 	return a;
@@ -680,9 +673,21 @@ int alter_tables(DB db){
 					}
 					queries|=ss.str();
 				}else{
-					//change already-existing columns
-					//or delete columns
-					nyi
+					if(e2){
+						//change already-existing columns
+						if(e1->first==e2->first){
+							nyi
+						}else{
+							cout<<"Change w/ possibly totally unrelated column.  Not automatically updating.\n";
+							PRINT(table_name);
+							PRINT(e1);
+							PRINT(e2);
+							exit(1);
+						}
+					}else{
+						//delete column
+						nyi
+					}
 				}
 			}
 		}

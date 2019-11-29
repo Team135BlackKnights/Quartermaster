@@ -122,7 +122,7 @@ std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string con
 				//cout<<"after\n";
 				this_row|=std::optional{std::string(row[i])};
 			}else{
-				this_row|={};
+				this_row|=std::optional<std::string>{std::nullopt};
 				//cout<<"NULL!\n";
 			}
 		}
