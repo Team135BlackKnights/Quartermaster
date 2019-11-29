@@ -138,6 +138,7 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		#undef X
 		"<br><input type=\"submit\">"+
 		"</form>"
+		+link([=](){ BOM r; r.subsystem=a.id; return r; }(),"BOM")
 		+h2("Overview")
 		+[=](){
 			stringstream ss;

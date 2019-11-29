@@ -314,6 +314,7 @@ DEF_OPTION(Extra,EXTRA_ITEMS)
 DEF_OPTION(Order_edit,ORDER_EDIT_ITEMS)
 DEF_OPTION(Arrived,ARRIVED_ITEMS)
 DEF_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
+DEF_OPTION(BOM,BOM_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';

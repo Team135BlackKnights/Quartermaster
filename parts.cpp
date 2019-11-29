@@ -317,7 +317,11 @@ string check_part_numbers(DB db){
 }
 
 std::string show_current_parts(DB db,Request const& page){
-	return h2("Current state")+to_do(db,page)+done(db,page);
+	return h2("Current state")
+		+subsystem_state_count(db,page)
+		+subsystem_machine_count(db,page)
+		+to_do(db,page)
+		+done(db,page);
 }
 
 void inner(ostream& o,Parts const& a,DB db){

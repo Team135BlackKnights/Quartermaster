@@ -94,6 +94,11 @@ string subsystem_name(DB db,Subsystem_id id){
 	return q[0];
 }
 
+string subsystem_name(DB db,optional<Subsystem_id> a){
+	if(a) return subsystem_name(db,*a);
+	return "Root";
+}
+
 string pretty_td(DB db,Subsystem_id a){
 	Subsystem_editor page;
 	page.id=a;
@@ -370,7 +375,7 @@ struct BOM_item{
 	BOM_ITEM_ITEMS(INST)
 };
 
-BOM_item bom_data(DB db){
+BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 	auto asms=qm<optional<Subsystem_id>,Subsystem_id,string,Part_number,bool>(
 		db,
 		"SELECT parent,subsystem_id,name,part_number,dni "
@@ -474,7 +479,7 @@ BOM_item bom_data(DB db){
 		return r;
 	};
 
-	return f(std::nullopt);
+	return f(subsystem);
 }
 
 template<typename Func,typename T>
@@ -484,14 +489,13 @@ void mapv(Func f,T t){
 	}
 }
 
-string bom(DB db){
+string bom(DB db,optional<Subsystem_id> subsystem){
 	stringstream ss;
-	ss<<h2("BOM");
 	ss<<"<table border>";
 	ss<<tr(join("",mapf(th,vector<string>{
 		"Part name","Supplier","Part number","Qty","Actual cost","Rule Category","BOM cost"
 	})));
-	auto x=bom_data(db);
+	auto x=bom_data(db,subsystem);
 	std::function<void(unsigned,BOM_item)> f;
 	f=[&](unsigned indent,BOM_item const& b){
 		ss<<"<tr>";
@@ -525,13 +529,21 @@ string parts_by_state(DB db,Request const& page){
 	return h2("Parts by state")+as_table(db,page,vector<Label>{"State","Subsystem","Part"},a);
 }
 
+void inner(ostream& o,BOM const& a,DB db){
+	make_page(
+		o,
+		subsystem_name(db,a.subsystem)+ " BOM",
+		bom(db,a.subsystem)
+	);
+}
+
 void inner(ostream& o,Home const& a,DB db){
 	make_page(
 		o,
 		"Home",
 		parts_by_state(db,a)+
 		part_tree(db)+
-		indent_part_tree(db)+bom(db)
+		indent_part_tree(db)//+bom(db,std::nullopt)
 	);
 }
 

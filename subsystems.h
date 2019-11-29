@@ -50,5 +50,7 @@ std::variant<T,std::string>& operator+=(std::variant<T,std::string>& a,std::vari
 }
 
 std::string show_table(DB db,Request const& page,Table_name const& name,std::optional<std::string> title={});
+std::string subsystem_state_count(DB,Request const&);
+std::string subsystem_machine_count(DB,Request const&);
 
 #endif

@@ -165,8 +165,9 @@ void inner(ostream& o,Subsystems const& a,DB db){
 		o,
 		"Subsystems",
 		show_current_subsystems(db,a)
-		+subsystem_state_count(db,a)
-		+subsystem_machine_count(db,a)
+		//+subsystem_state_count(db,a)
+		//+subsystem_machine_count(db,a)
+		+link(BOM{},"BOM")
 		+show_table(db,a,"subsystem_info","History")
 	);
 }

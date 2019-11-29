@@ -252,6 +252,10 @@ DECL_OPTION(Arrived,ARRIVED_ITEMS)
 	X(Supplier,supplier)
 DECL_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
 
+#define BOM_ITEMS(X)\
+	X(std::optional<Subsystem_id>,subsystem)
+DECL_OPTION(BOM,BOM_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -279,7 +283,8 @@ DECL_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
 	X(Order_edit)\
 	X(Arrived)\
 	X(By_supplier)\
-
+	X(BOM)
+	
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)

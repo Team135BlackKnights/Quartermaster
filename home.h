@@ -5,6 +5,7 @@
 #include "queries.h"
 
 void inner(std::ostream&,Home const&,DB);
+void inner(std::ostream&,BOM const&,DB);
 
 struct Label{
 	std::string text;
