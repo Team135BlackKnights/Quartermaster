@@ -213,36 +213,36 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 	parents|=id;
 	stringstream ss;
 	ss<<"<table border>";
-	auto data=qm<Subsystem_id,optional<string>>(
+	auto data=qm<Subsystem_id,optional<string>,optional<string>>(
 		db,
-		"SELECT subsystem_id,name "
+		"SELECT subsystem_id,name,part_number "
 		"FROM subsystem_info "
 		"WHERE "
 			"valid AND "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
 			"parent="+escape(id)
 	);
-	for(auto [subsystem_id,subsystem_name]:data){
+	for(auto [subsystem_id,subsystem_name,part_number]:data){
 		ss<<"<tr>";
 		Subsystem_editor e;
 		e.id=subsystem_id;
-		ss<<td(link(e,subsystem_name))<<td(sub_table(db,subsystem_id,parents));
+		ss<<td(link(e,part_number)+" "+as_string(subsystem_name))<<td(sub_table(db,subsystem_id,parents));
 		ss<<"</tr>";
 	}
-	auto data2=qm<Part_id,optional<string>,optional<Part_state>>(
+	auto data2=qm<Part_id,optional<string>,optional<string>,unsigned,optional<Part_state>>(
 		db,
-		"SELECT part_id,name,part_state "
+		"SELECT part_id,name,part_number,qty,part_state "
 		"FROM part_info "
 		"WHERE "
 			"valid AND "
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) AND "
 			"subsystem="+escape(id)
 	);
-	for(auto [part_id,part_name,state]:data2){
+	for(auto [part_id,part_name,pn,qty,state]:data2){
 		ss<<"<tr>";
 		Part_editor e;
 		e.id=part_id;
-		ss<<td(link(e,part_name))<<td(link(state));
+		ss<<td(link(e,pn)+" "+as_string(part_name))<<td(link(state))<<td(as_string(qty));
 		ss<<"</tr>";
 	}
 	ss<<"</table>";
