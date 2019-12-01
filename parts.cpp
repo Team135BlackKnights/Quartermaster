@@ -324,12 +324,14 @@ std::string show_current_parts(DB db,Request const& page){
 		+done(db,page);
 }
 
+HISTORY_TABLE(part,PART_INFO_ROW)
+
 void inner(ostream& o,Parts const& a,DB db){
 	make_page(
 		o,
 		"Parts",
 		show_current_parts(db,a)+
-		show_table(db,a,"part_info","History")
+		history_part(db,a)//show_table(db,a,"part_info","History")
 	);
 }
 

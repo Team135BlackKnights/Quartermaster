@@ -160,6 +160,8 @@ string subsystem_machine_count(DB db,Request const& page){
 	);
 }
 
+HISTORY_TABLE(subsystem,SUBSYSTEM_INFO_ROW)
+
 void inner(ostream& o,Subsystems const& a,DB db){
 	return make_page(
 		o,
@@ -168,7 +170,7 @@ void inner(ostream& o,Subsystems const& a,DB db){
 		//+subsystem_state_count(db,a)
 		//+subsystem_machine_count(db,a)
 		+link(BOM{},"BOM")
-		+show_table(db,a,"subsystem_info","History")
+		+history_subsystem(db,a)//+show_table(db,a,"subsystem_info","History")
 	);
 }
 

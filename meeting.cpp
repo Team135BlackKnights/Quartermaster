@@ -119,13 +119,15 @@ string to_do(DB db,Request const& page){
 	);
 }
 
+HISTORY_TABLE(meeting,MEETING_INFO_ROW)
+
 void inner(std::ostream& o,Calendar const& a,DB db){
 	make_page(
 		o,
 		"Calendar",
 		current_calendar(db,a)
 		+to_do(db,a)
-		+show_table(db,a,"meeting_info","History")
+		+history_meeting(db,a)//+show_table(db,a,"meeting_info","History")
 	);
 }
 

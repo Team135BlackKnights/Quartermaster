@@ -53,4 +53,24 @@ std::string show_table(DB db,Request const& page,Table_name const& name,std::opt
 std::string subsystem_state_count(DB,Request const&);
 std::string subsystem_machine_count(DB,Request const&);
 
+#define A_COMMA(A,B) A,
+#define B_STR_COMMA(A,B) ""#B ","
+#define LABEL_B(A,B) labels|=Label{""#B};
+
+#define HISTORY_TABLE(NAME,ITEMS)\
+std::string history_##NAME(DB db,Request const& page){\
+	auto q=qm<\
+		ITEMS(A_COMMA)\
+		Dummy\
+	>(\
+		db,\
+		"SELECT "\
+		ITEMS(B_STR_COMMA)\
+		"0 FROM "#NAME "_info ORDER BY id"\
+	);\
+	vector<Label> labels;\
+	ITEMS(LABEL_B)\
+	return h2("History")+as_table(db,page,labels,q);\
+}
+
 #endif

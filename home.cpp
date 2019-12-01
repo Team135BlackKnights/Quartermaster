@@ -44,9 +44,9 @@ void make_page(std::ostream& o,string const& heading,string const& main_body){
 	o<<html(
 		head(
 			title(name)
-			+"<style>"
+			/*+"<style>"
 			"body{ background: grey; }"
-			"</style>"
+			"</style>"*/
 		)+
 		body(
 			h1(heading)+nav()+main_body
