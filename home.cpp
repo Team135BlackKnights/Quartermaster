@@ -5,25 +5,6 @@
 
 using namespace std;
 
-template<typename T>
-vector<T> convert1(vector<vector<optional<string>>> const& in){
-	return mapf(
-		[](auto x){
-			assert(x.size()==1);
-			if(!x[0]) return T{};
-			assert(x[0]);
-			return parse((T*)0,*x[0]);
-		},
-		in
-	);
-}
-
-template<typename T>
-vector<T> q1(DB db,string const& query_string){
-	auto q=query(db,query_string);
-	return convert1<T>(q);
-}
-
 string title_end(){ return "1425 Parts System"; }
 
 string nav(){
@@ -376,7 +357,7 @@ struct BOM_item{
 };
 
 BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
-	auto asms=qm<optional<Subsystem_id>,Subsystem_id,string,Part_number,bool>(
+	auto asms=qm<optional<Subsystem_id>,Subsystem_id,string,Part_number,optional<bool>>(
 		db,
 		"SELECT parent,subsystem_id,name,part_number,dni "
 		"FROM subsystem_info "
@@ -386,7 +367,7 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 	);
 
 	map<optional<Subsystem_id>,vector<Subsystem_id>> asm_by_parent;
-	using Asm_info=tuple<string,Part_number,bool>;
+	using Asm_info=tuple<string,Part_number,optional<bool>>;
 	map<Subsystem_id,Asm_info> asm_by_id;
 	for(auto elem:asms){
 		asm_by_parent[get<0>(elem)]|=get<1>(elem);
@@ -447,7 +428,7 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 			auto x=asm_by_id[*a];
 			r.name=get<0>(x);
 			r.part_number=get<1>(x);
-			dni=get<2>(x);
+			dni=get<2>(x)?*get<2>(x):0;
 		}else{
 			r.name="Root";
 			dni=0;

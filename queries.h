@@ -12,7 +12,7 @@
 	X(Part_number,part_number)\
 	X(Decimal,time)\
 	X(Assembly_state,state)\
-	X(bool,dni)\
+	X(std::optional<bool>,dni)\
 
 struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)
@@ -260,6 +260,10 @@ DECL_OPTION(BOM,BOM_ITEMS)
 	X(Part_id,part)
 DECL_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
 
+#define SUBSYSTEM_DUPLICATE_ITEMS(X)\
+	X(Subsystem_id,subsystem)
+DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -288,7 +292,8 @@ DECL_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
 	X(Arrived)\
 	X(By_supplier)\
 	X(BOM)\
-	X(Part_duplicate)
+	X(Part_duplicate)\
+	X(Subsystem_duplicate)\
 	
 using Request=std::variant<
 	#define X(A) A,

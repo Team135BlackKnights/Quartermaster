@@ -159,4 +159,23 @@ void make_page(std::ostream& o,std::string const& heading,std::string const& mai
 std::string indent_sub_table(DB db,unsigned indent,Subsystem_id id,std::set<Subsystem_id> parents);
 std::string subsystem_name(DB,Subsystem_id);
 
+template<typename T>
+std::vector<T> convert1(std::vector<std::vector<std::optional<std::string>>> const& in){
+	return mapf(
+		[](auto x){
+			assert(x.size()==1);
+			if(!x[0]) return T{};
+			assert(x[0]);
+			return parse((T*)0,*x[0]);
+		},
+		in
+	);
+}
+
+template<typename T>
+std::vector<T> q1(DB db,std::string const& query_string){
+	auto q=query(db,query_string);
+	return convert1<T>(q);
+}
+
 #endif

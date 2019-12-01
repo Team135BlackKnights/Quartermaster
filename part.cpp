@@ -217,8 +217,7 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 	);
 }
 
-void inner(std::ostream& o,Part_duplicate const& a,DB db){
-	//read existing data
+optional<Part_data> part_data(DB db,Part_id part){
 	auto q=query(
 		db,
 		"SELECT "
@@ -229,15 +228,10 @@ void inner(std::ostream& o,Part_duplicate const& a,DB db){
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid "
-			"AND part_id='"+escape(a.part)+"'"
+			"AND part_id="+escape(part)
 	);
 	if(q.size()!=1){
-		make_page(
-			o,
-			"Part duplicate",
-			"Error: Could not find information about part to duplicate.  Part id:"+as_string(a.part)
-		);
-		return;
+		return std::nullopt;
 	}
 	
 	Part_data data;
@@ -249,15 +243,17 @@ void inner(std::ostream& o,Part_duplicate const& a,DB db){
 		PART_DATA_INNER(X)
 		#undef X
 	}
+	return data;
+}
 
-	//create part
-	auto id=Part_id{new_item(db,"part")};
-
+void insert_part_data(DB db,Part_id part_id,Part_data const& data){
 	run_cmd(
 		db,
 		[=](){
 			vector<pair<string,string>> items;
-			items|=pair<string,string>("part_id",escape(id));
+			items|=pair<string,string>("part_id",escape(part_id));
+			items|=pair<string,string>("edit_user",escape(current_user()));
+			items|=pair<string,string>("edit_date","now()");
 			#define X(A,B) items|=pair<string,string>(""#B,escape(data.B));
 			PART_DATA(X)
 			#undef X
@@ -272,7 +268,22 @@ void inner(std::ostream& o,Part_duplicate const& a,DB db){
 			return ss.str();
 		}()
 	);
+}
+
+void inner(std::ostream& o,Part_duplicate const& a,DB db){
+	auto data=part_data(db,a.part);
+	if(!data){
+		make_page(
+			o,
+			"Part duplicate",
+			"Error: Could not find information about part to duplicate.  Part id:"+as_string(a.part)
+		);
+		return;
+	}
 	
+	//create part
+	auto id=Part_id{new_item(db,"part")};
+	insert_part_data(db,id,*data);
 	make_page(
 		o,
 		"Part_duplicate",

@@ -141,6 +141,9 @@ bool parse(const bool*,string const& s){
 	if(s=="on") return 1;
 	if(s=="off") return 0;
 
+	struct X{};
+	throw X{};
+	throw invalid_argument("sd");
 	PRINT(s);
 	nyi
 }
@@ -316,6 +319,7 @@ DEF_OPTION(Arrived,ARRIVED_ITEMS)
 DEF_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
 DEF_OPTION(BOM,BOM_ITEMS)
 DEF_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
+DEF_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';

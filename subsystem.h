@@ -3,9 +3,10 @@
 
 #include "queries.h"
 
-void inner(std::ostream& o,Subsystem_new const&,DB);
-void inner(std::ostream& o,Subsystem_edit const&,DB);
-void inner(std::ostream& o,Subsystem_editor const&,DB);
+void inner(std::ostream&,Subsystem_new const&,DB);
+void inner(std::ostream&,Subsystem_edit const&,DB);
+void inner(std::ostream&,Subsystem_editor const&,DB);
+void inner(std::ostream&,Subsystem_duplicate const&,DB);
 
 template<typename T>
 std::string redirect_to(T const& t){
