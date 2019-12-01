@@ -256,6 +256,10 @@ DECL_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
 	X(std::optional<Subsystem_id>,subsystem)
 DECL_OPTION(BOM,BOM_ITEMS)
 
+#define PART_DUPLICATE_ITEMS(X)\
+	X(Part_id,part)
+DECL_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -283,7 +287,8 @@ DECL_OPTION(BOM,BOM_ITEMS)
 	X(Order_edit)\
 	X(Arrived)\
 	X(By_supplier)\
-	X(BOM)
+	X(BOM)\
+	X(Part_duplicate)
 	
 using Request=std::variant<
 	#define X(A) A,

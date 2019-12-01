@@ -6,6 +6,7 @@
 void inner(std::ostream&,Part_new const&,DB);
 void inner(std::ostream&,Part_editor const&,DB);
 void inner(std::ostream&,Part_edit const&,DB);
+void inner(std::ostream&,Part_duplicate const&,DB);
 Part_number_local next_part_number(DB,Subsystem_id);
 
 template<typename T>

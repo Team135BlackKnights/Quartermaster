@@ -175,6 +175,14 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		#undef X
 		"<br><input type=\"submit\">"+
 		"</form>"
+		+link(
+			[a](){
+				Part_duplicate r;
+				r.part=a.id;
+				return r;
+			}(),
+			"Duplicate"
+		)
 		+h2("History")
 		+make_table(
 			a,
@@ -209,3 +217,69 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 	);
 }
 
+void inner(std::ostream& o,Part_duplicate const& a,DB db){
+	//read existing data
+	auto q=query(
+		db,
+		"SELECT "
+		#define X(A,B) ""#B ","
+		PART_DATA_INNER(X)
+		#undef X
+		"0 FROM part_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+			"AND valid "
+			"AND part_id='"+escape(a.part)+"'"
+	);
+	if(q.size()!=1){
+		make_page(
+			o,
+			"Part duplicate",
+			"Error: Could not find information about part to duplicate.  Part id:"+as_string(a.part)
+		);
+		return;
+	}
+	
+	Part_data data;
+	data.valid=1;
+	{
+		auto row=q[0];
+		unsigned i=0;
+		#define X(A,B) { if(row[i]) data.B=parse((A*)0,*row[i]); i++; }
+		PART_DATA_INNER(X)
+		#undef X
+	}
+
+	//create part
+	auto id=Part_id{new_item(db,"part")};
+
+	run_cmd(
+		db,
+		[=](){
+			vector<pair<string,string>> items;
+			items|=pair<string,string>("part_id",escape(id));
+			#define X(A,B) items|=pair<string,string>(""#B,escape(data.B));
+			PART_DATA(X)
+			#undef X
+	
+			//create part_info entry from existing data
+			stringstream ss;
+			ss<<"INSERT INTO part_info (";
+			ss<<join(",",firsts(items));
+			ss<<") VALUES (";
+			ss<<join(",",seconds(items));
+			ss<<")";
+			return ss.str();
+		}()
+	);
+	
+	make_page(
+		o,
+		"Part_duplicate",
+		redirect_to([=](){
+			Part_editor p;
+			p.id=id;
+			return p;
+		}())
+	);
+}
