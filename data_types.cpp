@@ -16,36 +16,49 @@ int rand(const int*){ return rand()%100; }
 
 int parse(const int*,string const& s){ return stoi(s); }
 
-string with_suggestions(string const& name,string const& value,vector<string> const& suggestions){
+Input with_suggestions(string const& name,string const& value,vector<string> const& suggestions){
 	stringstream ss;
-	ss<<"<br>"<<name<<":<input name=\""<<name<<"\" list=\""<<name<<"\" value=\""<<value<<"\">";
+	ss<<"<input name=\""<<name<<"\" list=\""<<name<<"\" value=\""<<value<<"\">";
 	ss<<"<datalist id=\""<<name<<"\">";
 	for(auto a:suggestions){
 		ss<<"<option value=\""<<a<<"\">";
 	}
 	ss<<"</datalist>";
-	return ss.str();
+	return Input{name,ss.str(),""};
 }
 
-string show_input(DB,string const& name,string const& value){
-	return "<br>"+name+":<input type=\"text\" name=\""+name+"\" value=\""+value+"\">";
+Input show_input(DB,string const& name,string const& value){
+	//return "<br>"+name+":<input type=\"text\" name=\""+name+"\" value=\""+value+"\">";
+	return Input{name,"<input type=\"text\" name=\""+name+"\" value=\""+value+"\">",""};
 }
 
-string show_input(DB db,string const& name,int value){
-	return show_input(db,name,as_string(value))+" (integer)";
+Input show_input(DB db,string const& name,int value){
+	auto x=show_input(db,name,as_string(value));
+	x.notes="(integer)";
+	return x;
 }
 
-string show_input(DB db,string const& name,double value){
-	return show_input(db,name,as_string(value))+" (fraction)";
+Input show_input(DB db,string const& name,double value){
+	auto x=show_input(db,name,as_string(value));
+	x.notes="(fraction)";
+	return x;
 }
 
-string show_input(DB db,string const& name,unsigned value){
-	return show_input(db,name,as_string(value))+" (non-negative integer)";
+Input show_input(DB db,string const& name,unsigned value){
+	auto x=show_input(db,name,as_string(value));
+	x.notes="(non-negative integer)";
+	return x;
 }
 
-string show_input(DB db,string const& name,bool value){
-	return "<br>"+name+":<input type=\"checkbox\" name=\""+name+"\" "+
-		[=](){ if(value) return "checked=on"; return ""; }()+"\">";
+Input show_input(DB db,string const& name,bool value){
+	//return "<br>"+name+":<input type=\"checkbox\" name=\""+name+"\" "+
+	//	[=](){ if(value) return "checked=on"; return ""; }()+"\">";
+	return Input{
+		name,
+		"<input type=\"checkbox\" name=\""+name+"\" "+
+		[=](){ if(value) return "checked=on"; return ""; }()+"\">"
+		""
+	};
 }
 
 string escape(string const& s){
@@ -65,9 +78,8 @@ string escape(string const& s){
 string escape(int i){ return as_string(i); }
 
 template<typename Value,typename Display>
-string drop_down(string const& name,Value const& current,vector<pair<Value,Display>> const& v){
+Input drop_down(string const& name,Value const& current,vector<pair<Value,Display>> const& v){
 	stringstream ss;
-	ss<<"<br>"<<name<<":";
 	ss<<"<select name=\""<<name<<"\">";
 	for(auto elem:v){
 		ss<<"<option value=\""<<elem.first<<"\"";
@@ -75,11 +87,11 @@ string drop_down(string const& name,Value const& current,vector<pair<Value,Displ
 		ss<<">"<<elem.second<<"</option><br>";
 	}
 	ss<<"</select>";
-	return ss.str();
+	return Input{name,ss.str(),""};
 }
 
 template<typename T>
-string drop_down(string const& name,T const& current,vector<T> const& options){
+auto drop_down(string const& name,T const& current,vector<T> const& options){
 	return drop_down(name,current,mapf([](auto x){ return make_pair(x,x); },options));
 }
 
@@ -87,15 +99,24 @@ string to_db_type(const User*){ return "varchar(11)"; }
 
 string to_db_type(const Datetime*){ return "datetime"; }
 
-string show_input(DB db,string const& name,Date const& current){
-	return "<br>"+name+":<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">";
+Input show_input(DB db,string const& name,Date const& current){
+	//return "<br>"+name+":<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">";
+	return Input{
+		name,
+		"<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">",
+		""
+	};
 }
 
 string to_db_type(const Date*){ return "date"; }
 
-string show_input(DB db,string const& name,URL const& value){
+Input show_input(DB db,string const& name,URL const& value){
 	if(prefix("http",value.data)){
-		return "<br><a href=\""+value.data+"\">"+name+":</a><input type=\"text\" name=\""+name+"\" value=\""+value.data+"\">";
+		return Input{
+			"<a href=\""+value.data+"\">"+name+"</a>"
+			"<input type=\"text\" name=\""+name+"\" value=\""+value.data+"\">",
+			""
+		};
 	}
 	return show_input(db,name,value.data);
 }
@@ -122,7 +143,7 @@ string show_input(DB db,string const& name,URL const& value){
 		OPTIONS(E_PARSE)\
 		throw std::invalid_argument{""#NAME+string()+": "+s};\
 	}\
-	string show_input(DB db,string const& name,T const& value){\
+	Input show_input(DB db,string const& name,T const& value){\
 		return drop_down(name,value,options(&value));\
 	}\
 	string escape(T const& a){ return "'"+as_string(a)+"'"; }\
@@ -204,8 +225,10 @@ Decimal parse(const Decimal*,string const& s){
 	throw "Not a decimal";
 }
 
-string show_input(DB db,string const& name,Decimal value){
-	return show_input(db,name,as_string(value))+" Max 2 decimal places";
+Input show_input(DB db,string const& name,Decimal value){
+	auto x=show_input(db,name,as_string(value));
+	x.notes="Max 2 decimal places";
+	return x;
 }
 
 string escape(Decimal a){ return as_string(a); }
@@ -236,7 +259,7 @@ string escape(Material const& s){
 	return escape(s.s);
 }
 
-string show_input(DB db,string const& name,Subsystem_id const& current){
+Input show_input(DB db,string const& name,Subsystem_id const& current){
 	auto q=query(
 		db,
 		"SELECT subsystem_id,name FROM subsystem_info WHERE id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND valid"
@@ -256,10 +279,12 @@ string show_input(DB db,string const& name,Subsystem_id const& current){
 	//show the other current ones in a drop-down
 	Subsystem_editor page;
 	page.id=current;
-	return drop_down(name,as_string(current),m)+link(page,"Current");
+	auto x=drop_down(name,as_string(current),m);
+	x.notes=link(page,"Current");
+	return x;
 }
 
-string show_input(DB db,string const& name,std::optional<Subsystem_id> const& current){
+Input show_input(DB db,string const& name,std::optional<Subsystem_id> const& current){
 	auto q=query(
 		db,
 		"SELECT subsystem_id,name FROM subsystem_info "
@@ -280,12 +305,12 @@ string show_input(DB db,string const& name,std::optional<Subsystem_id> const& cu
 		q
 	);
 
-	string out=drop_down(name,as_string(current),m);
-	out+="(optional)";
+	Input out=drop_down(name,as_string(current),m);
+	out.notes="(optional)";
 	if(current){
 		Subsystem_editor page;
 		page.id=*current;
-		out+=link(page,"Current");
+		out.notes+=link(page,"Current");
 	}
 	return out;
 }
@@ -349,8 +374,10 @@ Subsystem_prefix parse(Subsystem_prefix const*,std::string const& s){
 	return Subsystem_prefix{s[0],s[1]};
 }
 
-string show_input(DB db,string const& name,Subsystem_prefix const& a){
-	return show_input(db,name,as_string(a))+" Two upper case characters";
+Input show_input(DB db,string const& name,Subsystem_prefix const& a){
+	auto x=show_input(db,name,as_string(a));
+	x.notes=" Two upper case characters";
+	return x;
 }
 
 Part_number_local::Part_number_local(std::string const& a){
@@ -438,6 +465,7 @@ ostream& operator<<(std::ostream& o,Three_digit a){
 NO_ADD_IMPL(Subsystem_id)
 NO_ADD_IMPL(Part_id)
 
-string show_input(DB,std::string const& name,Part_checkbox const& a){
-        return "<br><input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">";
+Input show_input(DB,std::string const& name,Part_checkbox const& a){
+	//return "<br><input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">";
+	return Input{name,"<input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">",""};
 }

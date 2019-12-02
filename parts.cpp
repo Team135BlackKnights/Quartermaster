@@ -282,6 +282,7 @@ string check_part_numbers(DB db){
 		(void)id;
 		(void)sub;
 		switch(state){
+			case Part_state::build_list:
 			case Part_state::need_prints:
 			case Part_state::need_to_cam:
 			case Part_state::cut_list:

@@ -2,6 +2,7 @@
 #include "subsystem.h"
 #include "home.h"
 #include "subsystems.h"
+#include "meeting.h"
 
 using namespace std;
 
@@ -165,14 +166,15 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"+
-		#define X(A,B) [&]()->string{ \
-			if(should_show(current.part_state,""#B)) \
-				return show_input(db,""#B,current.B); \
-			else \
-				return ""; \
-		}()+
-		PART_DATA(X)
-		#undef X
+		input_table([=](){
+			vector<Input> r;
+			#define X(A,B) \
+				if(should_show(current.part_state,""#B)) \
+					r|=show_input(db,""#B,current.B);
+			PART_DATA(X)
+			#undef X
+			return r;
+		}())+
 		"<br><input type=\"submit\">"+
 		"</form>"
 		+link(

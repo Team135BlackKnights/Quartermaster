@@ -16,6 +16,19 @@ void inner_new(ostream& o,DB db,Table_name const& table){
 	);
 }
 
+std::string input_table(vector<Input> const& a){
+	stringstream ss;
+	ss<<"<table>";
+	for(auto elem:a){
+		ss<<"<tr>";
+		ss<<"<td align=right>"<<elem.name<<"</td>";
+		ss<<td(elem.form)<<td(elem.notes);
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
 void inner(ostream& o,Meeting_editor const& a,DB db){
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
@@ -48,9 +61,13 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"
-		#define X(A,B) "<br>"+show_input(db,""#B,current.B)+
-		MEETING_DATA(X)
-		#undef X
+		+input_table([=](){
+			vector<Input> r;
+			#define X(A,B) r|=show_input(db,""#B,current.B);
+			MEETING_DATA(X)
+			#undef X
+			return r;
+		}())+
 		"<br><input type=\"submit\">"+
 		"</form>"
 		+h2("History")

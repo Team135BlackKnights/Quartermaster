@@ -9,5 +9,6 @@ void inner(std::ostream&,Meeting_edit const&,DB);
 void inner(std::ostream&,Calendar const&,DB);
 
 std::string to_do(DB,Request const&);
+std::string input_table(std::vector<Input> const&);
 
 #endif

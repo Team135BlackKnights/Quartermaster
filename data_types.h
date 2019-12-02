@@ -12,12 +12,16 @@ unsigned parse(const unsigned*,std::string const&);
 float parse(const float*,std::string const&);
 double parse(const double*,std::string const&);
 
-std::string with_suggestions(std::string const& name,std::string const& value,std::vector<std::string> const& suggestions);
-std::string show_input(DB,std::string const& name,std::string const& value);
-std::string show_input(DB,std::string const& name,int value);
-std::string show_input(DB,std::string const& name,double value);
-std::string show_input(DB,std::string const& name,unsigned value);
-std::string show_input(DB,std::string const& name,bool value);
+struct Input{
+	std::string name,form,notes;
+};
+
+Input with_suggestions(std::string const& name,std::string const& value,std::vector<std::string> const& suggestions);
+Input show_input(DB,std::string const& name,std::string const& value);
+Input show_input(DB,std::string const& name,int value);
+Input show_input(DB,std::string const& name,double value);
+Input show_input(DB,std::string const& name,unsigned value);
+Input show_input(DB,std::string const& name,bool value);
 std::string to_db_type(const std::string*);
 std::string to_db_type(bool const*);
 
@@ -34,7 +38,7 @@ std::ostream& operator<<(std::ostream&,Decimal const&);
 Decimal rand(const Decimal*);
 Decimal parse(const Decimal*,std::string const&);
 std::string to_db_type(Decimal const *);
-std::string show_input(DB db,std::string const& name,Decimal value);
+Input show_input(DB db,std::string const& name,Decimal value);
 std::string escape(Decimal a);
 
 template<typename Sub,typename Data>
@@ -78,7 +82,7 @@ Sub parse(const Wrap<Sub,Data>*,std::string const& s){
 }
 
 template<typename Sub,typename Data>
-std::string show_input(DB db,std::string const& name,Wrap<Sub,Data> const& current){
+auto show_input(DB db,std::string const& name,Wrap<Sub,Data> const& current){
 	return show_input(db,name,current.data);
 }
 
@@ -95,8 +99,8 @@ struct Part_number:Wrap<Part_number,std::string>{};
 std::string to_db_type(const Part_number*);
 
 struct Subsystem_id:Wrap<Subsystem_id,Id>{};
-std::string show_input(DB db,std::string const& name,Subsystem_id const& current);
-std::string show_input(DB db,std::string const& name,std::optional<Subsystem_id> const& current);
+Input show_input(DB db,std::string const& name,Subsystem_id const& current);
+Input show_input(DB db,std::string const& name,std::optional<Subsystem_id> const& current);
 
 struct User:Wrap<User,std::string>{};
 std::string to_db_type(const User*);
@@ -105,11 +109,11 @@ struct Datetime:Wrap<Datetime,std::string>{};
 std::string to_db_type(const Datetime*);
 
 struct Date:Wrap<Date,std::string>{};
-std::string show_input(DB db,std::string const& name,Date const& current);
+Input show_input(DB db,std::string const& name,Date const& current);
 std::string to_db_type(const Date*);
 
 struct URL:Wrap<URL,std::string>{};
-std::string show_input(DB db,std::string const& name,URL const& value);
+Input show_input(DB db,std::string const& name,URL const& value);
 
 #define NO_ADD(X) std::optional<X>& operator+=(std::optional<X>& a,std::optional<X> const&);
 NO_ADD(Subsystem_id)
@@ -151,7 +155,7 @@ NO_ADD(Part_id)
 	std::vector<NAME> options(const NAME*);\
 	NAME rand(const NAME* a);\
 	NAME parse(const NAME*,std::string const&);\
-	std::string show_input(DB db,std::string const& name,NAME const& value);\
+	Input show_input(DB db,std::string const& name,NAME const& value);\
 	std::string escape(NAME const&);\
 	std::string to_db_type(const NAME*);\
 	std::optional<NAME>& operator+=(std::optional<NAME>&,std::optional<NAME>);\
@@ -237,7 +241,7 @@ T parse(const Suggest<T>*,std::string s){
 }
 
 template<typename T>
-std::string show_input(DB db,std::string const& name,Suggest<T> const& value){
+auto show_input(DB db,std::string const& name,Suggest<T> const& value){
 	return with_suggestions(name,value.s,value.suggestions());
 }
 
@@ -275,7 +279,7 @@ std::optional<T> parse(const std::optional<T>*,std::string const& s){
 }
 
 template<typename T>
-std::string show_input(DB db,std::string const& name,std::optional<T> const& a){
+auto show_input(DB db,std::string const& name,std::optional<T> const& a){
 	if(a) return show_input(db,name,*a);
 	return show_input(db,name,T{});
 }
@@ -301,7 +305,7 @@ class Subsystem_prefix{
 };
 std::string to_db_type(const Subsystem_prefix*);
 Subsystem_prefix parse(Subsystem_prefix const*,std::string const&);
-std::string show_input(DB,std::string const&,Subsystem_prefix const&);
+Input show_input(DB,std::string const&,Subsystem_prefix const&);
 std::string escape(Subsystem_prefix const&);
 bool operator==(Subsystem_prefix const&,Subsystem_prefix const&);
 bool operator!=(Subsystem_prefix const&,Subsystem_prefix const&);
@@ -340,7 +344,7 @@ std::string escape(Part_number_local const&);
 Part_number_local next(Part_number_local);
 
 struct Part_checkbox:Wrap<Part_checkbox,Part_id>{};
-std::string show_input(DB,std::string const&,Part_checkbox const&);
+Input show_input(DB,std::string const&,Part_checkbox const&);
 
 struct Weight:Wrap<Weight,Decimal>{};
 
