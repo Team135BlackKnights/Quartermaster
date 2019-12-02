@@ -661,6 +661,47 @@ int tables(DB db){
 	return 0;
 }
 
+vector<string> parse_enum(string s){
+	assert(s.substr(0,5)=="enum(");
+	assert(s[s.size()-1]==')');
+	auto middle=s.substr(5,s.size()-5-1);
+	auto sp=split(',',middle);
+
+	auto parse_item=[=](string s){
+		assert(s.size());
+		assert(s[0]=='\'');
+		assert(s[s.size()-1]=='\'');
+		return s.substr(1,s.size()-2);
+	};
+
+	return mapf(parse_item,sp);
+}
+
+void alter_column(DB db,Table_name table,pair<string,Column_type> c1,pair<string,Column_type> c2){
+	auto name1=c1.first;
+	auto name2=c2.first;
+	assert(name1==name2);
+
+	auto t1=c1.second;
+	auto t2=c2.second;
+	assert(!t1.second);
+	assert(!t2.second);
+
+	PRINT(table);
+	PRINT(t1);
+	PRINT(t2);
+
+	auto e1=parse_enum(t1.first);
+	auto e2=parse_enum(t2.first);
+	auto missing=to_set(e1)-to_set(e2);
+	if(missing.size()){
+		cout<<"Does not cover all previous cases";
+		nyi
+	}
+
+	run_cmd(db,"ALTER TABLE "+table+" MODIFY "+name1+" "+t2.first);
+}
+
 int alter_tables(DB db){
 	//First, create a list of all the edits to make; don't start if don't know what want to do for each of the changes
 	vector<string> queries;
@@ -682,7 +723,7 @@ int alter_tables(DB db){
 					if(e2){
 						//change already-existing columns
 						if(e1->first==e2->first){
-							nyi
+							alter_column(db,table_name,*e1,*e2);
 						}else{
 							cout<<"Change w/ possibly totally unrelated column.  Not automatically updating.\n";
 							PRINT(table_name);

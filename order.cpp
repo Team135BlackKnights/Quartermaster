@@ -12,10 +12,10 @@ string to_order(DB db,Request const& page){
 	ss<<as_table(
 		db,
 		page,
-		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","part_link","price","In new order"},
-		qm<Subsystem_id,Part_id,Supplier,Part_number,unsigned,URL,Decimal,Part_checkbox>(
+		vector<Label>{"Subsystem","Part","Supplier","Part #","qty","price","In new order"},
+		qm<Subsystem_id,Part_id,Supplier,Part_number,unsigned,Decimal,Part_checkbox>(
 			db,
-			"SELECT subsystem,part_id,part_supplier,part_number,qty,part_link,price,part_id "
+			"SELECT subsystem,part_id,part_supplier,part_number,qty,price,part_id "
 			"FROM part_info "
 			"WHERE "
 				"valid "

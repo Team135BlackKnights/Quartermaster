@@ -118,6 +118,7 @@ NO_ADD(Part_id)
 #define PART_STATES(X)\
 	X(in_design)\
 	X(need_prints)\
+	X(build_list)\
 	X(need_to_cam)\
 	X(cut_list)\
 	X(find)\
