@@ -4,6 +4,25 @@
 
 using namespace std;
 
+template<typename K,typename V>
+vector<V> values(map<K,V> const& a){
+	vector<V> r;
+	for(auto [_,v]:a){
+		(void)_;
+		r|=v;
+	}
+	return r;
+}
+
+template<typename T>
+vector<T> flatten(vector<vector<T>> const& a){
+	vector<T> r;
+	for(auto elem:a){
+		r|=elem;
+	}
+	return r;
+}
+
 template<typename T>
 void inner_new(ostream& o,DB db,Table_name const& table){
 	auto id=new_item(db,table);
@@ -15,6 +34,8 @@ void inner_new(ostream& o,DB db,Table_name const& table){
 		redirect_to(page)
 	);
 }
+
+std::string show_plan(DB db,Request const& page);
 
 std::string input_table(vector<Input> const& a){
 	stringstream ss;
@@ -144,8 +165,231 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 		"Calendar",
 		current_calendar(db,a)
 		+to_do(db,a)
+		+show_plan(db,a)
 		+history_meeting(db,a)//+show_table(db,a,"meeting_info","History")
 	);
+}
+
+/*struct Plan{
+	m
+};*/
+using Item=variant<Part_id,Subsystem_id>;
+using Time=Decimal;
+using Schedule_item=pair<Time,Item>;
+using To_do=map<Machine,vector<Schedule_item>>;
+
+#define MEETING_PLAN_ITEMS(X)\
+	X(Decimal,length)\
+	X(To_do,to_do)
+
+struct Meeting_plan{
+	//at some point, could decide that there are different amounts of time available on each of these.
+	MEETING_PLAN_ITEMS(INST)
+};
+
+std::ostream& operator<<(std::ostream& o,Meeting_plan const& a){
+	o<<"Meeting_plan( ";
+	#define X(A,B) o<<""#B<<":"<<a.B<<" ";
+	MEETING_PLAN_ITEMS(X)
+	#undef X
+	return o<<")";
+}
+
+using Plan=vector<pair<Date,Meeting_plan>>;
+
+Plan blank_plan(DB db){
+	auto q=qm<Date,Decimal>(
+		db,
+		"SELECT date,length "
+		"FROM meeting_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM meeting_info GROUP BY meeting_id) "
+			"AND valid "
+			"AND date>now() "
+		"ORDER BY date"
+	);
+	return mapf(
+		[](auto x){
+			return make_pair(
+				get<0>(x),
+				Meeting_plan{get<1>(x),{}}
+			);
+		},
+		q
+	);
+}
+
+#define BUILD_ITEMS(X)\
+	X(Item,item)\
+	X(Machine,machine)\
+	X(Decimal,length)
+
+struct Build_item{
+	BUILD_ITEMS(INST)
+};
+
+std::ostream& operator<<(std::ostream& o,Build_item const& a){
+	o<<"Build_item( ";
+	#define X(A,B) o<<""#B<<":"<<a.B<<" ";
+	BUILD_ITEMS(X)
+	#undef X
+	return o<<")";
+}
+
+vector<Build_item> to_build(DB db){
+	auto q=qm<Part_id,Machine,Decimal>(
+		db,
+		"SELECT part_id,machine,time "
+		"FROM part_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+			"AND valid "
+			"AND (part_state='cut_list' OR part_state='find' OR part_state='_3d_print' OR part_state='fab') "
+	);
+
+	vector<Build_item> r;
+	for(auto row:q){
+		r|=Build_item{get<0>(row),get<1>(row),get<2>(row)};
+	}
+
+	auto q1=qm<Subsystem_id,Decimal>(
+		db,
+		"SELECT subsystem_id,time "
+		"FROM subsystem_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
+			"AND valid "
+			"AND (state='parts' OR state='assembly')"
+	);
+	for(auto row:q1){
+		r|=Build_item{get<0>(row),Machine::none,get<1>(row)};
+	}
+	return r;
+}
+
+Decimal machine_time_left(Meeting_plan mp,Machine machine){
+	/*auto total_time_used=[=](){
+		Decimal r=0;
+		for(auto [k,v]:mp.to_do){
+			for(auto [item,length]:v){
+				nyi//r+=length;
+			}
+		}
+		return r;
+	}();*/
+	auto total_time_used=sum(
+		firsts(flatten(values(mp.to_do)))
+	);
+	
+	auto overall_time_available=mp.length*3-total_time_used;
+	
+	auto machine_time_used=sum(firsts(mp.to_do[machine]));
+	auto machine_time_available=mp.length-machine_time_used;
+
+	return min(overall_time_available,machine_time_available);
+}
+
+pair<Plan,string> make_plan_inner(DB db){
+	//this is going to be a graph problem...
+	//if you cared that much about it
+
+	//first, going to just schedule building the parts and not care about assembly.
+	auto plan=blank_plan(db);
+	//print_lines(plan);
+	auto to_schedule=to_build(db);
+	//print_lines(to_schedule);
+
+	auto schedule_part=[&](auto &x)->std::optional<std::string>{
+		for(auto &meeting:plan){
+			auto m=machine_time_left(meeting.second,x.machine);
+			if(m>0){
+				auto to_use=min(m,x.length);
+				x.length-=to_use;
+				meeting.second.to_do[x.machine]|=make_pair(to_use,x.item);
+				if(x.length==0) return std::nullopt;
+			}
+		}
+		stringstream ss;
+		ss<<"Planned so far:\n";
+		//print_lines(plan);
+		for(auto elem:plan) ss<<elem<<"\n";
+		ss<<"Could not schedule item.  Out of meetings.\n";
+		ss<<"Attempting to schedule:"<<x<<"\n";
+		return ss.str();
+	};
+
+	//TODO: Put dependencies in here.
+	for(auto x:to_schedule){
+		//PRINT(x);
+		while(x.length>0){
+			auto s=schedule_part(x);
+			if(s){
+				return make_pair(plan,*s);
+			}
+		}
+	}
+	return make_pair(plan,string{});
+}
+
+template<typename T>
+string join(vector<T> const& v){
+	return join("",v);
+}
+
+auto li(std::string s){ return tag("li",s); }
+
+std::string show_plan(DB db,Request const& page){
+	auto x=make_plan_inner(db);
+	stringstream o;
+	o<<h2("Scheduled tasks");
+	o<<"Methodology notes:\n";
+	o<<"<ul>";
+	o<<li("Items that are in still in design are totally ignored.");
+	o<<li("Items that are to be ordered are totally ignored");
+	o<<li("Items with time taken listed as 0 are totally ignored.");
+	o<<li("Dependencies between parts and their assemblies are ignored.");
+	o<<li("Assumes that the amount of time for any given machines is equal to meeting length and overall time is 3x meeting length");
+	o<<"</ul>";
+	o<<"<table border>";
+	o<<tr(join("",mapf(th,vector{"Date","Length","Notes","To do"})));
+	for(auto a:x.first){
+		o<<"<tr>";
+		o<<td(as_string(a.first));
+		auto mp=a.second;
+		o<<td(as_string(mp.length));
+		o<<td("");//TODO: Fill this in
+		o<<"<td>";
+		o<<"<table border>";
+		o<<tr(join(mapf(th,vector{"Machine","Parts"})));
+		for(auto [machine,items]:mp.to_do){
+			o<<"<tr>";
+			o<<td(as_string(machine));
+			o<<"<td>";
+			o<<"<table border>";
+			o<<tr(join(mapf(th,vector{"Time","Part"})));
+			for(auto [time,item]:items){
+				o<<"<tr>";
+				o<<td(as_string(time));
+				o<<pretty_td(db,item);
+				o<<"</tr>";
+			}
+			o<<"</table>";
+			o<<"</td>";
+			o<<"</tr>";
+		}
+		o<<"</table>";
+		o<<"</td>";
+		o<<"</tr>";
+	}
+	o<<"</table>";
+	o<<x.second;
+	return o.str();
+}
+
+void make_plan(DB db){
+	auto x=make_plan_inner(db);
+	print_lines(x.first);
+	cout<<x.second<<"\n";
 }
 
 void inner(ostream& o,Meeting_edit const& a,DB db){

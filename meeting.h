@@ -10,5 +10,6 @@ void inner(std::ostream&,Calendar const&,DB);
 
 std::string to_do(DB,Request const&);
 std::string input_table(std::vector<Input> const&);
+void make_plan(DB);
 
 #endif

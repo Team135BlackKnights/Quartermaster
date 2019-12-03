@@ -608,6 +608,7 @@ struct Args{
 	bool help=0;
 	bool tables=0;
 	bool alter_tables=0;
+	bool plan=0;
 };
 
 void help(){
@@ -618,6 +619,8 @@ void help(){
 	cout<<"\tShow current tables in db & expected\n";
 	cout<<"--alter_tables\n";
 	cout<<"\tTry to change the database to match what this program expects.\n";
+	cout<<"--plan\n";
+	cout<<"\tShow plan for machine scheduling\n";
 }
 
 Args parse_args(int argc,char **argv){
@@ -630,6 +633,8 @@ Args parse_args(int argc,char **argv){
 			r.tables=1;
 		}else if(s=="--alter_tables"){
 			r.alter_tables=1;
+		}else if(s=="--plan"){
+			r.plan=1;
 		}else{
 			cerr<<"Unexpected argument:"<<argv[i]<<"\n";
 			help();
@@ -779,6 +784,10 @@ int main1(int argc,char **argv,char **envp){
 	}
 	if(args.alter_tables){
 		return alter_tables(db);
+	}
+	if(args.plan){
+		make_plan(db);
+		return 0;
 	}
 	/*auto g1=getenv("HTTP_REFERER");
 	auto p=parse_referer(g1);
