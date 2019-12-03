@@ -1,6 +1,7 @@
 #include "data_types.h"
-#include "queries.h"
 #include<cassert>
+#include<strings.h>
+#include "queries.h"
 
 using namespace std;
 
@@ -99,11 +100,83 @@ string to_db_type(const User*){ return "varchar(11)"; }
 
 string to_db_type(const Datetime*){ return "datetime"; }
 
+unsigned short rand(unsigned short const*){
+	return rand();
+}
+
+Date parse(Date const*,std::string const& s){
+	auto sp=split('-',s);
+	if(sp.size()!=3) throw "Invalid date:"+s;
+	return Date{
+		(unsigned short)stoi(sp[0]),
+		(unsigned short)stoi(sp[1]),
+		(unsigned short)stoi(sp[2])
+	};
+	/*Date r;
+	if(s=="0000-00-00"){
+
+	}
+	bzero(&r,sizeof(r));
+	char *res=strptime(s.c_str(),"%Y-%m-%d",&r);
+	if(!res){
+		PRINT(s);
+	}
+	assert(res);
+	assert(res[0]=='\0');
+	return r;*/
+}
+
+bool operator<(Date const& a,Date const& b){
+	#define X(A,B) if(a.B<b.B) return 1; if(b.B<a.B) return 0;
+	DATE_ITEMS(X)
+	#undef X
+	return 0;
+}
+
+bool operator==(Date const& a,Date const& b){
+	#define X(A,B) if(a.B!=b.B) return 0;
+	DATE_ITEMS(X)
+	#undef X
+	return 1;
+}
+
+bool operator!=(Date const& a,Date const& b){
+	return !(a==b);
+}
+
+std::ostream& operator<<(std::ostream& o,Date const& a){
+	//Try to display as something like "Thursday, March 5"
+	stringstream ss;
+	ss<<a.year<<"-"<<a.month<<"-"<<a.day;
+	struct tm tm1;
+	bzero(&tm1,sizeof tm1);
+	char *res=strptime(ss.str().c_str(),"%Y-%m-%d",&tm1);
+	if(!res || res[0]) return o<<ss.str();
+	static const size_t LEN=26;
+	char s[LEN];
+	strftime(s,LEN,"%a, %b %d",&tm1);
+	return o<<s;
+}
+
+Date rand(Date const*){
+	Date r;
+	#define X(A,B) r.B=rand((A*)0);
+	DATE_ITEMS(X)
+	#undef X
+	return r;
+}
+
+string escape(Date const& a){
+	static const size_t LEN=26;
+	char s[LEN];
+	sprintf(s,"%04d-%02d-%02d",a.year,a.month,a.day);
+	return s;
+}
+
 Input show_input(DB db,string const& name,Date const& current){
-	//return "<br>"+name+":<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">";
 	return Input{
 		name,
-		"<input type=\"date\" name=\""+name+"\" value=\""+as_string(current)+"\">",
+		"<input type=\"date\" name=\""+name+"\" value=\""+escape(current)+"\">",
 		""
 	};
 }

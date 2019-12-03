@@ -108,9 +108,22 @@ std::string to_db_type(const User*);
 struct Datetime:Wrap<Datetime,std::string>{};
 std::string to_db_type(const Datetime*);
 
-struct Date:Wrap<Date,std::string>{};
+#define DATE_ITEMS(X)\
+	X(unsigned short,year)\
+	X(unsigned short,month)\
+	X(unsigned short,day)
+struct Date{
+	DATE_ITEMS(INST)
+};
+Date parse(Date const*,std::string const&);
 Input show_input(DB db,std::string const& name,Date const& current);
 std::string to_db_type(const Date*);
+bool operator==(Date const&,Date const&);
+bool operator!=(Date const&,Date const&);
+bool operator<(Date const&,Date const&);
+std::ostream& operator<<(std::ostream&,Date const&);
+std::string escape(Date const&);
+Date rand(Date const*);
 
 struct URL:Wrap<URL,std::string>{};
 Input show_input(DB db,std::string const& name,URL const& value);
