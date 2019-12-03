@@ -4,6 +4,24 @@
 
 using namespace std;
 
+template<typename T>
+std::vector<T>& operator|=(std::vector<T> &a,std::optional<T> b){
+	if(b){
+		a|=*b;
+	}
+	return a;
+}
+
+template<typename T>
+optional<T> max(vector<T> const& a){
+	if(a.empty()) return std::nullopt;
+	T r=a[0];
+	for(auto elem:a){
+		r=std::max(r,elem);
+	}
+	return r;
+}
+
 template<typename K,typename V>
 vector<V> values(map<K,V> const& a){
 	vector<V> r;
@@ -33,6 +51,24 @@ void inner_new(ostream& o,DB db,Table_name const& table){
 		"New item",
 		redirect_to(page)
 	);
+}
+
+template<typename A,typename B>
+map<A,B> to_map(std::vector<std::tuple<A,B>> const& v){
+	map<A,B> r;
+	for(auto [a,b]:v){
+		r[a]=b;
+	}
+	return r;
+}
+
+template<typename A,typename ... Ts>
+map<A,tuple<A,Ts...>> to_map(std::vector<std::tuple<A,Ts...>> const& v){
+	map<A,tuple<A,Ts...>> r;
+	for(auto elem:v){
+		r[get<0>(elem)]=elem;
+	}
+	return r;
 }
 
 std::string show_plan(DB db,Request const& page);
@@ -222,11 +258,27 @@ Plan blank_plan(DB db){
 #define BUILD_ITEMS(X)\
 	X(Item,item)\
 	X(Machine,machine)\
-	X(Decimal,length)
-
+	X(Decimal,length)\
+	X(set<Item>,dependencies)\
+	X(std::optional<Date>,wait)\
+	
 struct Build_item{
 	BUILD_ITEMS(INST)
 };
+
+bool operator<(Build_item const& a,Build_item const& b){
+	#define X(A,B) if(a.B<b.B) return 1; if(b.B<a.B) return 0;
+	BUILD_ITEMS(X)
+	#undef X
+	return 0;
+}
+
+bool operator==(Build_item const& a,Build_item const& b){
+	#define X(A,B) if(a.B!=b.B) return 0;
+	BUILD_ITEMS(X)
+	#undef X
+	return 1;
+}
 
 std::ostream& operator<<(std::ostream& o,Build_item const& a){
 	o<<"Build_item( ";
@@ -237,9 +289,9 @@ std::ostream& operator<<(std::ostream& o,Build_item const& a){
 }
 
 vector<Build_item> to_build(DB db){
-	auto q=qm<Part_id,Machine,Decimal>(
+	auto q=qm<Part_id,Machine,Decimal,Subsystem_id>(
 		db,
-		"SELECT part_id,machine,time "
+		"SELECT part_id,machine,time,subsystem "
 		"FROM part_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
@@ -249,20 +301,65 @@ vector<Build_item> to_build(DB db){
 
 	vector<Build_item> r;
 	for(auto row:q){
-		r|=Build_item{get<0>(row),get<1>(row),get<2>(row)};
+		r|=Build_item{
+			get<0>(row),
+			get<1>(row),
+			get<2>(row),
+			{},
+			std::nullopt
+		};
 	}
 
-	auto q1=qm<Subsystem_id,Decimal>(
+	map<Subsystem_id,set<Item>> dependencies;
+	for(auto [part,_1,_2,subsystem]:q){
+		(void)_1;
+		(void)_2;
+		dependencies[subsystem].insert(part);
+	}
+
+	const auto wait_items=to_map(qm<Subsystem_id,Date>(
 		db,
-		"SELECT subsystem_id,time "
+		"SELECT subsystem,MAX(arrival_date) "
+		"FROM part_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+			"AND valid "
+			"AND (part_state='on_order')"
+		"GROUP BY subsystem"
+	));
+
+	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>>(
+		db,
+		"SELECT subsystem_id,time,parent "
 		"FROM subsystem_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
 			"AND valid "
 			"AND (state='parts' OR state='assembly')"
 	);
+
+	for(auto [id,_,parent]:q1){
+		(void)_;
+		if(parent){
+			dependencies[*parent].insert(id);
+		}
+	}
+
 	for(auto row:q1){
-		r|=Build_item{get<0>(row),Machine::none,get<1>(row)};
+		auto id=get<0>(row);
+		r|=Build_item{
+			id,
+			Machine::none,
+			get<1>(row),
+			dependencies[id],
+			[=]()->std::optional<Date>{
+				auto f=wait_items.find(id);
+				if(f==wait_items.end()){
+					return std::nullopt;
+				}
+				return f->second;
+			}()
+		};
 	}
 	return r;
 }
@@ -289,6 +386,32 @@ Decimal machine_time_left(Meeting_plan mp,Machine machine){
 	return min(overall_time_available,machine_time_available);
 }
 
+vector<Build_item> topological_sort(vector<Build_item> a){
+	vector<Build_item> r;
+	set<Item> done;
+
+	auto run_pass=[&](auto in){
+		set<Build_item> deferred;
+		for(auto elem:in){
+			if( (elem.dependencies-done).size() ){
+				deferred|=elem;
+			}else{
+				r|=elem;
+				done|=elem.item;
+			}
+		}
+		return deferred;
+	};
+
+	auto d=run_pass(a);
+	while(d.size()){
+		auto d2=run_pass(d);
+		assert(d2!=d);//if this happens, we have a circular dependency.
+		d=d2;
+	}
+	return r;
+}
+
 pair<Plan,string> make_plan_inner(DB db){
 	//this is going to be a graph problem...
 	//if you cared that much about it
@@ -299,14 +422,36 @@ pair<Plan,string> make_plan_inner(DB db){
 	auto to_schedule=to_build(db);
 	//print_lines(to_schedule);
 
+	map<Item,Date> finish;
+
 	auto schedule_part=[&](auto &x)->std::optional<std::string>{
+		vector<Date> dates;
+		dates|=mapf(
+			[=](auto item)->Date{
+				auto f=finish.find(item);
+				assert(f!=finish.end()); //otherwise, dependency not met.
+				return f->second;
+			},
+			x.dependencies
+		);
+		dates|=x.wait;
+		auto dep_date=max(dates);
+
 		for(auto &meeting:plan){
+			//skip if before deps are done.
+			if(dep_date && meeting.first<*dep_date){
+				continue;
+			}
+
 			auto m=machine_time_left(meeting.second,x.machine);
 			if(m>0){
 				auto to_use=min(m,x.length);
 				x.length-=to_use;
 				meeting.second.to_do[x.machine]|=make_pair(to_use,x.item);
-				if(x.length==0) return std::nullopt;
+				if(x.length==0){
+					finish[x.item]=meeting.first;
+					return std::nullopt;
+				}
 			}
 		}
 		stringstream ss;
@@ -318,9 +463,7 @@ pair<Plan,string> make_plan_inner(DB db){
 		return ss.str();
 	};
 
-	//TODO: Put dependencies in here.
-	for(auto x:to_schedule){
-		//PRINT(x);
+	for(auto x:topological_sort(to_schedule)){
 		while(x.length>0){
 			auto s=schedule_part(x);
 			if(s){
@@ -338,6 +481,12 @@ string join(vector<T> const& v){
 
 auto li(std::string s){ return tag("li",s); }
 
+string link(Meeting_id a,string body){
+	Meeting_editor r;
+	r.id=a;
+	return link(r,body);
+}
+
 std::string show_plan(DB db,Request const& page){
 	auto x=make_plan_inner(db);
 	stringstream o;
@@ -345,19 +494,28 @@ std::string show_plan(DB db,Request const& page){
 	o<<"Methodology notes:\n";
 	o<<"<ul>";
 	o<<li("Items that are in still in design are totally ignored.");
-	o<<li("Items that are to be ordered are totally ignored");
+	o<<li("Items that are yet to be ordered are totally ignored");
 	o<<li("Items with time taken listed as 0 are totally ignored.");
-	o<<li("Dependencies between parts and their assemblies are ignored.");
 	o<<li("Assumes that the amount of time for any given machines is equal to meeting length and overall time is 3x meeting length");
 	o<<"</ul>";
 	o<<"<table border>";
 	o<<tr(join("",mapf(th,vector{"Date","Length","Notes","To do"})));
+	auto q=qm<Date,Meeting_id,string,string>(
+		db,
+		"SELECT date,meeting_id,notes,color FROM meeting_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM meeting_info GROUP BY meeting_id) "
+			"AND valid"
+	);
+	auto by_date=to_map(q);
 	for(auto a:x.first){
+		auto [date,meeting_id,notes,color]=by_date[a.first];
+		(void)date;
 		o<<"<tr>";
-		o<<td(as_string(a.first));
+		o<<"<td bgcolor=\""<<color<<"\">"<<link(meeting_id,as_string(a.first))<<"</td>";
 		auto mp=a.second;
 		o<<td(as_string(mp.length));
-		o<<td("");//TODO: Fill this in
+		o<<td(notes);
 		o<<"<td>";
 		o<<"<table border>";
 		o<<tr(join(mapf(th,vector{"Machine","Parts"})));

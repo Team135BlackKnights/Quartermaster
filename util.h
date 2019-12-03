@@ -120,8 +120,8 @@ T const& choose(std::vector<T> const& a){
 }
 
 template<typename Func,typename T>
-auto mapf(Func f,std::vector<T> const& v){
-	std::vector<decltype(f(v[0]))> r;
+auto mapf(Func f,T const& v){
+	std::vector<decltype(f(*std::begin(v)))> r;
 	for(auto elem:v){
 		r|=f(elem);
 	}
