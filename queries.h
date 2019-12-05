@@ -5,14 +5,14 @@
 #include "data_types.h"
 
 #define SUBSYSTEM_DATA(X)\
-	X(bool,valid)\
+	X(Valid,valid)\
 	X(std::string,name)\
 	X(Subsystem_prefix,prefix)\
 	X(std::optional<Subsystem_id>,parent)\
 	X(Part_number,part_number)\
-	X(Decimal,time)\
+	X(Hours,time)\
 	X(Assembly_state,state)\
-	X(std::optional<bool>,dni)\
+	X(std::optional<DNI>,dni)\
 
 struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)
@@ -41,7 +41,7 @@ struct Subsystem_data{
 	X(std::optional<std::string>,thickness)\
 	X(std::optional<Material>,material)\
 	X(unsigned,qty)\
-	X(std::optional<Decimal>,time)\
+	X(std::optional<Hours>,time)\
 	X(std::optional<Date>,manufacture_date)\
 	X(std::optional<User>,who_manufacture)\
 	X(std::optional<Machine>,machine)\
@@ -54,13 +54,13 @@ struct Subsystem_data{
 	X(std::optional<URL>,part_link)\
 	X(std::optional<Date>,arrival_date)\
 	X(std::optional<Decimal>,price)\
-	X(std::optional<bool>,dni)\
+	X(std::optional<DNI>,dni)\
 	X(std::optional<Weight>,weight)\
 	X(std::optional<Bom_exemption>,bom_exemption)\
 	X(std::optional<Decimal>,bom_cost_override)\
 	
 #define PART_DATA(X)\
-	X(bool,valid)\
+	X(Valid,valid)\
 	PART_DATA_INNER(X)
 
 struct Part_data{
@@ -83,7 +83,7 @@ using Meeting_length=int;
 using Color=std::string;
 
 #define MEETING_DATA(X)\
-	X(bool,valid)\
+	X(Valid,valid)\
 	X(Date,date)\
 	X(Meeting_length,length)\
 	X(Color,color)\

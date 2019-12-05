@@ -97,10 +97,11 @@ struct Part_id:Wrap<Part_id,Id>{};
 struct Meeting_id:Wrap<Meeting_id,Id>{};
 struct Part_number:Wrap<Part_number,std::string>{};
 std::string to_db_type(const Part_number*);
+Input show_input(DB,std::string const&,Part_number const&);
 
 struct Subsystem_id:Wrap<Subsystem_id,Id>{};
-Input show_input(DB db,std::string const& name,Subsystem_id const& current);
-Input show_input(DB db,std::string const& name,std::optional<Subsystem_id> const& current);
+Input show_input(DB,std::string const& name,Subsystem_id const& current);
+Input show_input(DB,std::string const& name,std::optional<Subsystem_id> const& current);
 
 struct User:Wrap<User,std::string>{};
 std::string to_db_type(const User*);
@@ -360,5 +361,16 @@ struct Part_checkbox:Wrap<Part_checkbox,Part_id>{};
 Input show_input(DB,std::string const&,Part_checkbox const&);
 
 struct Weight:Wrap<Weight,Decimal>{};
+
+struct Valid:Wrap<Valid,bool>{
+	Valid& operator=(bool);
+};
+Input show_input(DB,std::string const&,Valid const&);
+
+struct DNI:Wrap<DNI,bool>{};
+Input show_input(DB,std::string const&,DNI const&);
+
+struct Hours:Wrap<Hours,Decimal>{};
+Input show_input(DB,std::string const&,Hours const&);
 
 #endif

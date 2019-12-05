@@ -13,6 +13,12 @@ std::string to_db_type(const Part_number*){
 	return "varchar(100)";
 }
 
+Input show_input(DB db,std::string const& name,Part_number const& current){
+	auto r=show_input(db,name,current.data);
+	r.notes+="If left blank, will be automatically generated.";
+	return r;
+}
+
 int rand(const int*){ return rand()%100; }
 
 int parse(const int*,string const& s){ return stoi(s); }
@@ -184,14 +190,17 @@ Input show_input(DB db,string const& name,Date const& current){
 string to_db_type(const Date*){ return "date"; }
 
 Input show_input(DB db,string const& name,URL const& value){
+	auto notes="Must start with something like \"http://\"";
 	if(prefix("http",value.data)){
 		return Input{
 			"<a href=\""+value.data+"\">"+name+"</a>"
 			"<input type=\"text\" name=\""+name+"\" value=\""+value.data+"\">",
-			""
+			notes
 		};
 	}
-	return show_input(db,name,value.data);
+	auto r=show_input(db,name,value.data);
+	r.notes+=notes;
+	return r;
 }
 
 #define E_PRINT(A) if(a==T::A) return o<<""#A;
@@ -541,4 +550,27 @@ NO_ADD_IMPL(Part_id)
 Input show_input(DB,std::string const& name,Part_checkbox const& a){
 	//return "<br><input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">";
 	return Input{name,"<input type=\"checkbox\" name=\""+name+":"+as_string(a)+"\">",""};
+}
+
+Valid& Valid::operator=(bool b){
+	data=b;
+	return *this;
+}
+
+Input show_input(DB db,std::string const& name,Valid const& a){
+	auto r=show_input(db,name,a.data);
+	r.notes+="In other words, this part should continue to exist.";
+	return r;
+}
+
+Input show_input(DB db,std::string const& name,DNI const& a){
+	auto r=show_input(db,name,a.data);
+	r.notes+="Do not install";
+	return r;
+}
+
+Input show_input(DB db,std::string const& name,Hours const& current){
+	auto r=show_input(db,name,current.data);
+	r.notes="Hours; "+r.notes;
+	return r;
 }
