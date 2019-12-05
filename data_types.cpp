@@ -208,7 +208,12 @@ Input show_input(DB db,string const& name,URL const& value){
 #define E_PARSE(A) if(s==""#A) return T::A;
 #define E_ESCAPED(A) values|=string{"'"#A "'"};
 
-#define ENUM_DEFS(NAME,OPTIONS)\
+#define ENUM_INPUT(NAME,OPTIONS)\
+	Input show_input(DB db,string const& name,T const& value){\
+		return drop_down(name,value,options(&value));\
+	}\
+
+#define ENUM_DEFS_MAIN(NAME,OPTIONS)\
 	std::ostream& operator<<(std::ostream& o,NAME const& a){\
 		OPTIONS(E_PRINT)\
 		assert(0);\
@@ -224,9 +229,6 @@ Input show_input(DB db,string const& name,URL const& value){
 	NAME parse(const NAME*,string const& s){\
 		OPTIONS(E_PARSE)\
 		throw std::invalid_argument{""#NAME+string()+": "+s};\
-	}\
-	Input show_input(DB db,string const& name,T const& value){\
-		return drop_down(name,value,options(&value));\
 	}\
 	string escape(T const& a){ return "'"+as_string(a)+"'"; }\
 	\
@@ -244,9 +246,36 @@ Input show_input(DB db,string const& name,URL const& value){
 		return a;\
 	}
 
+#define ENUM_DEFS(NAME,OPTIONS)\
+	ENUM_DEFS_MAIN(NAME,OPTIONS)\
+	ENUM_INPUT(NAME,OPTIONS)
+
 #define T Part_state
-ENUM_DEFS(Part_state,PART_STATES)
+ENUM_DEFS_MAIN(Part_state,PART_STATES)
 #undef T
+
+template<typename Value,typename Display>
+Input drop_down_submit(string const& name,Value const& current,vector<pair<Value,Display>> const& v){
+	stringstream ss;
+	ss<<"<select name=\""<<name<<"\" onchange=\"this.form.submit()\">";
+	for(auto elem:v){
+		ss<<"<option value=\""<<elem.first<<"\"";
+		if(elem.first==current) ss<<"selected=selected";
+		ss<<">"<<elem.second<<"</option><br>";
+	}
+	ss<<"</select>";
+	return Input{name,ss.str(),""};
+}
+
+Input show_input(DB db,std::string const& name,Part_state const& current){
+	return drop_down_submit(
+		name,current,
+		mapf(
+			[](auto x){ return make_pair(x,x); },
+			options(&current)
+		)
+	);
+}
 
 #define T Machine
 ENUM_DEFS(Machine,MACHINES)
