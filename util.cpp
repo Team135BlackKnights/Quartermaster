@@ -91,6 +91,7 @@ TAG(td)
 TAG(th)
 TAG(h2)
 TAG(h3)
+TAG(h4)
 TAG(tr)
 #undef TAG
 

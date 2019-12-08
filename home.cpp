@@ -203,6 +203,85 @@ string link(optional<string> const& url,string const& text){
 	return ss.str();
 }
 
+string highlight_color(Part_state state){
+	//These all pastels to avoid obscuring text
+	switch(state){
+		case Part_state::in_design:
+		case Part_state::need_prints:
+			return "#ffcccc";//"red";
+		case Part_state::build_list:
+		case Part_state::need_to_cam:
+			return "#ffcc44";//"orange";
+		case Part_state::buy_list:
+			return "#ffffaa";//"yellow";
+		case Part_state::cut_list:
+		case Part_state::find:
+		case Part_state::_3d_print:
+		case Part_state::fab:
+			return "white";
+		case Part_state::ordered:
+			return "#ccccff";//"blue";
+		case Part_state::fabbed:
+		case Part_state::arrived:
+		case Part_state::found:
+			return "#ccffcc";//"green";
+		default:
+			PRINT(state);
+			assert(0);
+	}
+}
+
+string highlight_color(Assembly_state state){
+	//These are all chosen from the same palette as for the part state highlighting.
+	switch(state){
+		case Assembly_state::in_design:
+			return "#ffcccc";
+		case Assembly_state::parts:
+			return "#ccccff";
+		case Assembly_state::assembly:
+			return "white";
+		case Assembly_state::done:
+			return "#ccffcc";
+		default:
+			PRINT(state);
+			assert(0);
+	}
+}
+
+template<typename T>
+string highlight_color(std::optional<T> const& a){
+	if(a) return highlight_color(*a);
+	return "#777777";//grey
+}
+
+template<typename T>
+string key(string name,T const* a){
+	stringstream ss;
+	ss<<h4(name);
+	ss<<"<table>";
+	for(auto state:options(a)){
+		ss<<"<tr>";
+		ss<<"<td bgcolor=\""+highlight_color(state)+"\">"<<state<<"</td>";
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+string td_top(string body){
+	return "<td valign=top>"+body+"</td>";
+}
+
+string key(){
+	stringstream ss;
+	ss<<h3("Legend");
+	ss<<"<table border><tr>";
+	ss<<td_top(key("Assembly states",(Assembly_state*)0));
+	ss<<td_top(key("Part states",(Part_state*)0));
+	ss<<"</tr></table>";
+	return ss.str();
+}
+
 string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 	if(parents.count(id)){
 		stringstream ss;
@@ -212,20 +291,21 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 	parents|=id;
 	stringstream ss;
 	ss<<"<table border>";
-	auto data=qm<Subsystem_id,optional<string>,optional<string>>(
+	auto data=qm<Subsystem_id,optional<string>,optional<string>,Assembly_state>(
 		db,
-		"SELECT subsystem_id,name,part_number "
+		"SELECT subsystem_id,name,part_number,state "
 		"FROM subsystem_info "
 		"WHERE "
 			"valid AND "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
 			"parent="+escape(id)
 	);
-	for(auto [subsystem_id,subsystem_name,part_number]:data){
-		ss<<"<tr>";
+	for(auto [subsystem_id,subsystem_name,part_number,state]:data){
+		ss<<"<tr bgcolor=\""+highlight_color(state)+"\">";
 		Subsystem_editor e;
 		e.id=subsystem_id;
-		ss<<td(link(e,part_number)+" "+as_string(subsystem_name))<<td(sub_table(db,subsystem_id,parents));
+		ss<<td(link(e,part_number)+" "+as_string(subsystem_name));
+		ss<<td(sub_table(db,subsystem_id,parents));
 		ss<<"</tr>";
 	}
 	auto data2=qm<Part_id,optional<string>,optional<string>,unsigned,optional<Part_state>>(
@@ -238,7 +318,7 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 			"subsystem="+escape(id)
 	);
 	for(auto [part_id,part_name,pn,qty,state]:data2){
-		ss<<"<tr>";
+		ss<<"<tr bgcolor=\""+highlight_color(state)+"\">";
 		Part_editor e;
 		e.id=part_id;
 		ss<<td(link(e,pn)+" "+as_string(part_name))<<td(link(state))<<td(as_string(qty));
@@ -250,25 +330,26 @@ string sub_table(DB db,Subsystem_id id,set<Subsystem_id> parents){
 
 string part_tree(DB db){
 	stringstream ss;
-	ss<<h2("Part tree");
+	ss<<h2("Current status");
 	ss<<"<table border>";
-	auto subs=qm<Subsystem_id,optional<string>>(
+	auto subs=qm<Subsystem_id,optional<string>,Assembly_state>(
 		db,
-		"SELECT subsystem_id,name "
+		"SELECT subsystem_id,name,state "
 		"FROM subsystem_info "
 		"WHERE "
 			"valid AND "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) AND "
 			"parent IS NULL"
 	);
-	for(auto [subsystem_id,subsystem_name]:subs){
-		ss<<"<tr>";
+	for(auto [subsystem_id,subsystem_name,state]:subs){
+		ss<<"<tr bgcolor=\""+highlight_color(state)+"\">";
 		Subsystem_editor e;
 		e.id=subsystem_id;
 		ss<<td(link(e,subsystem_name))<<td(sub_table(db,subsystem_id,{}));
 		ss<<"</tr>";
 	}
 	ss<<"</table>";
+	ss<<key();
 	return ss.str();
 }
 
@@ -540,7 +621,7 @@ void inner(ostream& o,Home const& a,DB db){
 	make_page(
 		o,
 		"Home",
-		parts_by_state(db,a)+
+		//parts_by_state(db,a)+
 		part_tree(db)+
 		indent_part_tree(db)//+bom(db,std::nullopt)
 	);

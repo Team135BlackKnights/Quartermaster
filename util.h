@@ -250,6 +250,7 @@ X(td)
 X(th)
 X(h2)
 X(h3)
+X(h4)
 X(tr)
 #undef X
 
