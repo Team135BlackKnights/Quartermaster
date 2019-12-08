@@ -198,6 +198,8 @@ vector<T> parse(const vector<T>*,vector<string> v){
 			r.B=A{};\
 		}else if(strstr(""#A,"vector")){\
 			r.B=A{};\
+		}else if(""#A==string("Valid")){\
+			r.B=A{};\
 		}else{\
 			throw string()+"Failed to find:"#B+as_string(p);\
 		}\

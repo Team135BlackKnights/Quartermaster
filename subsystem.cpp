@@ -132,7 +132,7 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		as_string(current.name)+" Subsystem",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
-		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+as_string(a.id)+"\">"+
+		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+escape(a.id)+"\">"+
 		input_table([=](){
 			vector<Input> r;
 			#define X(A,B) r|=show_input(db,""#B,current.B);

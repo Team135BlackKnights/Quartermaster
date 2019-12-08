@@ -124,7 +124,7 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 		as_string(current.date)+" (meeting)",
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
-		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+as_string(a.id)+"\">"
+		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+escape(a.id)+"\">"
 		+input_table([=](){
 			vector<Input> r;
 			#define X(A,B) r|=show_input(db,""#B,current.B);
