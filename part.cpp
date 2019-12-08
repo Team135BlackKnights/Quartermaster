@@ -131,6 +131,34 @@ bool should_show(Part_state state,string name){
 	return 1;
 }
 
+string fields_by_state(){
+	stringstream o;
+	o<<h2("Part fields by state");
+	o<<"<table border>";
+	o<<"<tr>";
+	o<<td("");
+	for(auto state:options((Part_state*)0)){
+		o<<th(as_string(state));
+	}
+	o<<"</tr>";
+
+	vector<string> items;
+	#define X(A,B) items|=""#B;
+	PART_DATA(X)
+	#undef X
+	
+	for(auto item:items){
+		o<<"<tr>";
+		o<<th(item);
+		for(auto state:options((Part_state*)0)){
+			o<<td(as_string(should_show(state,item)));
+		}
+		o<<"</tr>";
+	}
+	o<<"</table>";
+	return o.str();
+}
+
 string after_done(){
 	auto g1=getenv("HTTP_REFERER");
 	auto p=parse_referer(g1);

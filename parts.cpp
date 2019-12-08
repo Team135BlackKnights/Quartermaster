@@ -523,6 +523,7 @@ void inner(ostream& o,Extra const&,DB db){
 	show_expected_tables(ss);
 
 	ss<<h2("Data consistency")<<check_part_numbers(db);
+	ss<<fields_by_state();
 
 	make_page(
 		o,
