@@ -347,6 +347,7 @@ void inner(std::ostream& o,Error const& a,DB db){
 string show_table_user(DB db,Request const& page,Table_name const& name,User const& edit_user){
 	auto columns=firsts(query(db,"DESCRIBE "+name));
 	stringstream ss;
+	ss<<"<a name=\""<<name<<"\"></a>";
 	ss<<h2(name);
 	ss<<"<table border>";
 	ss<<"<tr>";
@@ -363,12 +364,18 @@ string show_table_user(DB db,Request const& page,Table_name const& name,User con
 	return ss.str();
 }
 
-
 void inner(std::ostream& o,By_user const& a,DB db){
+	vector<string> tables{"subsystem_info","part_info","meeting_info"};
+	string links;
+	links+=h2("Contents");
+	for(auto table:tables){
+		links+="<a href=\"#"+table+"\">"+table+"</a><br>";
+	}
 	make_page(
 		o,
 		"By user \""+as_string(a.user)+"\"",
-		show_table_user(db,a,"subsystem_info",a.user)
+		links
+		+show_table_user(db,a,"subsystem_info",a.user)
 		+show_table_user(db,a,"part_info",a.user)
 		+show_table_user(db,a,"meeting_info",a.user)
 	);
