@@ -99,6 +99,8 @@ string join(string delim,vector<T> v){
 	return ss.str();
 }
 
+#define MAP(F,A) mapf([&](auto x){ return (F)(x); },(A))
+
 void inner(std::ostream& o,Order_edit const& a,DB db){
 	if(as_string(a.arrival_date)==""){
 		make_page(
@@ -137,7 +139,7 @@ void inner(std::ostream& o,Order_edit const& a,DB db){
 			ss<<"  valid AND";
 			ss<<"  id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)";
 			ss<<"  AND part_id IN (";
-			ss<<join(",",a.part_checkbox);
+			ss<<join(",",MAP(escape,a.part_checkbox));
 			ss<<"  )";
 			return ss.str();
 		}()

@@ -94,12 +94,17 @@ std::string escape(Wrap<Sub,Data> const& a){
 using Id=int;
 
 struct Part_id:Wrap<Part_id,Id>{};
+std::ostream& operator<<(std::ostream&,Part_id const&);
+
 struct Meeting_id:Wrap<Meeting_id,Id>{};
+std::ostream& operator<<(std::ostream&,Meeting_id const&);
+
 struct Part_number:Wrap<Part_number,std::string>{};
 std::string to_db_type(const Part_number*);
 Input show_input(DB,std::string const&,Part_number const&);
 
 struct Subsystem_id:Wrap<Subsystem_id,Id>{};
+std::ostream& operator<<(std::ostream&,Subsystem_id const&);
 Input show_input(DB,std::string const& name,Subsystem_id const& current);
 Input show_input(DB,std::string const& name,std::optional<Subsystem_id> const& current);
 

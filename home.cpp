@@ -62,7 +62,7 @@ string subsystem_name(DB db,Subsystem_id id){
 		"SELECT name "
 		"FROM subsystem_info "
 		"WHERE (id) IN "
-			"(SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+as_string(id)+") "
+			"(SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+escape(id)+") "
 			"AND valid"
 	);
 	if(q.size()==0) return "No subsystem name found";
@@ -92,7 +92,7 @@ string part_name(DB db,Part_id id){
 		"SELECT name "
 		"FROM part_info "
 		"WHERE (id) IN "
-			"(SELECT MAX(id) FROM part_info WHERE part_id="+as_string(id)+") "
+			"(SELECT MAX(id) FROM part_info WHERE part_id="+escape(id)+") "
 			"AND valid"
 	);
 	if(q.empty()) return "No part name found";
@@ -107,7 +107,7 @@ tuple<string,string,URL> part_info(DB db,Part_id id){
 		"SELECT part_number,name,part_link "
 		"FROM part_info "
 		"WHERE (id) IN "
-			"(SELECT MAX(id) FROM part_info WHERE part_id="+as_string(id)+") "
+			"(SELECT MAX(id) FROM part_info WHERE part_id="+escape(id)+") "
 			"AND valid"
 	);
 	if(q.empty()){

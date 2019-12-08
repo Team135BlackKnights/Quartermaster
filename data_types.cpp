@@ -603,3 +603,15 @@ Input show_input(DB db,std::string const& name,Hours const& current){
 	r.notes="Hours; "+r.notes;
 	return r;
 }
+
+std::ostream& operator<<(std::ostream& o,Part_id const& a){
+	return o<<"Part_id("<<a.data<<")";
+}
+
+std::ostream& operator<<(std::ostream& o,Meeting_id const& a){
+	return o<<"Meeting_id("<<a.data<<")";
+}
+
+std::ostream& operator<<(std::ostream& o,Subsystem_id const& a){
+	return o<<"Subsystem_id("<<a.data<<")";
+}

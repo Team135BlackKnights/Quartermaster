@@ -141,7 +141,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 	auto q=query(
 		db,
 		"SELECT " +join(",",data_cols)+ " FROM "+area_lower+"_info "
-		"WHERE "+area_lower+"_id="+as_string(a.id)+
+		"WHERE "+area_lower+"_id="+escape(a.id)+
 		" ORDER BY edit_date DESC LIMIT 1"
 	);
 	Part_data current{};
@@ -189,7 +189,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		+make_table(
 			a,
 			all_cols,
-			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+as_string(a.id))
+			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+escape(a.id))
 		)
 	);
 }

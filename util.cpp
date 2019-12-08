@@ -99,7 +99,8 @@ using DB=MYSQL*;
 void run_cmd(DB db,std::string const& cmd){
 	auto q=mysql_query(db,cmd.c_str());
 	if(q){
-		std::cout<<"Fail:"<<mysql_error(db)<<"\n";
+		std::cout<<"Mysql fail:"<<mysql_error(db)<<"\n";
+		std::cout<<"Query was:"<<cmd<<"\n";
 		mysql_close(db);
 		exit(1);
 	}

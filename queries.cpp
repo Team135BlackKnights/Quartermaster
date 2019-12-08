@@ -212,9 +212,52 @@ vector<T> parse(const vector<T>*,vector<string> v){
 	}\
 }
 
+string get_esc(string s){
+	return s;
+}
+
+string get_esc(Subsystem_id a){
+	return as_string(a.data);
+}
+
+string get_esc(Valid a){
+	return as_string(a.data);
+}
+
+string get_esc(Part_id a){
+	return as_string(a.data);
+}
+
+string get_esc(Meeting_id a){
+	return as_string(a.data);
+}
+
+#define ESC_STR(X) string get_esc(X a){\
+	return as_string(a);\
+}
+ESC_STR(Subsystem_prefix)
+ESC_STR(Part_number)
+ESC_STR(Hours)
+ESC_STR(Assembly_state)
+ESC_STR(int)
+ESC_STR(Part_state)
+ESC_STR(Date)
+ESC_STR(User)
+ESC_STR(Machine)
+ESC_STR(Export_item)
+ESC_STR(Supplier)
+ESC_STR(DNI)
+ESC_STR(Material)
+ESC_STR(Bend_type)
+
+template<typename T>
+string get_esc(T t){
+	return as_string(t);
+}
+
 template<typename T>
 void to_q(map<string,vector<string>> &r,string name,T t){
-	r[name]|=as_string(t);
+	r[name]|=get_esc(t);
 }
 
 template<typename T>
@@ -272,8 +315,8 @@ vector<T> rand(vector<T> const*){
 		map<string,vector<string>> r;\
 		r["p"]|=STR(T);\
 		ITEMS(TO_Q)\
-		r["sort_by"]|=as_string(a.sort_by);\
-		r["sort_order"]|=as_string(a.sort_order);\
+		r["sort_by"]|=get_esc(a.sort_by);\
+		r["sort_order"]|=get_esc(a.sort_order);\
 		return to_query(r);\
 	}\
 	optional<T> parse_query(const T*,P const& p1){\

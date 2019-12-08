@@ -440,7 +440,7 @@ void inner(ostream& o,State const& a,DB db){
 				"WHERE "
 					"valid "
 					"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
-					"AND part_state='"+as_string(a.state)+"'"
+					"AND part_state="+escape(a.state)+" "
 				"ORDER BY subsystem,part_id "
 			)
 		)
@@ -801,7 +801,7 @@ int main1(int argc,char **argv,char **envp){
 		return 0;
 	}
 	auto s=check_part_numbers(db);
-	PRINT(s);
+	//PRINT(s);
 	//nyi
 	for(auto _:range(100)){
 		(void)_;

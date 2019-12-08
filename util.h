@@ -220,7 +220,7 @@ void diff(std::variant<Ts...> const& a,std::variant<Ts...> const& b){
 		a
 	);
 	if(found) return;
-	std::cout<<"variant types differ";
+	std::cout<<"variant types differ:\n";
 	PRINT(a);
 	PRINT(b);
 }

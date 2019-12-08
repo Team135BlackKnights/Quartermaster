@@ -67,7 +67,7 @@ string parts_of_subsystem(DB db,Request const& page,Subsystem_id id){
 		"FROM part_info "
 		"WHERE (id) IN "
 			"(SELECT MAX(id) FROM part_info GROUP BY part_id) "
-			"AND valid AND subsystem="+as_string(id)
+			"AND valid AND subsystem="+escape(id)
 	);
 	return h2("Parts directly in subsystem")+as_table(db,page,vector<Label>{"Part","State","Qty"},q);
 }
@@ -127,7 +127,6 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 	#undef X
 
 	auto current=subsystem_data(db,a.id);
-
 	make_page(
 		o,
 		as_string(current.name)+" Subsystem",
@@ -171,7 +170,7 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 			query(
 				db,
 				"SELECT "+join(",",info_col_names)+
-				" FROM subsystem_info WHERE subsystem_id="+as_string(a.id)
+				" FROM subsystem_info WHERE subsystem_id="+escape(a.id)
 			)
 		)
 	);

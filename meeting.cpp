@@ -1,8 +1,15 @@
 #include "meeting.h"
+#include<functional>
 #include "subsystems.h"
 #include "subsystem.h"
 
 using namespace std;
+
+template<typename T>
+vector<T> sorted(vector<T> a){
+	sort(begin(a),end(a));
+	return a;
+}
 
 template<typename T>
 std::vector<T>& operator|=(std::vector<T> &a,std::optional<T> b){
@@ -97,7 +104,7 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 	auto q=query(
 		db,
 		"SELECT " +join(",",data_cols)+ " FROM "+area_lower+"_info "
-		"WHERE "+area_lower+"_id="+as_string(a.id)+
+		"WHERE "+area_lower+"_id="+escape(a.id)+
 		" ORDER BY edit_date DESC LIMIT 1"
 	);
 	Meeting_data current{};
@@ -131,7 +138,7 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 		+make_table(
 			a,
 			all_cols,
-			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+as_string(a.id))
+			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+escape(a.id))
 		)
 	);
 }
@@ -261,7 +268,8 @@ Plan blank_plan(DB db){
 	X(Decimal,length)\
 	X(set<Item>,dependencies)\
 	X(std::optional<Date>,wait)\
-	
+	X(int,priority)\
+
 struct Build_item{
 	BUILD_ITEMS(INST)
 };
@@ -306,7 +314,8 @@ vector<Build_item> to_build(DB db){
 			get<1>(row),
 			get<2>(row),
 			{},
-			std::nullopt
+			std::nullopt,
+			0
 		};
 	}
 
@@ -328,9 +337,9 @@ vector<Build_item> to_build(DB db){
 		"GROUP BY subsystem"
 	));
 
-	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>>(
+	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,int>(
 		db,
-		"SELECT subsystem_id,time,parent "
+		"SELECT subsystem_id,time,parent,priority "
 		"FROM subsystem_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
@@ -338,8 +347,9 @@ vector<Build_item> to_build(DB db){
 			"AND (state='parts' OR state='assembly')"
 	);
 
-	for(auto [id,_,parent]:q1){
-		(void)_;
+	for(auto [id,_1,parent,_3]:q1){
+		(void)_1;
+		(void)_3;
 		if(parent){
 			dependencies[*parent].insert(id);
 		}
@@ -358,9 +368,36 @@ vector<Build_item> to_build(DB db){
 					return std::nullopt;
 				}
 				return f->second;
-			}()
+			}(),
+			get<3>(row)
 		};
 	}
+
+	//print_lines(sorted(r));
+	auto find_elem=[&](Item a)->Build_item&{
+		for(auto& x:r){
+			if(x.item==a) return x;
+		}
+		PRINT(a);
+		assert(0);
+	};
+
+	std::function<void(Item,int)> inherit_priority;
+	inherit_priority=[&](Item a,int priority){
+		auto& elem=find_elem(a);
+		elem.priority=max(elem.priority,priority);
+		if(holds_alternative<Subsystem_id>(a)){
+			for(auto item:dependencies[get<Subsystem_id>(a)]){
+				inherit_priority(item,elem.priority);
+			}
+		}
+	};
+
+	/*for(auto [parent,_]:dependencies){
+		(void)_;
+		//inherit_priority(parent,0);
+	}*/
+
 	return r;
 }
 
