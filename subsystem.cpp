@@ -184,13 +184,7 @@ void inner(ostream& o,Subsystem_edit const& a,DB db){
 	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.parent,a.B); else v|=pair<string,string>(""#B,escape(a.B));
 	SUBSYSTEM_EDIT_DATA_ITEMS(X)
 	#undef X
-	auto q="INSERT INTO subsystem_info ("
-		+join(",",firsts(v))
-		+") VALUES ("
-		+join(",",seconds(v))
-		+")";
-	//PRINT(q);
-	run_cmd(db,q);
+	insert(db,"subsystem_info",v);
 	make_page(
 		o,
 		"Subsystem edit",
@@ -223,13 +217,7 @@ void insert_subsystem_data(DB db,Subsystem_id id,Subsystem_data data){
 	#define X(A,B) items|=pair<string,string>(""#B,escape(data.B));
 	SUBSYSTEM_DATA(X)
 	#undef X
-	stringstream ss;
-	ss<<"INSERT INTO subsystem_info (";
-	ss<<join(",",firsts(items));
-	ss<<") VALUES (";
-	ss<<join(",",seconds(items));
-	ss<<")";
-	run_cmd(db,ss.str());
+	insert(db,"subsystem_info",items);
 }
 
 Subsystem_id make_duplicate_local(DB db,optional<Subsystem_id> new_parent,Subsystem_id current){

@@ -702,6 +702,16 @@ void make_plan(DB db){
 	cout<<x.second<<"\n";
 }
 
+void insert(DB db,Table_name const& table,vector<pair<string,string>> const& data){
+	//The data fields must already be escaped.
+	auto q="INSERT INTO "+table+" ("
+		+join(",",firsts(data))
+		+") VALUES ("
+		+join(",",seconds(data))
+		+")";
+	run_cmd(db,q);
+}
+
 void inner(ostream& o,Meeting_edit const& a,DB db){
 	string area_lower="meeting";
 	string area_cap="Meeting";
@@ -712,12 +722,8 @@ void inner(ostream& o,Meeting_edit const& a,DB db){
 	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
 	MEETING_EDIT_DATA_ITEMS(X)
 	#undef X
-	auto q="INSERT INTO "+area_lower+"_info ("
-		+join(",",firsts(v))
-		+") VALUES ("
-		+join(",",seconds(v))
-		+")";
-	run_cmd(db,q);
+	insert(db,area_lower+"_info",v);
+
 	make_page(
 		o,
 		area_cap+" edit",
