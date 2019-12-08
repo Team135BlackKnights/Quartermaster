@@ -268,17 +268,17 @@ DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
-	X(Subsystem_new)\
 	X(Parts)\
-	X(Part_new)\
 	X(Calendar)\
-	X(Meeting_new)\
 	X(Machines)\
 	X(Orders)\
 	X(Extra)
 	
 #define PAGES(X)\
 	BASIC_PAGES(X)\
+	X(Subsystem_new)\
+	X(Part_new)\
+	X(Meeting_new)\
 	X(Subsystem_editor)\
 	X(Subsystem_edit)\
 	X(Part_editor)\

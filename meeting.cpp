@@ -206,7 +206,8 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 	make_page(
 		o,
 		"Calendar",
-		current_calendar(db,a)
+		link(Meeting_new{},"New meeting")
+		+current_calendar(db,a)
 		+to_do(db,a)
 		+show_plan(db,a)
 		+history_meeting(db,a)//+show_table(db,a,"meeting_info","History")
@@ -494,7 +495,9 @@ pair<Plan,string> make_plan_inner(DB db){
 		stringstream ss;
 		ss<<"Planned so far:\n";
 		//print_lines(plan);
-		for(auto elem:plan) ss<<elem<<"\n";
+		for(auto elem:plan){
+			ss<<elem<<"<br>\n";
+		}
 		ss<<"Could not schedule item.  Out of meetings.\n";
 		ss<<"Attempting to schedule:"<<x<<"\n";
 		return ss.str();

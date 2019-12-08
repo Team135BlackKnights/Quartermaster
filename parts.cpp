@@ -331,7 +331,8 @@ void inner(ostream& o,Parts const& a,DB db){
 	make_page(
 		o,
 		"Parts",
-		show_current_parts(db,a)+
+		link(Part_new{},"New part")
+		+show_current_parts(db,a)+
 		history_part(db,a)//show_table(db,a,"part_info","History")
 	);
 }
@@ -397,7 +398,8 @@ string by_machine(DB db,Request const& page,Machine const& a){
 			"AND machine='"+as_string(a)+"' "
 		"ORDER BY part_state"
 	);
-	return h2(as_string(a))
+	return "<a name=\""+as_string(a)+"\"></a>"
+		+h2(as_string(a))
 		+as_table(db,page,vector<Label>{"Status","Subsystem","Part","Qty","Time"},qq)
 		+"Total time:"+as_string(sum(get_col<4>(qq)));
 }
@@ -414,7 +416,14 @@ void inner(std::ostream& o,Machines const& a,DB db){
 	make_page(
 		o,
 		"Machines",
-		join("",mapf([=](auto x){ return by_machine(db,a,x); },machines()))
+		h2("Contents")+join(
+			"<br>",
+			mapf(
+				[=](auto x){ return "<a href=\"#"+as_string(x)+"\">"+as_string(x)+"</a>"; },
+				machines()
+			)
+		)
+		+join("",mapf([=](auto x){ return by_machine(db,a,x); },machines()))
 	);
 }
 

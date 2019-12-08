@@ -166,7 +166,8 @@ void inner(ostream& o,Subsystems const& a,DB db){
 	return make_page(
 		o,
 		"Subsystems",
-		show_current_subsystems(db,a)
+		link(Subsystem_new{},"New subsystem")
+		+show_current_subsystems(db,a)
 		//+subsystem_state_count(db,a)
 		//+subsystem_machine_count(db,a)
 		+link(BOM{},"BOM")
