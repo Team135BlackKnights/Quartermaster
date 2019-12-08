@@ -191,12 +191,15 @@ void inner(ostream& o,Subsystem_edit const& a,DB db){
 		+")";
 	//PRINT(q);
 	run_cmd(db,q);
-	Subsystem_editor page;
-	page.id=Subsystem_id{a.subsystem_id};
 	make_page(
 		o,
 		"Subsystem edit",
-		redirect_to(page)
+		redirect_to([=]()->URL{
+			if(a.after) return *a.after;
+			Subsystem_editor page;
+			page.id=Subsystem_id{a.subsystem_id};
+			return URL{to_query(page)};
+		}())
 	);
 }
 
