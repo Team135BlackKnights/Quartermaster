@@ -193,7 +193,7 @@ Input show_input(DB db,string const& name,URL const& value){
 	auto notes="Must start with something like \"http://\"";
 	if(prefix("http",value.data)){
 		return Input{
-			"<a href=\""+value.data+"\">"+name+"</a>"
+			"<a href=\""+value.data+"\">"+name+"</a>",
 			"<input type=\"text\" name=\""+name+"\" value=\""+value.data+"\">",
 			notes
 		};
