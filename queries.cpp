@@ -317,8 +317,8 @@ vector<T> rand(vector<T> const*){
 		map<string,vector<string>> r;\
 		r["p"]|=STR(T);\
 		ITEMS(TO_Q)\
-		r["sort_by"]|=get_esc(a.sort_by);\
-		r["sort_order"]|=get_esc(a.sort_order);\
+		if(a.sort_by) r["sort_by"]|=get_esc(a.sort_by);\
+		if(a.sort_order) r["sort_order"]|=get_esc(a.sort_order);\
 		return to_query(r);\
 	}\
 	optional<T> parse_query(const T*,P const& p1){\
