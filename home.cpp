@@ -257,7 +257,7 @@ string highlight_color(std::optional<T> const& a){
 template<typename T>
 string key(string name,T const* a){
 	stringstream ss;
-	ss<<h4(name);
+	//ss<<h4(name);
 	ss<<"<table>";
 	for(auto state:options(a)){
 		ss<<"<tr>";
@@ -275,10 +275,19 @@ string td_top(string body){
 string key(){
 	stringstream ss;
 	ss<<h3("Legend");
-	ss<<"<table border><tr>";
-	ss<<td_top(key("Assembly states",(Assembly_state*)0));
-	ss<<td_top(key("Part states",(Part_state*)0));
-	ss<<"</tr></table>";
+	ss<<"<table border>";
+	ss<<tr(td("")+th("Assembly")+th("Part"));
+	ss<<"<tr>";
+	ss<<th("State colors");
+	ss<<td(key("Assembly states",(Assembly_state*)0));
+	ss<<td(key("Part states",(Part_state*)0));
+	ss<<"</tr>";
+	ss<<"<tr>";
+	ss<<th("Intended workflow");
+	ss<<td("<img src=\"/asm.png\" rel=\"Assembly workflow\">");
+	ss<<td("<img src=\"/part.png\" rel=\"Part workflow\">");
+	ss<<"</tr>";
+	ss<<"</table>";
 	return ss.str();
 }
 
