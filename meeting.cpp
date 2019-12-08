@@ -297,6 +297,65 @@ std::ostream& operator<<(std::ostream& o,Build_item const& a){
 	return o<<")";
 }
 
+std::string table(DB db,Request const& page,vector<Build_item> const& a){
+	vector<Label> labels;
+	#define X(A,B) labels|=Label{""#B};
+	BUILD_ITEMS(X)
+	#undef X
+	
+	using T=tuple<
+		#define X(A,B) A,
+		BUILD_ITEMS(X)
+		#undef X
+		Dummy
+	>;
+	vector<T> v;
+	for(auto elem:a){
+		T t{
+			#define X(A,B) elem.B,
+			BUILD_ITEMS(X)
+			#undef X
+			{}
+		};
+		v|=t;
+	}
+	return as_table<
+		#define X(A,B)
+		BUILD_ITEMS(X)
+		#undef X
+	>(db,page,labels,v);
+}
+
+std::string table(DB db,Request const& page,vector<pair<Build_item,string>> const& a){
+	vector<Label> labels;
+	#define X(A,B) labels|=Label{""#B};
+	BUILD_ITEMS(X)
+	#undef X
+	labels|=Label{"Reason"};
+
+	using T=tuple<
+		#define X(A,B) A,
+		BUILD_ITEMS(X)
+		#undef X
+		string
+	>;
+	vector<T> v;
+	for(auto elem:a){
+		T t{
+			#define X(A,B) elem.first.B,
+			BUILD_ITEMS(X)
+			#undef X
+			elem.second
+		};
+		v|=t;
+	}
+	return as_table<
+		#define X(A,B)
+		BUILD_ITEMS(X)
+		#undef X
+	>(db,page,labels,v);
+}
+
 vector<Build_item> to_build(DB db){
 	auto q=qm<Part_id,Machine,Decimal,Subsystem_id>(
 		db,
@@ -450,7 +509,28 @@ vector<Build_item> topological_sort(vector<Build_item> a){
 	return r;
 }
 
-pair<Plan,string> make_plan_inner(DB db){
+template<typename T>
+bool all(vector<T> const& a){
+	for(auto elem:a){
+		if(!elem){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+template<typename T>
+vector<T> non_null(vector<optional<T>> v){
+	vector<T> r;
+	for(auto elem:v){
+		if(elem){
+			r|=*elem;
+		}
+	}
+	return r;
+}
+
+pair<Plan,vector<pair<Build_item,string>>> make_plan_inner(DB db){
 	//this is going to be a graph problem...
 	//if you cared that much about it
 
@@ -463,16 +543,21 @@ pair<Plan,string> make_plan_inner(DB db){
 	map<Item,Date> finish;
 
 	auto schedule_part=[&](auto &x)->std::optional<std::string>{
-		vector<Date> dates;
-		dates|=mapf(
-			[=](auto item)->Date{
+		vector<optional<Date>> dates1;
+		dates1|=mapf(
+			[=](auto item)->optional<Date>{
 				auto f=finish.find(item);
-				assert(f!=finish.end()); //otherwise, dependency not met.
+				//assert(f!=finish.end()); //otherwise, dependency not met.
+				if(f==finish.end()) return std::nullopt;
 				return f->second;
 			},
 			x.dependencies
 		);
-		dates|=x.wait;
+		if(!all(dates1)){
+			return "Dependency not met";
+		}
+		dates1|=x.wait;
+		auto dates=non_null(dates1);
 		auto dep_date=max(dates);
 
 		for(auto &meeting:plan){
@@ -492,7 +577,7 @@ pair<Plan,string> make_plan_inner(DB db){
 				}
 			}
 		}
-		stringstream ss;
+		/*stringstream ss;
 		ss<<"Planned so far:\n";
 		//print_lines(plan);
 		for(auto elem:plan){
@@ -500,18 +585,21 @@ pair<Plan,string> make_plan_inner(DB db){
 		}
 		ss<<"Could not schedule item.  Out of meetings.\n";
 		ss<<"Attempting to schedule:"<<x<<"\n";
-		return ss.str();
+		return ss.str();*/
+		return "Out of meetings";
 	};
 
+	vector<pair<Build_item,string>> failures;
 	for(auto x:topological_sort(to_schedule)){
 		while(x.length>0){
 			auto s=schedule_part(x);
 			if(s){
-				return make_pair(plan,*s);
+				failures|=make_pair(x,*s);
+				x.length=0;
 			}
 		}
 	}
-	return make_pair(plan,string{});
+	return make_pair(plan,failures);
 }
 
 template<typename T>
@@ -580,7 +668,11 @@ std::string show_plan(DB db,Request const& page){
 		o<<"</tr>";
 	}
 	o<<"</table>";
-	o<<x.second;
+
+	if(x.second.size()){
+		o<<h3("Could not be scheduled");
+		o<<table(db,page,x.second);
+	}
 	return o.str();
 }
 

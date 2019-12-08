@@ -67,6 +67,19 @@ std::string pretty_td(DB,T const& t){
 	return td(as_string(t));
 }
 
+template<typename T>
+std::string pretty_td(DB db,std::set<T> const& t){
+	std::stringstream ss;
+	ss<<"<table border>";
+	for(auto elem:t){
+		ss<<"<tr>";
+		ss<<pretty_td(db,elem);
+		ss<<"</tr>";
+	}
+	ss<<"</table>";
+	return td(ss.str());
+}
+
 template<typename A,typename B>
 std::string pretty_td(DB db,std::variant<A,B> const& a){
 	if(std::holds_alternative<A>(a)){
