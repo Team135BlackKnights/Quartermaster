@@ -27,7 +27,7 @@ struct Subsystem_data{
 	X(Subsystem_id,subsystem_id)\
 	X(User,edit_user)\
 	X(Datetime,edit_date)\
-	SUBSYSTEM_DATA(X)
+	SUBSYSTEM_DATA(X)\
 
 #define PART_ROW(X)\
 	X(Part_id,id)\
@@ -62,7 +62,7 @@ struct Subsystem_data{
 	
 #define PART_DATA(X)\
 	X(Valid,valid)\
-	PART_DATA_INNER(X)
+	PART_DATA_INNER(X)\
 
 struct Part_data{
 	PART_DATA(INST)
@@ -75,7 +75,7 @@ std::ostream& operator<<(std::ostream&,Part_data const&);
 	X(Part_id,part_id)\
 	X(User,edit_user)\
 	X(Datetime,edit_date)\
-	PART_DATA(X)
+	PART_DATA(X)\
 
 #define MEETING_ROW(X)\
 	X(Meeting_id,id)
@@ -172,9 +172,13 @@ DECL_OPTION(Subsystem_new,SUBSYSTEM_NEW_ITEMS)
 
 DECL_OPTION(Subsystem_editor,SUBSYSTEM_EDITOR_ITEMS)
 
-#define SUBSYSTEM_EDIT_ITEMS(X)\
+#define SUBSYSTEM_EDIT_DATA_ITEMS(X)\
 	X(Subsystem_id,subsystem_id)\
-	SUBSYSTEM_DATA(X)
+	SUBSYSTEM_DATA(X)\
+
+#define SUBSYSTEM_EDIT_ITEMS(X)\
+	SUBSYSTEM_EDIT_DATA_ITEMS(X)\
+	X(std::optional<URL>,after)\
 
 DECL_OPTION(Subsystem_edit,SUBSYSTEM_EDIT_ITEMS)
 
@@ -189,10 +193,14 @@ DECL_OPTION(Part_new,PART_NEW_ITEMS)
 	X(Part_id,id)\
 
 DECL_OPTION(Part_editor,PART_EDITOR_ITEMS)
-	
-#define PART_EDIT_ITEMS(X)\
+
+#define PART_EDIT_DATA_ITEMS(X)\
 	X(Part_id,part_id)\
 	PART_DATA(X)\
+
+#define PART_EDIT_ITEMS(X)\
+	PART_EDIT_DATA_ITEMS(X)\
+	X(std::optional<URL>,after)\
 
 DECL_OPTION(Part_edit,PART_EDIT_ITEMS)
 
@@ -206,9 +214,14 @@ DECL_OPTION(Meeting_new,MEETING_NEW_ITEMS)
 	X(Meeting_id,id)
 DECL_OPTION(Meeting_editor,MEETING_EDITOR_ITEMS)
 
-#define MEETING_EDIT_ITEMS(X)\
+#define MEETING_EDIT_DATA_ITEMS(X)\
 	X(Meeting_id,meeting_id)\
-	MEETING_DATA(X)
+	MEETING_DATA(X)\
+	
+#define MEETING_EDIT_ITEMS(X)\
+	MEETING_EDIT_DATA_ITEMS(X)\
+	X(std::optional<URL>,after)\
+
 DECL_OPTION(Meeting_edit,MEETING_EDIT_ITEMS)
 
 #define ERROR_ITEMS(X)\

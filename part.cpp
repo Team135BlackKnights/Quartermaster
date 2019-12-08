@@ -3,6 +3,7 @@
 #include "home.h"
 #include "subsystems.h"
 #include "meeting.h"
+#include "parts.h"
 
 using namespace std;
 
@@ -130,6 +131,13 @@ bool should_show(Part_state state,string name){
 	return 1;
 }
 
+string after_done(){
+	auto g1=getenv("HTTP_REFERER");
+	auto p=parse_referer(g1);
+	if(!p) return "";
+	return "<input type=\"hidden\" name=\"after\" value=\""+to_query(*p)+"\">";
+}
+
 void inner(ostream& o,Part_editor const& a,DB db){
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
@@ -166,6 +174,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+escape(a.id)+"\">"+
+		after_done()+
 		input_table([=](){
 			vector<Input> r;
 			#define X(A,B) \
@@ -194,6 +203,12 @@ void inner(ostream& o,Part_editor const& a,DB db){
 	);
 }
 
+string redirect_to(URL const& url){
+	//go parse it out, which is a bit silly.
+	auto p=parse_query(url.data);
+	return redirect_to(p);
+}
+
 void inner(std::ostream& o,Part_edit const& a,DB db){
 	string area_lower="part";
 	string area_cap="Part";
@@ -202,7 +217,7 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
 	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.B); else v|=pair<string,string>(""#B,escape(a.B));
-	PART_EDIT_ITEMS(X)
+	PART_EDIT_DATA_ITEMS(X)
 	#undef X
 	auto q="INSERT INTO "+area_lower+"_info ("
 		+join(",",firsts(v))
@@ -210,12 +225,15 @@ void inner(std::ostream& o,Part_edit const& a,DB db){
 		+join(",",seconds(v))
 		+")";
 	run_cmd(db,q);
-	Part_editor page;
-	page.id=Part_id{a.part_id};
 	make_page(
 		o,
 		area_cap+" edit",
-		redirect_to(page)
+		redirect_to([=]()->URL{
+			if(a.after) return *a.after;
+			Part_editor page;
+			page.id=Part_id{a.part_id};
+			return URL{to_query(page)};
+		}())
 	);
 }
 

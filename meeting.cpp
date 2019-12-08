@@ -2,6 +2,7 @@
 #include<functional>
 #include "subsystems.h"
 #include "subsystem.h"
+#include "part.h"
 
 using namespace std;
 
@@ -162,6 +163,7 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\""+area_cap+"_edit\">"
 		"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+escape(a.id)+"\">"
+		+after_done()
 		+input_table([=](){
 			vector<Input> r;
 			#define X(A,B) r|=show_input(db,""#B,current.B);
@@ -708,7 +710,7 @@ void inner(ostream& o,Meeting_edit const& a,DB db){
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
 	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
-	MEETING_EDIT_ITEMS(X)
+	MEETING_EDIT_DATA_ITEMS(X)
 	#undef X
 	auto q="INSERT INTO "+area_lower+"_info ("
 		+join(",",firsts(v))
@@ -716,12 +718,15 @@ void inner(ostream& o,Meeting_edit const& a,DB db){
 		+join(",",seconds(v))
 		+")";
 	run_cmd(db,q);
-	Meeting_editor page;
-	page.id=Meeting_id{a.meeting_id};
 	make_page(
 		o,
 		area_cap+" edit",
-		redirect_to(page)
+		redirect_to([=]()->URL{
+			if(a.after) return *a.after;
+			Meeting_editor page;
+			page.id=Meeting_id{a.meeting_id};
+			return URL{to_query(page)};
+		}())
 	);
 }
 

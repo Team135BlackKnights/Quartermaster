@@ -175,14 +175,14 @@ Date rand(Date const*){
 string escape(Date const& a){
 	static const size_t LEN=26;
 	char s[LEN];
-	sprintf(s,"%04d-%02d-%02d",a.year,a.month,a.day);
+	sprintf(s,"'%04d-%02d-%02d'",a.year,a.month,a.day);
 	return s;
 }
 
 Input show_input(DB db,string const& name,Date const& current){
 	return Input{
 		name,
-		"<input type=\"date\" name=\""+name+"\" value=\""+escape(current)+"\">",
+		"<input type=\"date\" name=\""+name+"\" value="+escape(current)+">",
 		""
 	};
 }

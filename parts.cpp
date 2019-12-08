@@ -1,3 +1,4 @@
+#include "parts.h"
 #include<algorithm>
 #include<string.h>
 #include<functional>

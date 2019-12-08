@@ -10,6 +10,8 @@ void inner(std::ostream&,Part_duplicate const&,DB);
 Part_number_local next_part_number(DB,Subsystem_id);
 std::optional<Part_data> part_data(DB,Part_id);
 void insert_part_data(DB,Part_id,Part_data const&);
+std::string after_done();
+std::string redirect_to(URL const&);
 
 template<typename T>
 std::pair<std::string,std::string> part_entry(DB db,std::optional<Subsystem_id> subsystem_id,T t){

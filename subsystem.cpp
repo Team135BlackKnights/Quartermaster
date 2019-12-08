@@ -133,7 +133,8 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		string()+"<form>"
 		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_edit\">"
 		"<input type=\"hidden\" name=\"subsystem_id\" value=\""+escape(a.id)+"\">"+
-		input_table([=](){
+		after_done()
+		+input_table([=](){
 			vector<Input> r;
 			#define X(A,B) r|=show_input(db,""#B,current.B);
 			SUBSYSTEM_DATA(X)
@@ -181,7 +182,7 @@ void inner(ostream& o,Subsystem_edit const& a,DB db){
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
 	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.parent,a.B); else v|=pair<string,string>(""#B,escape(a.B));
-	SUBSYSTEM_EDIT_ITEMS(X)
+	SUBSYSTEM_EDIT_DATA_ITEMS(X)
 	#undef X
 	auto q="INSERT INTO subsystem_info ("
 		+join(",",firsts(v))
