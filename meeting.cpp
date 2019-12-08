@@ -5,6 +5,28 @@
 
 using namespace std;
 
+//start generic code
+template<typename T>
+bool all(vector<T> const& a){
+	for(auto elem:a){
+		if(!elem){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+template<typename T>
+vector<T> non_null(vector<optional<T>> v){
+	vector<T> r;
+	for(auto elem:v){
+		if(elem){
+			r|=*elem;
+		}
+	}
+	return r;
+}
+
 template<typename T>
 vector<T> sorted(vector<T> a){
 	sort(begin(a),end(a));
@@ -49,16 +71,11 @@ vector<T> flatten(vector<vector<T>> const& a){
 }
 
 template<typename T>
-void inner_new(ostream& o,DB db,Table_name const& table){
-	auto id=new_item(db,table);
-	T page;
-	page.id={id};
-	make_page(
-		o,
-		"New item",
-		redirect_to(page)
-	);
+string join(vector<T> const& v){
+	return join("",v);
 }
+
+auto li(std::string s){ return tag("li",s); }
 
 template<typename A,typename B>
 map<A,B> to_map(std::vector<std::tuple<A,B>> const& v){
@@ -76,6 +93,26 @@ map<A,tuple<A,Ts...>> to_map(std::vector<std::tuple<A,Ts...>> const& v){
 		r[get<0>(elem)]=elem;
 	}
 	return r;
+}
+
+//end generic code
+
+string link(Meeting_id a,string body){
+	Meeting_editor r;
+	r.id=a;
+	return link(r,body);
+}
+
+template<typename T>
+void inner_new(ostream& o,DB db,Table_name const& table){
+	auto id=new_item(db,table);
+	T page;
+	page.id={id};
+	make_page(
+		o,
+		"New item",
+		redirect_to(page)
+	);
 }
 
 std::string show_plan(DB db,Request const& page);
@@ -214,9 +251,6 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 	);
 }
 
-/*struct Plan{
-	m
-};*/
 using Item=variant<Part_id,Subsystem_id>;
 using Time=Decimal;
 using Schedule_item=pair<Time,Item>;
@@ -359,7 +393,7 @@ std::string table(DB db,Request const& page,vector<pair<Build_item,string>> cons
 vector<Build_item> to_build(DB db){
 	auto q=qm<Part_id,Machine,Decimal,Subsystem_id>(
 		db,
-		"SELECT part_id,machine,time,subsystem "
+		"SELECT part_id,machine,GREATEST(time,0.1),subsystem "
 		"FROM part_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
@@ -399,7 +433,7 @@ vector<Build_item> to_build(DB db){
 
 	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
 		db,
-		"SELECT subsystem_id,time,parent,priority "
+		"SELECT subsystem_id,GREATEST(time,.1),parent,priority "
 		"FROM subsystem_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
@@ -434,43 +468,40 @@ vector<Build_item> to_build(DB db){
 	}
 
 	//print_lines(sorted(r));
-	auto find_elem=[&](Item a)->Build_item&{
+	auto find_elem=[&](Item a)->Build_item*{
 		for(auto& x:r){
-			if(x.item==a) return x;
+			if(x.item==a) return &x;
 		}
+		return NULL;
+		/*print_lines(r);
 		PRINT(a);
-		assert(0);
+		assert(0);*/
 	};
 
 	std::function<void(Item,Priority)> inherit_priority;
 	inherit_priority=[&](Item a,Priority priority){
-		auto& elem=find_elem(a);
+		//cout<<"inherit:"<<a<<" "<<priority<<"\n";
+		auto *e=find_elem(a);
+		if(!e) return;
+		auto& elem=*e;
 		elem.priority=max(elem.priority,priority);
 		if(holds_alternative<Subsystem_id>(a)){
 			for(auto item:dependencies[get<Subsystem_id>(a)]){
 				inherit_priority(item,elem.priority);
 			}
 		}
+		//cout<<"done\n";
 	};
 
-	/*for(auto [parent,_]:dependencies){
+	for(auto [parent,_]:dependencies){
 		(void)_;
-		//inherit_priority(parent,0);
-	}*/
+		inherit_priority(Item{parent},Priority{0});
+	}
 
 	return r;
 }
 
 Decimal machine_time_left(Meeting_plan mp,Machine machine){
-	/*auto total_time_used=[=](){
-		Decimal r=0;
-		for(auto [k,v]:mp.to_do){
-			for(auto [item,length]:v){
-				nyi//r+=length;
-			}
-		}
-		return r;
-	}();*/
 	auto total_time_used=sum(
 		firsts(flatten(values(mp.to_do)))
 	);
@@ -483,13 +514,34 @@ Decimal machine_time_left(Meeting_plan mp,Machine machine){
 	return min(overall_time_available,machine_time_available);
 }
 
+vector<Build_item> sort_by_priority(vector<Build_item> v){
+	sort(
+		begin(v),
+		end(v),
+		[](auto a,auto b){
+			return a.priority>b.priority;
+		}
+	);
+	return v;
+}
+
+template<typename T>
+vector<T> to_vec(set<T> a){
+	return vector<T>(begin(a),end(a));
+}
+
+template<typename T>
+vector<T> to_vec(vector<T> a){
+	return a;
+}
+
 vector<Build_item> topological_sort(vector<Build_item> a){
 	vector<Build_item> r;
 	set<Item> done;
 
 	auto run_pass=[&](auto in){
 		set<Build_item> deferred;
-		for(auto elem:in){
+		for(auto elem:sort_by_priority(to_vec(in))){
 			if( (elem.dependencies-done).size() ){
 				deferred|=elem;
 			}else{
@@ -505,27 +557,6 @@ vector<Build_item> topological_sort(vector<Build_item> a){
 		auto d2=run_pass(d);
 		assert(d2!=d);//if this happens, we have a circular dependency.
 		d=d2;
-	}
-	return r;
-}
-
-template<typename T>
-bool all(vector<T> const& a){
-	for(auto elem:a){
-		if(!elem){
-			return 0;
-		}
-	}
-	return 1;
-}
-
-template<typename T>
-vector<T> non_null(vector<optional<T>> v){
-	vector<T> r;
-	for(auto elem:v){
-		if(elem){
-			r|=*elem;
-		}
 	}
 	return r;
 }
@@ -602,19 +633,6 @@ pair<Plan,vector<pair<Build_item,string>>> make_plan_inner(DB db){
 	return make_pair(plan,failures);
 }
 
-template<typename T>
-string join(vector<T> const& v){
-	return join("",v);
-}
-
-auto li(std::string s){ return tag("li",s); }
-
-string link(Meeting_id a,string body){
-	Meeting_editor r;
-	r.id=a;
-	return link(r,body);
-}
-
 std::string show_plan(DB db,Request const& page){
 	auto x=make_plan_inner(db);
 	stringstream o;
@@ -623,7 +641,7 @@ std::string show_plan(DB db,Request const& page){
 	o<<"<ul>";
 	o<<li("Items that are in still in design are totally ignored.");
 	o<<li("Items that are yet to be ordered are totally ignored");
-	o<<li("Items with time taken listed as 0 are totally ignored.");
+	o<<li("Items are given a minimum time estimate of 0.1 hours.");
 	o<<li("Assumes that the amount of time for any given machines is equal to meeting length and overall time is 3x meeting length");
 	o<<"</ul>";
 	o<<"<table border>";

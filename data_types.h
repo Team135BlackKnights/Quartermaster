@@ -67,6 +67,11 @@ bool operator<(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
 }
 
 template<typename Sub,typename Data>
+bool operator>(Wrap<Sub,Data> const& a,Wrap<Sub,Data> const& b){
+	return a.data>b.data;
+}
+
+template<typename Sub,typename Data>
 std::ostream& operator<<(std::ostream& o,Wrap<Sub,Data> const& a){
 	return o<<a.data;
 }
