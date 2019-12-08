@@ -378,4 +378,7 @@ Input show_input(DB,std::string const&,DNI const&);
 struct Hours:Wrap<Hours,Decimal>{};
 Input show_input(DB,std::string const&,Hours const&);
 
+struct Priority:Wrap<Priority,int>{};
+Input show_input(DB,std::string const&,Priority const&);
+
 #endif

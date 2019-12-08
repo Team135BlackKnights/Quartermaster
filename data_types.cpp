@@ -391,7 +391,7 @@ Input show_input(DB db,string const& name,Subsystem_id const& current){
 	Subsystem_editor page;
 	page.id=current;
 	auto x=drop_down(name,as_string(current),m);
-	x.notes=link(page,"Current");
+	x.name=link(page,x.name);
 	return x;
 }
 
@@ -417,11 +417,11 @@ Input show_input(DB db,string const& name,std::optional<Subsystem_id> const& cur
 	);
 
 	Input out=drop_down(name,as_string(current),m);
-	out.notes="(optional)";
+	out.notes="Name of subsystem which this should be a part of.  If this is intended to be a top-level project, choose \"NULL\"";
 	if(current){
 		Subsystem_editor page;
 		page.id=*current;
-		out.notes+=link(page,"Current");
+		out.name=link(page,out.name);
 	}
 	return out;
 }
@@ -594,13 +594,19 @@ Input show_input(DB db,std::string const& name,Valid const& a){
 
 Input show_input(DB db,std::string const& name,DNI const& a){
 	auto r=show_input(db,name,a.data);
-	r.notes+="Do not install";
+	r.notes+="\"Do not install\".  For items that should not be physically included in their enclosing subsystem.";
 	return r;
 }
 
 Input show_input(DB db,std::string const& name,Hours const& current){
 	auto r=show_input(db,name,current.data);
 	r.notes="Hours; "+r.notes;
+	return r;
+}
+
+Input show_input(DB db,std::string const& name,Priority const& current){
+	auto r=show_input(db,name,current.data);
+	r.notes="Higher number=higher priority "+r.notes;
 	return r;
 }
 

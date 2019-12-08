@@ -13,7 +13,7 @@
 	X(Hours,time)\
 	X(Assembly_state,state)\
 	X(std::optional<DNI>,dni)\
-	X(int,priority)\
+	X(Priority,priority)\
 	
 struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)

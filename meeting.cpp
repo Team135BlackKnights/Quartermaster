@@ -268,7 +268,7 @@ Plan blank_plan(DB db){
 	X(Decimal,length)\
 	X(set<Item>,dependencies)\
 	X(std::optional<Date>,wait)\
-	X(int,priority)\
+	X(Priority,priority)\
 
 struct Build_item{
 	BUILD_ITEMS(INST)
@@ -337,7 +337,7 @@ vector<Build_item> to_build(DB db){
 		"GROUP BY subsystem"
 	));
 
-	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,int>(
+	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
 		db,
 		"SELECT subsystem_id,time,parent,priority "
 		"FROM subsystem_info "
@@ -382,8 +382,8 @@ vector<Build_item> to_build(DB db){
 		assert(0);
 	};
 
-	std::function<void(Item,int)> inherit_priority;
-	inherit_priority=[&](Item a,int priority){
+	std::function<void(Item,Priority)> inherit_priority;
+	inherit_priority=[&](Item a,Priority priority){
 		auto& elem=find_elem(a);
 		elem.priority=max(elem.priority,priority);
 		if(holds_alternative<Subsystem_id>(a)){
