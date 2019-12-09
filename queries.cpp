@@ -419,7 +419,7 @@ map<string,vector<string>> parse_query_string(string const& s){
 			at++;
 		}
 		string key(start,at);
-		if(at==end) throw "Error: Invalid cgi query string.  Variable with no value specified.  Name:"+key+" Whole:"+s; //assert(at!=end);
+		if(at==end) throw "Error: Invalid cgi query string.  Variable with no value specified.  Name: \""+key+"\" Whole: \""+s+"\""; //assert(at!=end);
 		at++;
 		start=at;
 		while(at!=end && *at!='&'){

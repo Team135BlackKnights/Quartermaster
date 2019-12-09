@@ -234,8 +234,12 @@ void inner(ostream& o,Part_editor const& a,DB db){
 
 string redirect_to(URL const& url){
 	//go parse it out, which is a bit silly.
-	auto p=parse_query(url.data);
-	return redirect_to(p);
+	try{
+		auto p=parse_query(url.data);
+		return redirect_to(p);
+	}catch(string const& s){
+		return "Would redirect, but does not appear to be a valid page:"+as_string(url);
+	}
 }
 
 void inner(std::ostream& o,Part_edit const& a,DB db){
