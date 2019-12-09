@@ -2,6 +2,7 @@
 #include<cassert>
 #include<strings.h>
 #include "queries.h"
+#include "home.h"
 
 using namespace std;
 
@@ -370,6 +371,30 @@ string escape(Material const& s){
 	return escape(s.s);
 }
 
+string link(Subsystem_id a,string s){
+	Subsystem_editor page;
+	page.id=a;
+	return link(page,s);
+}
+
+string path(DB db,Subsystem_id const& a){
+	auto q=qm<string,optional<Subsystem_id>>(
+		db,
+		"SELECT name,parent "
+		"FROM subsystem_info "
+		"WHERE "
+			"id IN (SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+escape(a)+")"
+			//+" AND valid"
+	);
+	assert(q.size()==1);
+	auto [name,parent]=q[0];
+	string out;
+	if(parent){
+		out=path(db,*parent);
+	}
+	return out+" "+link(a,name);
+}
+
 Input show_input(DB db,string const& name,Subsystem_id const& current){
 	auto q=query(
 		db,
@@ -381,7 +406,7 @@ Input show_input(DB db,string const& name,Subsystem_id const& current){
 			assert(row.size()==2);
 			assert(row[0]);
 			//assert(row[1]);
-			return make_pair(*row[0],row[1]?*row[1]:"Untitled");
+			return make_pair(parse((Subsystem_id*)0,*row[0]),row[1]?*row[1]:"Untitled");
 		},
 		q
 	);
@@ -390,13 +415,14 @@ Input show_input(DB db,string const& name,Subsystem_id const& current){
 	//show the other current ones in a drop-down
 	Subsystem_editor page;
 	page.id=current;
-	auto x=drop_down(name,as_string(current),m);
+	auto x=drop_down(name,current,m);
 	x.name=link(page,x.name);
+	x.notes=path(db,current);
 	return x;
 }
 
 Input show_input(DB db,string const& name,std::optional<Subsystem_id> const& current){
-	auto q=query(
+	auto q=qm<Subsystem_id,optional<string>>(
 		db,
 		"SELECT subsystem_id,name FROM subsystem_info "
 		"WHERE "
@@ -404,20 +430,20 @@ Input show_input(DB db,string const& name,std::optional<Subsystem_id> const& cur
 			" AND valid"
 	);
 
-	vector<pair<string,string>> m;
-	m|=pair<string,string>("None","NULL");
+	using P=pair<optional<Subsystem_id>,string>;
+	vector<P> m;
+	m|=P(std::nullopt,"NULL");
 	m|=mapf(
 		[](auto row){
-			assert(row.size()==2);
-			assert(row[0]);
-			//assert(row[1]);
-			return make_pair(*row[0],row[1]?*row[1]:"Untitled");
+			auto [value,name]=row;
+			return P(value,name?*name:"Untitled");
 		},
 		q
 	);
 
-	Input out=drop_down(name,as_string(current),m);
-	out.notes="Name of subsystem which this should be a part of.  If this is intended to be a top-level project, choose \"NULL\"";
+	Input out=drop_down(name,current,m);
+	if(current) out.notes+=path(db,*current);
+	out.notes+=" Name of subsystem which this should be a part of.  If this is intended to be a top-level project, choose \"NULL\"";
 	if(current){
 		Subsystem_editor page;
 		page.id=*current;
