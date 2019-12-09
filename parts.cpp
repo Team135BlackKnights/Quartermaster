@@ -13,20 +13,13 @@
 #include "part.h"
 #include "meeting.h"
 #include "order.h"
+#include "progress.h"
 
 using namespace std;
 
 template<typename T>
 vector<T> operator|(vector<T> a,T b){
 	a|=b;
-	return a;
-}
-
-template<typename T>
-set<T> operator|(set<T> a,set<T> const& b){
-	for(auto elem:b){
-		a|=elem;
-	}
 	return a;
 }
 
@@ -627,6 +620,7 @@ struct Args{
 	bool tables=0;
 	bool alter_tables=0;
 	bool plan=0;
+	bool progress=0;
 };
 
 void help(){
@@ -653,6 +647,8 @@ Args parse_args(int argc,char **argv){
 			r.alter_tables=1;
 		}else if(s=="--plan"){
 			r.plan=1;
+		}else if(s=="--progress"){
+			r.progress=1;
 		}else{
 			cerr<<"Unexpected argument:"<<argv[i]<<"\n";
 			help();
@@ -807,6 +803,11 @@ int main1(int argc,char **argv,char **envp){
 		make_plan(db);
 		return 0;
 	}
+	if(args.progress){
+		progress(db);
+		return 0;
+	}
+
 	/*auto g1=getenv("HTTP_REFERER");
 	auto p=parse_referer(g1);
 	cout<<"ref from:"<<p<<"\n";*/

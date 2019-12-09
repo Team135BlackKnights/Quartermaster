@@ -89,18 +89,6 @@ void inner(ostream& o,Orders const& a,DB db){
 	);
 }
 
-template<typename T>
-string join(string delim,vector<T> v){
-	stringstream ss;
-	for(auto [last,elem]:mark_last(v)){
-		ss<<elem;
-		if(!last) ss<<delim;
-	}
-	return ss.str();
-}
-
-#define MAP(F,A) mapf([&](auto x){ return (F)(x); },(A))
-
 void inner(std::ostream& o,Order_edit const& a,DB db){
 	if(as_string(a.arrival_date)==""){
 		make_page(

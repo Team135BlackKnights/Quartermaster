@@ -12,5 +12,6 @@ std::string to_do(DB,Request const&);
 std::string input_table(std::vector<Input> const&);
 void make_plan(DB);
 void insert(DB,Table_name const&,std::vector<std::pair<std::string,std::string>> const&);
+void timeline(DB);
 
 #endif

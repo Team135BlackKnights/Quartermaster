@@ -7,7 +7,7 @@ LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient
 
 DEPS:=auth.o data_types.o parts.o queries.o \
 	util.o export.o home.o subsystems.o subsystem.o part.o \
-	meeting.o order.o
+	meeting.o order.o progress.o
 
 all: parts asm.png part.png
 

@@ -320,4 +320,34 @@ std::vector<T>& operator|=(std::vector<T>& a,std::vector<T> const& b){
 	return a;
 }
 
+template<typename T>
+std::string join(std::string delim,std::vector<T> v){
+	std::stringstream ss;
+	for(auto [last,elem]:mark_last(v)){
+		ss<<elem;
+		if(!last) ss<<delim;
+	}
+	return ss.str();
+}
+
+#define MAP(F,A) mapf([&](auto x){ return (F)(x); },(A))
+
+template<typename K,typename V>
+std::vector<V> values(std::map<K,V> const& a){
+	std::vector<V> r;
+	for(auto [_,v]:a){
+		(void)_;
+		r|=v;
+	}
+	return r;
+}
+
+template<typename T>
+std::set<T> operator|(std::set<T> a,std::set<T> const& b){
+	for(auto elem:b){
+		a|=elem;
+	}
+	return a;
+}
+
 #endif

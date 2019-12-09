@@ -52,16 +52,6 @@ optional<T> max(vector<T> const& a){
 	return r;
 }
 
-template<typename K,typename V>
-vector<V> values(map<K,V> const& a){
-	vector<V> r;
-	for(auto [_,v]:a){
-		(void)_;
-		r|=v;
-	}
-	return r;
-}
-
 template<typename T>
 vector<T> flatten(vector<vector<T>> const& a){
 	vector<T> r;
@@ -563,16 +553,9 @@ vector<Build_item> topological_sort(vector<Build_item> a){
 	return r;
 }
 
-pair<Plan,vector<pair<Build_item,string>>> make_plan_inner(DB db){
-	//this is going to be a graph problem...
-	//if you cared that much about it
+using Schedule_result=pair<Plan,vector<pair<Build_item,string>>>;
 
-	//first, going to just schedule building the parts and not care about assembly.
-	auto plan=blank_plan(db);
-	//print_lines(plan);
-	auto to_schedule=to_build(db);
-	//print_lines(to_schedule);
-
+Schedule_result schedule(Plan plan,vector<Build_item> to_schedule){
 	map<Item,Date> finish;
 
 	auto schedule_part=[&](auto &x)->std::optional<std::string>{
@@ -633,6 +616,18 @@ pair<Plan,vector<pair<Build_item,string>>> make_plan_inner(DB db){
 		}
 	}
 	return make_pair(plan,failures);
+}
+
+pair<Plan,vector<pair<Build_item,string>>> make_plan_inner(DB db){
+	//this is going to be a graph problem...
+	//if you cared that much about it
+
+	//first, going to just schedule building the parts and not care about assembly.
+	auto plan=blank_plan(db);
+	//print_lines(plan);
+	auto to_schedule=to_build(db);
+	//print_lines(to_schedule);
+	return schedule(plan,to_schedule);
 }
 
 std::string show_plan(DB db,Request const& page){
@@ -736,3 +731,282 @@ void inner(ostream& o,Meeting_edit const& a,DB db){
 	);
 }
 
+Plan historical_plan(DB db,Date date){
+	auto q=qm<Date,Decimal>(
+		db,
+		"SELECT date,length "
+		"FROM meeting_info "
+		"WHERE "
+			"id IN ("
+				"SELECT MAX(id) FROM meeting_info "
+				"WHERE edit_date<="+escape(date)+" "
+				"GROUP BY meeting_id"
+			") "
+			"AND valid "
+			"AND date>"+escape(date)+" "
+		"ORDER BY date"
+	);
+	return mapf(
+		[](auto x){
+			return make_pair(
+				get<0>(x),
+				Meeting_plan{get<1>(x),{}}
+			);
+		},
+		q
+	);
+}
+
+vector<Build_item> historical_to_build(DB db,Date date){
+	auto q=qm<Part_id,Machine,Decimal,Subsystem_id>(
+		db,
+		"SELECT part_id,machine,GREATEST(time,0.1),subsystem "
+		"FROM part_info "
+		"WHERE "
+			"id IN ("
+				"SELECT MAX(id) FROM part_info "
+				"WHERE edit_date<="+escape(date)+" "
+				"GROUP BY part_id"
+			") "
+			"AND valid "
+			"AND (part_state='cut_list' OR part_state='find' OR part_state='_3d_print' OR part_state='fab') "
+	);
+
+	vector<Build_item> r;
+	for(auto row:q){
+		r|=Build_item{
+			get<0>(row),
+			get<1>(row),
+			get<2>(row),
+			{},
+			std::nullopt,
+			0
+		};
+	}
+
+	map<Subsystem_id,set<Item>> dependencies;
+	for(auto [part,_1,_2,subsystem]:q){
+		(void)_1;
+		(void)_2;
+		dependencies[subsystem].insert(part);
+	}
+
+	const auto wait_items=to_map(qm<Subsystem_id,Date>(
+		db,
+		"SELECT subsystem,MAX(arrival_date) "
+		"FROM part_info "
+		"WHERE "
+			"id IN ("
+				"SELECT MAX(id) FROM part_info "
+				"WHERE edit_date<="+escape(date)+" "
+				"GROUP BY part_id"
+			") "
+			"AND valid "
+			"AND (part_state='on_order')"
+		"GROUP BY subsystem"
+	));
+
+	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
+		db,
+		"SELECT subsystem_id,GREATEST(time,.1),parent,priority "
+		"FROM subsystem_info "
+		"WHERE "
+			"id IN ("
+				"SELECT MAX(id) FROM subsystem_info "
+				"WHERE edit_date<="+escape(date)+" "
+				"GROUP BY subsystem_id"
+			") "
+			"AND valid "
+			"AND (state='parts' OR state='assembly')"
+	);
+
+	for(auto [id,_1,parent,_3]:q1){
+		(void)_1;
+		(void)_3;
+		if(parent){
+			dependencies[*parent].insert(id);
+		}
+	}
+
+	for(auto row:q1){
+		auto id=get<0>(row);
+		r|=Build_item{
+			id,
+			Machine::none,
+			get<1>(row),
+			dependencies[id],
+			[=]()->std::optional<Date>{
+				auto f=wait_items.find(id);
+				if(f==wait_items.end()){
+					return std::nullopt;
+				}
+				return f->second;
+			}(),
+			get<3>(row)
+		};
+	}
+
+	//print_lines(sorted(r));
+	auto find_elem=[&](Item a)->Build_item*{
+		for(auto& x:r){
+			if(x.item==a) return &x;
+		}
+		return NULL;
+		/*print_lines(r);
+		PRINT(a);
+		assert(0);*/
+	};
+
+	std::function<void(Item,Priority)> inherit_priority;
+	inherit_priority=[&](Item a,Priority priority){
+		//cout<<"inherit:"<<a<<" "<<priority<<"\n";
+		auto *e=find_elem(a);
+		if(!e) return;
+		auto& elem=*e;
+		elem.priority=max(elem.priority,priority);
+		if(holds_alternative<Subsystem_id>(a)){
+			for(auto item:dependencies[get<Subsystem_id>(a)]){
+				inherit_priority(item,elem.priority);
+			}
+		}
+		//cout<<"done\n";
+	};
+
+	for(auto [parent,_]:dependencies){
+		(void)_;
+		inherit_priority(Item{parent},Priority{0});
+	}
+
+	return r;
+}
+
+set<Date> days_with_changes(DB db,Table_name const& table){
+	auto q=qm<Date>(
+		db,
+		"SELECT DISTINCT(DATE(edit_date)) "
+		"FROM "+table+" "
+		"ORDER BY DATE(edit_date)"
+	);
+	return to_set(mapf([](auto x){ return get<0>(x); },q));
+}
+
+set<Date> days_with_changes(DB db){
+	return (
+		days_with_changes(db,"part_info")|
+		days_with_changes(db,"subsystem_info")|
+		days_with_changes(db,"meeting_info")
+	);
+}
+
+Date last_date_needed(Plan plan){
+	Date last{};//initialized to 0-0-0
+	for(auto [date,meeting_plan]:plan){
+		if(meeting_plan.to_do.size()){
+			last=max(last,date);
+		}
+	}
+	return last;
+}
+
+Date date_needed_for(Plan plan,Item item){
+	//On what day does part/asm X get finished?
+	Date last{};
+	for(auto const& [date,meeting_plan]:plan){
+		for(auto const& [machine,item_parts]:meeting_plan.to_do){
+			(void)machine;
+			for(auto const& [length,item_here]:item_parts){
+				(void)length;
+				if(item==item_here){
+					last=max(last,date);
+				}
+			}
+		}
+	}
+	return last;
+}
+
+void indent(size_t i){
+	for(auto _:range(i)){
+		(void)_;
+		cout<<"\t";
+	}
+}
+
+void print_r(bool)nyi
+
+void print_r(size_t i,Date d){
+	indent(i);
+	cout<<d<<"\n";
+}
+
+template<typename K,typename V>
+void print_r(size_t i,map<K,V> const& a){
+	indent(i);
+	cout<<"map\n";
+	for(auto p:a){
+		print_r(i+1,p);
+	}
+}
+
+template<typename T>
+void print_r(size_t i,T t){
+	indent(i);
+	cout<<t<<"\n";
+}
+
+#define X(NAME) void print_r(size_t i,NAME const&){\
+	indent(i);\
+	cout<<""#NAME<<"\n";\
+}
+X(Build_item)
+#undef X
+
+void print_r(size_t i,Meeting_plan const& a){
+	indent(i);
+	cout<<"Meeting_plan\n";
+	#define X(A,B) print_r(i+1,a.B);
+	MEETING_PLAN_ITEMS(X)
+	#undef X
+}
+
+template<typename A,typename B>
+void print_r(size_t i,pair<A,B> const& a){
+	indent(i);
+	cout<<"pair\n";
+	print_r(i+1,a.first);
+	print_r(i+1,a.second);
+}
+
+template<typename T>
+void print_r(size_t i,vector<T> const& a){
+	indent(i);
+	cout<<"vec\n";
+	for(auto elem:a){
+		print_r(i+1,elem);
+	}
+}
+
+template<typename T>
+void print_r(T t){
+	print_r(0,t);
+}
+
+void timeline(DB db){
+	//at each date, figure out when we think we're going to be done.
+	//Date date=parse((Date*)0,"2019-12-1");
+	for(auto date:days_with_changes(db)){
+		auto plan=historical_plan(db,date);
+		auto to_build=historical_to_build(db,date);
+		//print_lines(to_build);
+		auto s=schedule(plan,to_build);
+		//PRINT(s);
+		//print_r(s);
+		cout<<date<<":";
+		if(s.second.size()){
+			cout<<"Not completable\n";
+		}else{
+			cout<<last_date_needed(s.first)<<"\n";
+		}
+		cout<<"\t"<<date_needed_for(s.first,Item{Subsystem_id{535}})<<"\n";
+	}
+}
