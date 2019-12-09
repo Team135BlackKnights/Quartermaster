@@ -278,6 +278,11 @@ DECL_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
 	X(Subsystem_id,subsystem)
 DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 
+#define STATE_CHANGE_ITEMS(X)\
+	X(std::optional<Date>,start)\
+	X(std::optional<Date>,end)
+DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -308,6 +313,7 @@ DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 	X(BOM)\
 	X(Part_duplicate)\
 	X(Subsystem_duplicate)\
+	X(State_change)\
 	
 using Request=std::variant<
 	#define X(A) A,
@@ -361,7 +367,6 @@ void diff(std::vector<T> const& a,std::vector<T> const& b){
 				std::cout<<"a:"<<a1<<"\n";
 				std::cout<<"b:"<<b1<<"\n";
 			}
-			//PRINT(std::make_pair(a1,b1));
 		}
 		return;
 	}

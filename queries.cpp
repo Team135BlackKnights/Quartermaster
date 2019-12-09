@@ -243,7 +243,6 @@ ESC_STR(Hours)
 ESC_STR(Assembly_state)
 ESC_STR(int)
 ESC_STR(Part_state)
-ESC_STR(Date)
 ESC_STR(User)
 ESC_STR(Machine)
 ESC_STR(Export_item)
@@ -251,6 +250,13 @@ ESC_STR(Supplier)
 ESC_STR(DNI)
 ESC_STR(Material)
 ESC_STR(Bend_type)
+
+string get_esc(Date const& date){
+	auto s=escape(date);
+	assert(s[0]=='\'');
+	assert(s[s.size()-1]=='\'');
+	return s.substr(1,s.size()-2);
+}
 
 template<typename T>
 string get_esc(T t){
@@ -365,6 +371,7 @@ DEF_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
 DEF_OPTION(BOM,BOM_ITEMS)
 DEF_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
 DEF_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
+DEF_OPTION(State_change,STATE_CHANGE_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';
