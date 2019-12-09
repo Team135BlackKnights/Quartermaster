@@ -220,8 +220,10 @@ void inner(std::ostream& o,State_change const& a,DB db){
 		"State change "+as_string(a.start)+" to "+as_string(a.end),
 		"<form>" //this might make sense to have auto-submit on any change
 		"<input type=\"hidden\" name=\"p\" value=\"State_change\">"
-		+input_table(vector{show_input(db,"start",a.start),show_input(db,"end",a.end)})
-		+"<input type=\"submit\">"
+		"<input type=\"hidden\" name=\"sort_by\" value="+escape(a.sort_by)+">"
+		"<input type=\"hidden\" name=\"sort_order\" value="+escape(a.sort_order)+">"
+		+"<input type=\"date\" name=\"start\" value="+escape(a.start)+" onchange=\"this.form.submit();\">"
+		+"<input type=\"date\" name=\"end\" value="+escape(a.end)+" onchange=\"this.form.submit();\">"
 		+"</form>"
 		+change_table(a,db) //part#/asm,old state,new state
 	);
