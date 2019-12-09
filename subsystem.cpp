@@ -159,6 +159,7 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 		+"<table border><tr>"+th("Name")+th("Status")+"</tr>"+indent_sub_table(db,0,a.id,{})+"</table>"
 		+parts_of_subsystem(db,a,a.id)
 		+subsystems_of_subsystem(db,a,a.id)
+		+completion_est(db,a.id)
 		+h2("History")
 		+make_table(
 			a,

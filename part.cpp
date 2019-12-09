@@ -222,6 +222,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 			}(),
 			"Duplicate"
 		)
+		+completion_est(db,a.id)
 		+h2("History")
 		+make_table(
 			a,

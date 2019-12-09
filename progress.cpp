@@ -25,14 +25,6 @@ T head(vector<T> a){
 }
 
 template<typename T>
-vector<T> tail(vector<T> a){
-	if(a.size()){
-		a.erase(begin(a));
-	}
-	return a;
-}
-
-template<typename T>
 map<T,size_t> count(vector<T> const& a){
 	map<T,size_t> r;
 	for(auto elem:a){

@@ -378,6 +378,7 @@ string link(Subsystem_id a,string s){
 }
 
 string path(DB db,Subsystem_id const& a){
+	PRINT(a);
 	auto q=qm<string,optional<Subsystem_id>>(
 		db,
 		"SELECT name,parent "
@@ -386,8 +387,16 @@ string path(DB db,Subsystem_id const& a){
 			"id IN (SELECT MAX(id) FROM subsystem_info WHERE subsystem_id="+escape(a)+")"
 			//+" AND valid"
 	);
-	assert(q.size()==1);
-	auto [name,parent]=q[0];
+	string name;
+	optional<Subsystem_id> parent;
+	if(q.empty()){
+		name="[]";
+		parent=std::nullopt;
+	}else{
+		assert(q.size()==1);
+		name=get<0>(q[0]);
+		parent=get<1>(q[0]);
+	}
 	string out;
 	if(parent){
 		out=path(db,*parent);

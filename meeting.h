@@ -13,5 +13,7 @@ std::string input_table(std::vector<Input> const&);
 void make_plan(DB);
 void insert(DB,Table_name const&,std::vector<std::pair<std::string,std::string>> const&);
 void timeline(DB);
+std::string completion_est(DB,Part_id const&);
+std::string completion_est(DB,Subsystem_id const&);
 
 #endif

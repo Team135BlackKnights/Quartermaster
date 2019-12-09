@@ -315,6 +315,10 @@ bool operator==(Build_item const& a,Build_item const& b){
 	return 1;
 }
 
+bool operator!=(Build_item const& a,Build_item const& b){
+	return !(a==b);
+}
+
 std::ostream& operator<<(std::ostream& o,Build_item const& a){
 	o<<"Build_item( ";
 	#define X(A,B) o<<""#B<<":"<<a.B<<" ";
@@ -391,6 +395,7 @@ vector<Build_item> to_build(DB db){
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid "
 			"AND (part_state='cut_list' OR part_state='find' OR part_state='_3d_print' OR part_state='fab') "
+		"ORDER BY id"
 	);
 
 	vector<Build_item> r;
@@ -420,7 +425,8 @@ vector<Build_item> to_build(DB db){
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid "
 			"AND (part_state='on_order')"
-		"GROUP BY subsystem"
+		"GROUP BY subsystem "
+		"ORDER BY id "
 	));
 
 	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
@@ -430,7 +436,8 @@ vector<Build_item> to_build(DB db){
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
 			"AND valid "
-			"AND (state='parts' OR state='assembly')"
+			"AND (state='parts' OR state='assembly') "
+		"ORDER BY id"
 	);
 
 	for(auto [id,_1,parent,_3]:q1){
@@ -739,7 +746,7 @@ Plan historical_plan(DB db,Date date){
 		"WHERE "
 			"id IN ("
 				"SELECT MAX(id) FROM meeting_info "
-				"WHERE edit_date<="+escape(date)+" "
+				"WHERE DATE(edit_date)<="+escape(date)+" "
 				"GROUP BY meeting_id"
 			") "
 			"AND valid "
@@ -765,11 +772,12 @@ vector<Build_item> historical_to_build(DB db,Date date){
 		"WHERE "
 			"id IN ("
 				"SELECT MAX(id) FROM part_info "
-				"WHERE edit_date<="+escape(date)+" "
+				"WHERE DATE(edit_date)<="+escape(date)+" "
 				"GROUP BY part_id"
 			") "
 			"AND valid "
 			"AND (part_state='cut_list' OR part_state='find' OR part_state='_3d_print' OR part_state='fab') "
+		"ORDER BY id"
 	);
 
 	vector<Build_item> r;
@@ -798,12 +806,13 @@ vector<Build_item> historical_to_build(DB db,Date date){
 		"WHERE "
 			"id IN ("
 				"SELECT MAX(id) FROM part_info "
-				"WHERE edit_date<="+escape(date)+" "
+				"WHERE DATE(edit_date)<="+escape(date)+" "
 				"GROUP BY part_id"
 			") "
 			"AND valid "
 			"AND (part_state='on_order')"
-		"GROUP BY subsystem"
+		"GROUP BY subsystem "
+		"ORDER BY id "
 	));
 
 	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
@@ -813,11 +822,12 @@ vector<Build_item> historical_to_build(DB db,Date date){
 		"WHERE "
 			"id IN ("
 				"SELECT MAX(id) FROM subsystem_info "
-				"WHERE edit_date<="+escape(date)+" "
+				"WHERE DATE(edit_date)<="+escape(date)+" "
 				"GROUP BY subsystem_id"
 			") "
 			"AND valid "
-			"AND (state='parts' OR state='assembly')"
+			"AND (state='parts' OR state='assembly') "
+		"ORDER BY id"
 	);
 
 	for(auto [id,_1,parent,_3]:q1){
@@ -993,7 +1003,30 @@ void print_r(T t){
 
 void timeline(DB db){
 	//at each date, figure out when we think we're going to be done.
-	//Date date=parse((Date*)0,"2019-12-1");
+
+	/*Date test_date{2019,12,8};
+	{
+		auto tb=to_build(db);
+		auto tbh=historical_to_build(db,test_date);
+
+		auto sc=to_set(tb);
+		auto sh=to_set(tbh);
+
+		cout<<"Current only:\n";
+		print_lines(sc-sh);
+
+		cout<<"Hist only:\n";
+		print_lines(sh-sc);
+		
+		cout<<"Diff:\n";
+		diff(tb,tbh);
+		assert(tb==tbh);
+	}
+
+	{
+		auto planh=historical_plan(db,test_date);
+	}*/
+
 	for(auto date:days_with_changes(db)){
 		auto plan=historical_plan(db,date);
 		auto to_build=historical_to_build(db,date);
@@ -1009,4 +1042,45 @@ void timeline(DB db){
 		}
 		cout<<"\t"<<date_needed_for(s.first,Item{Subsystem_id{535}})<<"\n";
 	}
+}
+
+vector<pair<Date,Date>> skip_unchanged_second(vector<pair<Date,Date>> const& a){
+	if(a.empty()) return {};
+	vector<pair<Date,Date>> r;
+	r|=a[0];
+	for(auto [v1,v2]:tail(a)){
+		if(v2!=r[r.size()-1].second){
+			r|=make_pair(v1,v2);
+		}
+	}
+	return r;
+}
+
+string completion_est(DB db,Item item){
+	vector<pair<Date,Date>> r;
+	for(auto date:days_with_changes(db)){
+		auto plan=historical_plan(db,date);
+		auto to_build=historical_to_build(db,date);
+		auto s=schedule(plan,to_build);
+		auto sched=date_needed_for(s.first,item);
+		r|=make_pair(date,sched);
+	}
+	r=skip_unchanged_second(r);
+	stringstream ss;
+	ss<<h2("Completion estimates");
+	ss<<"<table border>";
+	ss<<tr(th("Date of estimate")+th("Estimated completion"));
+	for(auto a:r){
+		ss<<tr(td(as_string(a.first))+td(as_string(a.second)));
+	}
+	ss<<"</table>";
+	return ss.str();
+}
+
+string completion_est(DB db,Part_id const& part){
+	return completion_est(db,Item{part});
+}
+
+string completion_est(DB db,Subsystem_id const& subsystem){
+	return completion_est(db,Item{subsystem});
 }

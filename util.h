@@ -350,4 +350,12 @@ std::set<T> operator|(std::set<T> a,std::set<T> const& b){
 	return a;
 }
 
+template<typename T>
+std::vector<T> tail(std::vector<T> a){
+	if(a.size()){
+		a.erase(begin(a));
+	}
+	return a;
+}
+
 #endif
