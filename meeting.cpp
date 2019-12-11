@@ -86,7 +86,79 @@ map<A,tuple<A,Ts...>> to_map(std::vector<std::tuple<A,Ts...>> const& v){
 	return r;
 }
 
+template<typename T>
+vector<T> to_vec(set<T> a){
+	return vector<T>(begin(a),end(a));
+}
+
+template<typename T>
+vector<T> to_vec(vector<T> a){
+	return a;
+}
+
+void insert(DB db,Table_name const& table,vector<pair<string,string>> const& data){
+	//The data fields must already be escaped.
+	auto q="INSERT INTO "+table+" ("
+		+join(",",firsts(data))
+		+") VALUES ("
+		+join(",",seconds(data))
+		+")";
+	run_cmd(db,q);
+}
+
 //end generic code
+
+void indent(size_t i){
+	for(auto _:range(i)){
+		(void)_;
+		cout<<"\t";
+	}
+}
+
+void print_r(bool)nyi
+
+void print_r(size_t i,Date d){
+	indent(i);
+	cout<<d<<"\n";
+}
+
+template<typename K,typename V>
+void print_r(size_t i,map<K,V> const& a){
+	indent(i);
+	cout<<"map\n";
+	for(auto p:a){
+		print_r(i+1,p);
+	}
+}
+
+template<typename T>
+void print_r(size_t i,T t){
+	indent(i);
+	cout<<t<<"\n";
+}
+
+template<typename A,typename B>
+void print_r(size_t i,pair<A,B> const& a){
+	indent(i);
+	cout<<"pair\n";
+	print_r(i+1,a.first);
+	print_r(i+1,a.second);
+}
+
+template<typename T>
+void print_r(size_t i,vector<T> const& a){
+	indent(i);
+	cout<<"vec\n";
+	for(auto elem:a){
+		print_r(i+1,elem);
+	}
+}
+
+template<typename T>
+void print_r(T t){
+	print_r(0,t);
+}
+
 
 string link(Meeting_id a,string body){
 	Meeting_editor r;
@@ -266,6 +338,14 @@ std::ostream& operator<<(std::ostream& o,Meeting_plan const& a){
 	return o<<")";
 }
 
+void print_r(size_t i,Meeting_plan const& a){
+	indent(i);
+	cout<<"Meeting_plan\n";
+	#define X(A,B) print_r(i+1,a.B);
+	MEETING_PLAN_ITEMS(X)
+	#undef X
+}
+
 using Plan=vector<pair<Date,Meeting_plan>>;
 
 Plan blank_plan(DB db){
@@ -327,6 +407,13 @@ std::ostream& operator<<(std::ostream& o,Build_item const& a){
 	#undef X
 	return o<<")";
 }
+
+#define X(NAME) void print_r(size_t i,NAME const&){\
+	indent(i);\
+	cout<<""#NAME<<"\n";\
+}
+X(Build_item)
+#undef X
 
 std::string table(DB db,Request const& page,vector<Build_item> const& a){
 	vector<Label> labels;
@@ -525,16 +612,6 @@ vector<Build_item> sort_by_priority(vector<Build_item> v){
 	return v;
 }
 
-template<typename T>
-vector<T> to_vec(set<T> a){
-	return vector<T>(begin(a),end(a));
-}
-
-template<typename T>
-vector<T> to_vec(vector<T> a){
-	return a;
-}
-
 vector<Build_item> topological_sort(vector<Build_item> a){
 	vector<Build_item> r;
 	set<Item> done;
@@ -703,16 +780,6 @@ void make_plan(DB db){
 	auto x=make_plan_inner(db);
 	print_lines(x.first);
 	cout<<x.second<<"\n";
-}
-
-void insert(DB db,Table_name const& table,vector<pair<string,string>> const& data){
-	//The data fields must already be escaped.
-	auto q="INSERT INTO "+table+" ("
-		+join(",",firsts(data))
-		+") VALUES ("
-		+join(",",seconds(data))
-		+")";
-	run_cmd(db,q);
 }
 
 void inner(ostream& o,Meeting_edit const& a,DB db){
@@ -934,72 +1001,6 @@ Date date_needed_for(Plan plan,Item item){
 		}
 	}
 	return last;
-}
-
-void indent(size_t i){
-	for(auto _:range(i)){
-		(void)_;
-		cout<<"\t";
-	}
-}
-
-void print_r(bool)nyi
-
-void print_r(size_t i,Date d){
-	indent(i);
-	cout<<d<<"\n";
-}
-
-template<typename K,typename V>
-void print_r(size_t i,map<K,V> const& a){
-	indent(i);
-	cout<<"map\n";
-	for(auto p:a){
-		print_r(i+1,p);
-	}
-}
-
-template<typename T>
-void print_r(size_t i,T t){
-	indent(i);
-	cout<<t<<"\n";
-}
-
-#define X(NAME) void print_r(size_t i,NAME const&){\
-	indent(i);\
-	cout<<""#NAME<<"\n";\
-}
-X(Build_item)
-#undef X
-
-void print_r(size_t i,Meeting_plan const& a){
-	indent(i);
-	cout<<"Meeting_plan\n";
-	#define X(A,B) print_r(i+1,a.B);
-	MEETING_PLAN_ITEMS(X)
-	#undef X
-}
-
-template<typename A,typename B>
-void print_r(size_t i,pair<A,B> const& a){
-	indent(i);
-	cout<<"pair\n";
-	print_r(i+1,a.first);
-	print_r(i+1,a.second);
-}
-
-template<typename T>
-void print_r(size_t i,vector<T> const& a){
-	indent(i);
-	cout<<"vec\n";
-	for(auto elem:a){
-		print_r(i+1,elem);
-	}
-}
-
-template<typename T>
-void print_r(T t){
-	print_r(0,t);
 }
 
 void timeline(DB db){
