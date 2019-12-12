@@ -483,7 +483,7 @@ vector<Build_item> to_build(DB db){
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
 			"AND valid "
 			"AND (part_state='cut_list' OR part_state='find' OR part_state='_3d_print' OR part_state='fab') "
-		"ORDER BY id"
+		"ORDER BY part_id"
 	);
 
 	vector<Build_item> r;
@@ -514,7 +514,7 @@ vector<Build_item> to_build(DB db){
 			"AND valid "
 			"AND (part_state='on_order')"
 		"GROUP BY subsystem "
-		"ORDER BY id "
+		"ORDER BY subsystem "
 	));
 
 	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
@@ -525,7 +525,7 @@ vector<Build_item> to_build(DB db){
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
 			"AND valid "
 			"AND (state='parts' OR state='assembly') "
-		"ORDER BY id"
+		"ORDER BY subsystem_id"
 	);
 
 	for(auto [id,_1,parent,_3]:q1){
@@ -845,7 +845,7 @@ vector<Build_item> historical_to_build(DB db,Date date){
 			") "
 			"AND valid "
 			"AND (part_state='cut_list' OR part_state='find' OR part_state='_3d_print' OR part_state='fab') "
-		"ORDER BY id"
+		"ORDER BY part_id"
 	);
 
 	vector<Build_item> r;
@@ -880,7 +880,7 @@ vector<Build_item> historical_to_build(DB db,Date date){
 			"AND valid "
 			"AND (part_state='on_order')"
 		"GROUP BY subsystem "
-		"ORDER BY id "
+		"ORDER BY subsystem "
 	));
 
 	auto q1=qm<Subsystem_id,Decimal,optional<Subsystem_id>,Priority>(
@@ -895,7 +895,7 @@ vector<Build_item> historical_to_build(DB db,Date date){
 			") "
 			"AND valid "
 			"AND (state='parts' OR state='assembly') "
-		"ORDER BY id"
+		"ORDER BY subsystem_id"
 	);
 
 	for(auto [id,_1,parent,_3]:q1){
