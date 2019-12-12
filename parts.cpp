@@ -660,6 +660,7 @@ Args parse_args(int argc,char **argv){
 
 int tables(DB db){
 	cout<<"Expected database tables\n";
+	auto current_tables=show_tables(db);
 	for(auto [name,contents]:expected_tables()){
 		cout<<name<<"\n";
 		cout<<"\tName\t"<<"Type\t"<<"Primary key\n";
@@ -667,15 +668,19 @@ int tables(DB db){
 			cout<<"\t"<<a.first<<"\t"<<a.second.first<<"\t"<<a.second.second<<"\n";
 		}
 
-		auto f=read(db,name);
-		if(contents!=f){
-			cout<<"Start diff:\n";
-			//diff(contents,f);
-			//PRINT(f);
-			for(auto [e1,e2]:zip_extend(f,contents)){
-				if(e1!=e2)
-				cout<<"\t"<<e1<<" "<<e2<<"\n";
+		if(current_tables.count(name)){
+			auto f=read(db,name);
+			if(contents!=f){
+				cout<<"Start diff:\n";
+				//diff(contents,f);
+				//PRINT(f);
+				for(auto [e1,e2]:zip_extend(f,contents)){
+					if(e1!=e2)
+					cout<<"\t"<<e1<<" "<<e2<<"\n";
+				}
 			}
+		}else{
+			cout<<"Table does not exist.\n";
 		}
 	}
 	return 0;
@@ -722,41 +727,51 @@ void alter_column(DB db,Table_name table,pair<string,Column_type> c1,pair<string
 	run_cmd(db,"ALTER TABLE "+table+" MODIFY "+name1+" "+t2.first);
 }
 
+vector<string> alter_table(DB db,Table_name table_name,vector<pair<string,Column_type>> after){
+	vector<string> queries;
+	auto current=read(db,table_name);
+	for(auto [e1,e2]:zip_extend(current,after)){
+		if(e1!=e2){
+			if(!e1){
+				//add columns at the end
+				stringstream ss;
+				ss<<"ALTER TABLE "+table_name+" ADD "+e2->first+" "+e2->second.first;
+				if(e2->second.second){
+					ss<<" UNIQUE PRIMARY KEY";
+				}
+				queries|=ss.str();
+			}else{
+				if(e2){
+					//change already-existing columns
+					if(e1->first==e2->first){
+						alter_column(db,table_name,*e1,*e2);
+					}else{
+						cout<<"Change w/ possibly totally unrelated column.  Not automatically updating.\n";
+						PRINT(table_name);
+						PRINT(e1);
+						PRINT(e2);
+						exit(1);
+					}
+				}else{
+					//delete column
+					nyi
+				}
+			}
+		}
+	}
+	return queries;
+}
+
 int alter_tables(DB db){
 	//First, create a list of all the edits to make; don't start if don't know what want to do for each of the changes
 	vector<string> queries;
-
+	auto existing_tables=show_tables(db);
 	//not going to worry about missing tables here to start with.
 	for(auto [table_name,after]:expected_tables()){
-		auto current=read(db,table_name);
-		for(auto [e1,e2]:zip_extend(current,after)){
-			if(e1!=e2){
-				if(!e1){
-					//add columns at the end
-					stringstream ss;
-					ss<<"ALTER TABLE "+table_name+" ADD "+e2->first+" "+e2->second.first;
-					if(e2->second.second){
-						ss<<" UNIQUE PRIMARY KEY";
-					}
-					queries|=ss.str();
-				}else{
-					if(e2){
-						//change already-existing columns
-						if(e1->first==e2->first){
-							alter_column(db,table_name,*e1,*e2);
-						}else{
-							cout<<"Change w/ possibly totally unrelated column.  Not automatically updating.\n";
-							PRINT(table_name);
-							PRINT(e1);
-							PRINT(e2);
-							exit(1);
-						}
-					}else{
-						//delete column
-						nyi
-					}
-				}
-			}
+		if(existing_tables.count(table_name)){
+			queries|=alter_table(db,table_name,after);
+		}else{
+			//queries|=create_table(db,table_name,after);
 		}
 	}
 
