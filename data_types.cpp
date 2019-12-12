@@ -6,6 +6,15 @@
 
 using namespace std;
 
+unsigned short rand(unsigned short const*){
+	return rand();
+}
+
+template<int MIN,int MAX>
+Int_limited<MIN,MAX> parse(Int_limited<MIN,MAX> const*,string const& s){
+	return Int_limited<MIN,MAX>(stoi(s));
+}
+
 string to_db_type(const int*){
 	return "int(11)";
 }
@@ -107,17 +116,13 @@ string to_db_type(const User*){ return "varchar(11)"; }
 
 string to_db_type(const Datetime*){ return "datetime"; }
 
-unsigned short rand(unsigned short const*){
-	return rand();
-}
-
 Date parse(Date const*,std::string const& s){
 	auto sp=split('-',s);
 	if(sp.size()!=3) throw "Invalid date:"+s;
 	return Date{
-		(unsigned short)stoi(sp[0]),
-		(unsigned short)stoi(sp[1]),
-		(unsigned short)stoi(sp[2])
+		parse((Year*)0,sp[0]),
+		parse((Month*)0,sp[1]),
+		parse((Day*)0,sp[2])
 	};
 	/*Date r;
 	if(s=="0000-00-00"){
@@ -176,7 +181,7 @@ Date rand(Date const*){
 string escape(Date const& a){
 	static const size_t LEN=26;
 	char s[LEN];
-	sprintf(s,"'%04d-%02d-%02d'",a.year,a.month,a.day);
+	sprintf(s,"'%04d-%02d-%02d'",a.year.get(),a.month.get(),a.day.get());
 	return s;
 }
 

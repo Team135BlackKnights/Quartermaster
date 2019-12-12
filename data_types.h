@@ -119,10 +119,36 @@ std::string to_db_type(const User*);
 struct Datetime:Wrap<Datetime,std::string>{};
 std::string to_db_type(const Datetime*);
 
+template<int MIN,int MAX>
+class Int_limited{
+	//ends are inclusive.
+	int value;
+
+	public:
+	Int_limited():value(MIN){}
+
+	explicit Int_limited(int x):value(x){
+		if(x<MIN) throw "Value out of range";
+		if(x>MAX) throw "Value out of range";
+	}
+	
+	operator int()const{ return value; }
+	int get()const{ return value; }
+};
+
+template<int MIN,int MAX>
+Int_limited<MIN,MAX> rand(Int_limited<MIN,MAX> const*){
+	return Int_limited<MIN,MAX>{MIN+rand()%(MAX+1-MIN)};
+}
+
+using Year=Int_limited<0,2050>;
+using Month=Int_limited<1,12>;
+using Day=Int_limited<1,31>;
+
 #define DATE_ITEMS(X)\
-	X(unsigned short,year)\
-	X(unsigned short,month)\
-	X(unsigned short,day)
+	X(Year,year)\
+	X(Month,month)\
+	X(Day,day)
 struct Date{
 	DATE_ITEMS(INST)
 };
