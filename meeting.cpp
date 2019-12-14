@@ -309,6 +309,7 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 		"Calendar",
 		link(Meeting_new{},"New meeting")
 		+"<br>"+link(State_change{},"State changes by date")
+		+"<br>"+link(Chart{},"Chart")
 		+current_calendar(db,a)
 		+to_do(db,a)
 		+show_plan(db,a)

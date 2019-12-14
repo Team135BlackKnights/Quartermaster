@@ -372,6 +372,8 @@ DEF_OPTION(BOM,BOM_ITEMS)
 DEF_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
 DEF_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 DEF_OPTION(State_change,STATE_CHANGE_ITEMS)
+DEF_OPTION(Chart,CHART_ITEMS)
+DEF_OPTION(Chart_image,CHART_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';

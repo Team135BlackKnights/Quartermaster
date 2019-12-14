@@ -14,6 +14,7 @@
 #include "meeting.h"
 #include "order.h"
 #include "progress.h"
+#include "chart.h"
 
 using namespace std;
 

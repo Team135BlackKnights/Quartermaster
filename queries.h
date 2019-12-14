@@ -283,6 +283,10 @@ DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 	X(std::optional<Date>,end)
 DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
 
+#define CHART_ITEMS(X)
+DECL_OPTION(Chart,CHART_ITEMS)
+DECL_OPTION(Chart_image,CHART_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -314,7 +318,9 @@ DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
 	X(Part_duplicate)\
 	X(Subsystem_duplicate)\
 	X(State_change)\
-	
+	X(Chart)\
+	X(Chart_image)\
+
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)
