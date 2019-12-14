@@ -3,6 +3,22 @@
 
 using namespace std;
 
+template<typename T>
+set<T> rand(set<T> const*){
+	set<T> r;
+	for(auto _:range(rand()%10)){
+		(void)_;
+		r|=rand((T*)0);
+	}
+	return r;
+}
+
+template<typename T>
+set<T> parse(set<T> const*,string const& s){
+	PRINT(s);
+	nyi
+}
+
 std::ostream& operator<<(std::ostream& o,Part_data const& a){
 	o<<"Part_data(\n";
 	#define X(A,B) o<<"\t"#B<<":"<<a.B<<"\n";

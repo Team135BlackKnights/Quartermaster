@@ -283,7 +283,8 @@ DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 	X(std::optional<Date>,end)
 DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
 
-#define CHART_ITEMS(X)
+#define CHART_ITEMS(X)\
+	X(std::set<Part_state>,ignore)
 DECL_OPTION(Chart,CHART_ITEMS)
 DECL_OPTION(Chart_image,CHART_ITEMS)
 

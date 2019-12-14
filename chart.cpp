@@ -108,7 +108,7 @@ void run(DB db){
 			(void)_;
 			write(fds[1],"this\n",5);
 		}*/
-		to_sub<<"This is a titlet\n";
+		to_sub<<"Number of parts in each state by date\n";
 		to_sub<<"Axis label1\n";
 		to_sub<<"Axis (y)?\n";
 		in_state_by_date(to_sub,db);
