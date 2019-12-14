@@ -1,0 +1,8 @@
+digraph G{
+	in_design [color = "red"];
+	parts [color=blue];
+	assembly;
+	done [color=green];
+
+	in_design->parts->assembly->done;
+}
