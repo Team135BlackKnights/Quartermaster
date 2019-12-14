@@ -277,8 +277,7 @@ Input drop_down_submit(string const& name,Value const& current,vector<pair<Value
 	ss<<"<select name=\""<<name<<"\" onchange=\"this.form.submit()\">";
 	for(auto elem:v){
 		ss<<"<option value=\""<<elem.first<<"\"";
-		ss<<drop_style(elem.first);
-		if(elem.first==current) ss<<"selected=selected";
+		if(elem.first==current) ss<<" selected=selected";
 		ss<<">"<<elem.second<<"</option><br>";
 	}
 	ss<<"</select>";
