@@ -260,13 +260,24 @@ Input show_input(DB db,string const& name,URL const& value){
 ENUM_DEFS_MAIN(Part_state,PART_STATES)
 #undef T
 
+string drop_style(Part_state state){
+	stringstream ss;
+	ss<<" class=\"red\" ";
+	return ss.str();
+}
+
 template<typename Value,typename Display>
 Input drop_down_submit(string const& name,Value const& current,vector<pair<Value,Display>> const& v){
 	stringstream ss;
+	ss<<"<style>\n";
+	ss<<"red{\n";
+	ss<<"	background-color=green;\n";
+	ss<<"}\n";
+	ss<<"</style>\n";
 	ss<<"<select name=\""<<name<<"\" onchange=\"this.form.submit()\">";
 	for(auto elem:v){
 		ss<<"<option value=\""<<elem.first<<"\"";
-		if(elem.first==current) ss<<"selected=selected";
+		if(elem.first==current) ss<<" selected=selected";
 		ss<<">"<<elem.second<<"</option><br>";
 	}
 	ss<<"</select>";

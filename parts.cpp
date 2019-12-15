@@ -14,6 +14,7 @@
 #include "meeting.h"
 #include "order.h"
 #include "progress.h"
+#include "chart.h"
 
 using namespace std;
 
@@ -26,12 +27,6 @@ vector<T> operator|(vector<T> a,T b){
 template<typename T>
 set<T> operator-(set<T> a,T t){
 	a.erase(t);
-	return a;
-}
-
-template<typename T>
-vector<T>& operator|=(vector<T> &a,optional<T> t){
-	if(t) a|=*t;
 	return a;
 }
 

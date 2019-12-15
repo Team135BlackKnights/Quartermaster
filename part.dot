@@ -1,0 +1,22 @@
+digraph G{
+	in_design [color=red];
+	need_prints [color=red];
+	build_list [color=orange];
+	need_to_cam [color=orange];
+	cut_list;
+	find;
+	found [color=green];
+	_3d_print;
+	fab;
+	fabbed [color=green];
+	buy_list [color=yellow];
+	ordered [color=blue];
+	arrived [color=green];
+
+	in_design->need_prints->build_list->need_to_cam->cut_list->fab->fabbed;
+	need_to_cam->fab;
+	in_design->buy_list->ordered->arrived;
+	build_list->_3d_print->fabbed;
+	in_design->find->found;
+	in_design->_3d_print;
+}

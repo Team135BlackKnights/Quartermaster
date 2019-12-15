@@ -6,115 +6,6 @@
 
 using namespace std;
 
-//start generic code
-template<typename T>
-bool all(vector<T> const& a){
-	for(auto elem:a){
-		if(!elem){
-			return 0;
-		}
-	}
-	return 1;
-}
-
-template<typename T>
-vector<T> non_null(vector<optional<T>> v){
-	vector<T> r;
-	for(auto elem:v){
-		if(elem){
-			r|=*elem;
-		}
-	}
-	return r;
-}
-
-template<typename T>
-vector<T> sorted(vector<T> a){
-	sort(begin(a),end(a));
-	return a;
-}
-
-template<typename T>
-std::vector<T>& operator|=(std::vector<T> &a,std::optional<T> b){
-	if(b){
-		a|=*b;
-	}
-	return a;
-}
-
-template<typename T>
-optional<T> max(vector<T> const& a){
-	if(a.empty()) return std::nullopt;
-	T r=a[0];
-	for(auto elem:a){
-		r=std::max(r,elem);
-	}
-	return r;
-}
-
-template<typename T>
-vector<T> flatten(vector<vector<T>> const& a){
-	vector<T> r;
-	for(auto elem:a){
-		r|=elem;
-	}
-	return r;
-}
-
-template<typename T>
-string join(vector<T> const& v){
-	return join("",v);
-}
-
-auto li(std::string s){ return tag("li",s); }
-
-template<typename A,typename B>
-map<A,B> to_map(std::vector<std::tuple<A,B>> const& v){
-	map<A,B> r;
-	for(auto [a,b]:v){
-		r[a]=b;
-	}
-	return r;
-}
-
-template<typename A,typename ... Ts>
-map<A,tuple<A,Ts...>> to_map(std::vector<std::tuple<A,Ts...>> const& v){
-	map<A,tuple<A,Ts...>> r;
-	for(auto elem:v){
-		r[get<0>(elem)]=elem;
-	}
-	return r;
-}
-
-template<typename T>
-vector<T> to_vec(set<T> a){
-	return vector<T>(begin(a),end(a));
-}
-
-template<typename T>
-vector<T> to_vec(vector<T> a){
-	return a;
-}
-
-void insert(DB db,Table_name const& table,vector<pair<string,string>> const& data){
-	//The data fields must already be escaped.
-	auto q="INSERT INTO "+table+" ("
-		+join(",",firsts(data))
-		+") VALUES ("
-		+join(",",seconds(data))
-		+")";
-	run_cmd(db,q);
-}
-
-//end generic code
-
-void indent(size_t i){
-	for(auto _:range(i)){
-		(void)_;
-		cout<<"\t";
-	}
-}
-
 void print_r(bool)nyi
 
 void print_r(size_t i,Date d){
@@ -158,7 +49,6 @@ template<typename T>
 void print_r(T t){
 	print_r(0,t);
 }
-
 
 string link(Meeting_id a,string body){
 	Meeting_editor r;
@@ -309,6 +199,7 @@ void inner(std::ostream& o,Calendar const& a,DB db){
 		"Calendar",
 		link(Meeting_new{},"New meeting")
 		+"<br>"+link(State_change{},"State changes by date")
+		+"<br>"+link(Chart{},"Chart")
 		+current_calendar(db,a)
 		+to_do(db,a)
 		+show_plan(db,a)

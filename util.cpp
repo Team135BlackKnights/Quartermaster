@@ -82,17 +82,7 @@ std::string tag(std::string const& name,std::string const& body){
 std::string h1(std::string const& s){ return tag("h1",s); }
 
 #define TAG(X) std::string X(std::string const& s){ return tag(""#X,s); }
-TAG(title)
-TAG(head)
-TAG(html)
-TAG(body)
-TAG(p)
-TAG(td)
-TAG(th)
-TAG(h2)
-TAG(h3)
-TAG(h4)
-TAG(tr)
+TAGS(TAG)
 #undef TAG
 
 using DB=MYSQL*;
@@ -139,3 +129,21 @@ std::vector<std::string> operator|=(std::vector<std::string> &a,const char *s){
 	a.push_back(s);
 	return a;
 }
+
+void insert(DB db,Table_name const& table,std::vector<std::pair<std::string,std::string>> const& data){
+	//The data fields must already be escaped.
+	auto q="INSERT INTO "+table+" ("
+		+join(",",firsts(data))
+		+") VALUES ("
+		+join(",",seconds(data))
+		+")";
+	run_cmd(db,q);
+}
+
+void indent(size_t i){
+	for(auto _:range(i)){
+		(void)_;
+		std::cout<<"\t";
+	}
+}
+

@@ -94,7 +94,7 @@ void part_diff(DB db){
 
 //void meeting_diff(DB);
 
-void in_state_by_date(DB db){
+void in_state_by_date(ostream& o,DB db){
 	//to start with, only look at parts; ignore subsystems
 	//first, decide on what dates are interesting
 	//to start with, could just make it anytime anything changes
@@ -125,7 +125,7 @@ void in_state_by_date(DB db){
 	PRINT(timeline.size());
 
 	//output as CSV
-	ofstream o("timeline.csv");
+	//ofstream o("timeline.csv");
 	o<<"date,";
 	#define X(A) o<<""#A<<",";
 	PART_STATES(X)

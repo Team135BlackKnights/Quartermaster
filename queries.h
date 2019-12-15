@@ -106,8 +106,6 @@ using Table_type=std::vector<std::pair<std::string,Column_type>>;
 
 Table_type read(DB db,std::string const& name);
 
-using Table_name=std::string;
-
 void check_table(DB,Table_name const&,Table_type const&);
 std::set<Table_name> show_tables(DB);
 
@@ -283,6 +281,11 @@ DECL_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 	X(std::optional<Date>,end)
 DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
 
+#define CHART_ITEMS(X)\
+	X(std::set<Part_state>,ignore)
+DECL_OPTION(Chart,CHART_ITEMS)
+DECL_OPTION(Chart_image,CHART_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
@@ -314,7 +317,9 @@ DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
 	X(Part_duplicate)\
 	X(Subsystem_duplicate)\
 	X(State_change)\
-	
+	X(Chart)\
+	X(Chart_image)\
+
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)
