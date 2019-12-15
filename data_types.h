@@ -128,8 +128,8 @@ class Int_limited{
 	Int_limited():value(MIN){}
 
 	explicit Int_limited(int x):value(x){
-		if(x<MIN) throw "Value out of range";
-		if(x>MAX) throw "Value out of range";
+		//if(x<MIN) throw "Value out of range";
+		//if(x>MAX) throw "Value out of range";
 	}
 	
 	operator int()const{ return value; }

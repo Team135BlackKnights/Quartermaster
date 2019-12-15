@@ -99,7 +99,7 @@ Input drop_down(string const& name,Value const& current,vector<pair<Value,Displa
 	stringstream ss;
 	ss<<"<select name=\""<<name<<"\">";
 	for(auto elem:v){
-		ss<<"<option value=\""<<elem.first<<"\"";
+		ss<<"<option value="<<escape(elem.first)<<" ";
 		if(elem.first==current) ss<<"selected=selected";
 		ss<<">"<<elem.second<<"</option><br>";
 	}
