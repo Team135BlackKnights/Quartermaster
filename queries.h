@@ -106,8 +106,6 @@ using Table_type=std::vector<std::pair<std::string,Column_type>>;
 
 Table_type read(DB db,std::string const& name);
 
-using Table_name=std::string;
-
 void check_table(DB,Table_name const&,Table_type const&);
 std::set<Table_name> show_tables(DB);
 

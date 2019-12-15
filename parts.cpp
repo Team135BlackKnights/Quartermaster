@@ -30,12 +30,6 @@ set<T> operator-(set<T> a,T t){
 	return a;
 }
 
-template<typename T>
-vector<T>& operator|=(vector<T> &a,optional<T> t){
-	if(t) a|=*t;
-	return a;
-}
-
 template<typename ... Ts>
 tuple<Ts...> convert_row(vector<optional<string>> const& row){
 	tuple<Ts...> t;

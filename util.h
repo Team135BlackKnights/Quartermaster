@@ -240,18 +240,21 @@ bool operator!=(std::vector<std::string> const& a,std::vector<const char*> const
 std::string tag(std::string const& name,std::string const& body);
 std::string h1(std::string const&);
 
+#define TAGS(X)\
+X(title)\
+X(head)\
+X(html)\
+X(body)\
+X(p)\
+X(td)\
+X(th)\
+X(h2)\
+X(h3)\
+X(h4)\
+X(tr)\
+X(li)
 #define X(A) std::string A(std::string const&);
-X(title)
-X(head)
-X(html)
-X(body)
-X(p)
-X(td)
-X(th)
-X(h2)
-X(h3)
-X(h4)
-X(tr)
+TAGS(X)
 #undef X
 
 using DB=MYSQL*;
@@ -357,5 +360,97 @@ std::vector<T> tail(std::vector<T> a){
 	}
 	return a;
 }
+
+template<typename T>
+bool all(std::vector<T> const& a){
+	for(auto elem:a){
+		if(!elem){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+template<typename T>
+std::vector<T> non_null(std::vector<std::optional<T>> v){
+	std::vector<T> r;
+	for(auto elem:v){
+		if(elem){
+			r|=*elem;
+		}
+	}
+	return r;
+}
+
+template<typename T>
+std::vector<T> sorted(std::vector<T> a){
+	sort(begin(a),end(a));
+	return a;
+}
+
+template<typename T>
+std::vector<T>& operator|=(std::vector<T> &a,std::optional<T> b){
+	if(b){
+		a|=*b;
+	}
+	return a;
+}
+
+template<typename T>
+std::optional<T> max(std::vector<T> const& a){
+	if(a.empty()) return std::nullopt;
+	T r=a[0];
+	for(auto elem:a){
+		r=std::max(r,elem);
+	}
+	return r;
+}
+
+template<typename T>
+std::vector<T> flatten(std::vector<std::vector<T>> const& a){
+	std::vector<T> r;
+	for(auto elem:a){
+		r|=elem;
+	}
+	return r;
+}
+
+template<typename T>
+std::string join(std::vector<T> const& v){
+	return join("",v);
+}
+
+template<typename A,typename B>
+std::map<A,B> to_map(std::vector<std::tuple<A,B>> const& v){
+	std::map<A,B> r;
+	for(auto [a,b]:v){
+		r[a]=b;
+	}
+	return r;
+}
+
+template<typename A,typename ... Ts>
+std::map<A,std::tuple<A,Ts...>> to_map(std::vector<std::tuple<A,Ts...>> const& v){
+	std::map<A,std::tuple<A,Ts...>> r;
+	for(auto elem:v){
+		r[std::get<0>(elem)]=elem;
+	}
+	return r;
+}
+
+template<typename T>
+std::vector<T> to_vec(std::set<T> a){
+	return std::vector<T>(begin(a),end(a));
+}
+
+template<typename T>
+std::vector<T> to_vec(std::vector<T> a){
+	return a;
+}
+
+using Table_name=std::string;
+
+void insert(DB,Table_name const&,std::vector<std::pair<std::string,std::string>> const&);
+void indent(size_t);
 
 #endif
