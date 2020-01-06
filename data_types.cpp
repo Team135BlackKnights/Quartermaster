@@ -311,9 +311,7 @@ string viz_func(){
 	}
 	//ss<<"\tdocument.write(\"ran func\");\n";
 	ss<<"}\n";
-	ss<<"document.write(\"hi there1!\");";
 	ss<<"change_viz(1);\n";
-	ss<<"document.write(\"hi there2!\");";
 	ss<<"</script>\n";
 	return ss.str();
 }
