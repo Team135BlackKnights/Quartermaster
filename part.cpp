@@ -75,7 +75,7 @@ Part_number_local next_part_number(DB db,Subsystem_id subsystem){
 	return Part_number_local{get_prefix(db,subsystem),Three_digit{0}};
 }
 
-bool should_show(Part_state state,string name){
+bool should_show(Part_state state,string const& name){
 	if(name=="valid") return 1;
 	if(name=="subsystem") return 1;
 	if(name=="name") return 1;
@@ -205,9 +205,12 @@ void inner(ostream& o,Part_editor const& a,DB db){
 		after_done()+
 		input_table([=](){
 			vector<Input> r;
-			#define X(A,B) \
+			/*#define X(A,B) \
 				if(should_show(current.part_state,""#B)) \
 					r|=show_input(db,""#B,current.B);
+			PART_DATA(X)
+			#undef X*/
+			#define X(A,B) r|=show_input(db,""#B,current.B);
 			PART_DATA(X)
 			#undef X
 			return r;
@@ -229,6 +232,7 @@ void inner(ostream& o,Part_editor const& a,DB db){
 			all_cols,
 			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+escape(a.id))
 		)
+		+viz_func()
 	);
 }
 

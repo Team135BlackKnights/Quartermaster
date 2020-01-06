@@ -3,6 +3,7 @@
 #include<strings.h>
 #include "queries.h"
 #include "home.h"
+#include "part.h"
 
 using namespace std;
 
@@ -35,8 +36,8 @@ int parse(const int*,string const& s){ return stoi(s); }
 
 Input with_suggestions(string const& name,string const& value,vector<string> const& suggestions){
 	stringstream ss;
-	ss<<"<input name=\""<<name<<"\" list=\""<<name<<"\" value=\""<<value<<"\">";
-	ss<<"<datalist id=\""<<name<<"\">";
+	ss<<"<input name=\""<<name<<"\" list=\"list_"<<name<<"\" value=\""<<value<<"\">";
+	ss<<"<datalist id=\"list_"<<name<<"\">";
 	for(auto a:suggestions){
 		ss<<"<option value=\""<<a<<"\">";
 	}
@@ -99,7 +100,7 @@ Input drop_down(string const& name,Value const& current,vector<pair<Value,Displa
 	stringstream ss;
 	ss<<"<select name=\""<<name<<"\">";
 	for(auto elem:v){
-		ss<<"<option value=\""<<elem.first<<"\"";
+		ss<<"<option value=\""<<escape(elem.first)<<"\"";
 		if(elem.first==current) ss<<"selected=selected";
 		ss<<">"<<elem.second<<"</option><br>";
 	}
@@ -274,7 +275,7 @@ Input drop_down_submit(string const& name,Value const& current,vector<pair<Value
 	ss<<"	background-color=green;\n";
 	ss<<"}\n";
 	ss<<"</style>\n";
-	ss<<"<select name=\""<<name<<"\" onchange=\"this.form.submit()\">";
+	ss<<"<select name=\""<<name<<"\" id=\"part_state_select\" onchange=\"change_viz(1)\">";
 	for(auto elem:v){
 		ss<<"<option value=\""<<elem.first<<"\"";
 		if(elem.first==current) ss<<" selected=selected";
@@ -284,14 +285,51 @@ Input drop_down_submit(string const& name,Value const& current,vector<pair<Value
 	return Input{name,ss.str(),""};
 }
 
+vector<string> part_data_names(){
+	vector<string> r;
+	#define X(A,B) r|=""#B;
+	PART_DATA_INNER(X)
+	#undef X
+	return r;
+}
+
+string viz_func(){
+	stringstream ss;
+	ss<<"<script type=\"text/javascript\">\n";
+	ss<<"function change_viz(x){\n";
+	for(auto state:options((Part_state*)0)){
+		ss<<"	if(document.getElementById(\"part_state_select\").value==\""<<state<<"\"){\n";
+		//ss<<"document.write('found');\n";
+		for(auto name:part_data_names()){
+			//auto disp=should_show(state,name)?"block":"none";
+			auto disp=should_show(state,name)?"":"none";
+			ss<<"\t\tdocument.getElementById(\""<<name<<"\").style.display=\""<<disp<<"\";\n";
+			//auto color=should_show(state,name)?"red":"blue";
+			//ss<<"\t\tdocument.getElementById(\""<<name<<"\").style.color=\""<<color<<"\";\n";
+		}
+		ss<<"	}\n";
+	}
+	//ss<<"\tdocument.write(\"ran func\");\n";
+	ss<<"}\n";
+	ss<<"document.write(\"hi there1!\");";
+	ss<<"change_viz(1);\n";
+	ss<<"document.write(\"hi there2!\");";
+	ss<<"</script>\n";
+	return ss.str();
+}
+
 Input show_input(DB db,std::string const& name,Part_state const& current){
-	return drop_down_submit(
+	Input input=drop_down_submit(
 		name,current,
 		mapf(
 			[](auto x){ return make_pair(x,x); },
 			options(&current)
 		)
 	);
+	stringstream ss;
+	//input.form=ss.str()+input.form;
+	input.form+=ss.str();
+	return input;
 }
 
 #define T Machine

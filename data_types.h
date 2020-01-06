@@ -412,4 +412,6 @@ Input show_input(DB,std::string const&,Hours const&);
 struct Priority:Wrap<Priority,int>{};
 Input show_input(DB,std::string const&,Priority const&);
 
+std::string viz_func();
+
 #endif
