@@ -13,6 +13,7 @@ void insert_part_data(DB,Part_id,Part_data const&);
 std::string after_done();
 std::string redirect_to(URL const&);
 std::string fields_by_state();
+bool should_show(Part_state,std::string const& name);
 
 template<typename T>
 std::pair<std::string,std::string> part_entry(DB db,std::optional<Subsystem_id> subsystem_id,T t){

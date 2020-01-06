@@ -74,7 +74,12 @@ std::string input_table(vector<Input> const& a){
 	stringstream ss;
 	ss<<"<table>";
 	for(auto elem:a){
-		ss<<"<tr>";
+		auto s=as_string(elem.name);
+		if(s[0]!='<'){
+			ss<<"<tr id=\""<<elem.name<<"\">";
+		}else{
+			ss<<"<tr id=\"subsystem\">";
+		}
 		ss<<"<td align=right>"<<elem.name<<"</td>";
 		ss<<td(elem.form)<<td(elem.notes);
 		ss<<"</tr>";
