@@ -372,7 +372,10 @@ Decimal parse(const Decimal*,string const& s){
 		return std::decimal::make_decimal32((long long)stoi(sp[0]),0);
 	}
 	if(sp.size()==2){
-		unsigned long long whole=stoi(sp[0]);
+		unsigned long long whole=[=](){
+			if(sp[0].size()) return stoi(sp[0]);
+			return 0;
+		}();
 		int frac;
 		if(sp[1].size()==1){
 			frac=stoi(sp[1])*10;
