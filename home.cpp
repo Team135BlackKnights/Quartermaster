@@ -459,6 +459,7 @@ string indent_part_tree(DB db){
 	X(Decimal,actual_cost)\
 	X(Bom_category,category)\
 	X(Decimal,official_cost)\
+	X(Weight,weight)\
 	X(vector<BOM_item>,children)
 struct BOM_item{
 	BOM_ITEM_ITEMS(INST)
@@ -482,9 +483,9 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 		asm_by_id[get<1>(elem)]=make_tuple(get<2>(elem),get<3>(elem),get<4>(elem));
 	}
 
-	auto parts=qm<Subsystem_id,string,string,string,unsigned,bool,Decimal,Bom_exemption,Decimal>(
+	auto parts=qm<Subsystem_id,string,string,string,unsigned,bool,Decimal,Bom_exemption,Decimal,Weight>(
 		db,
-		"SELECT subsystem,name,part_supplier,part_number,qty,dni,price,bom_exemption,bom_cost_override "
+		"SELECT subsystem,name,part_supplier,part_number,qty,dni,price,bom_exemption,bom_cost_override,weight "
 		"FROM part_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM part_info GROUP BY part_id)"
@@ -493,7 +494,7 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 
 	map<Subsystem_id,vector<BOM_item>> parts_by_parent;
 	for(auto elem:parts){
-		auto [subsystem,name,supplier,part_number,qty,dni,price,bom_exemption,bom_cost_override]=elem;
+		auto [subsystem,name,supplier,part_number,qty,dni,price,bom_exemption,bom_cost_override,weight]=elem;
 		auto category=[=](){
 			if(dni) return Bom_category::DNI;
 			switch(bom_exemption){
@@ -523,7 +524,8 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 			dni?0:qty,
 			price,
 			category,
-			official_cost
+			official_cost,
+			weight
 		};
 	}
 
@@ -559,11 +561,16 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 			r.qty=0;
 			r.category=Bom_category::DNI;
 			r.official_cost=0;
+			r.weight=Weight{0};
 			return r;
 		}else{
 			r.qty=1;
 			r.category=Bom_category::STANDARD;
 			r.official_cost=sum(mapf([](auto x){ return x.official_cost; },r.children));
+			r.weight=sum(mapf(
+				[](auto x){ return x.weight; },
+				r.children
+			));
 		}
 		return r;
 	};
@@ -582,7 +589,7 @@ string bom(DB db,optional<Subsystem_id> subsystem){
 	stringstream ss;
 	ss<<"<table border>";
 	ss<<tr(join("",mapf(th,vector<string>{
-		"Part name","Supplier","Part number","Qty","Actual cost","Rule Category","BOM cost"
+		"Part name","Supplier","Part number","Qty","Actual cost","Rule Category","BOM cost","Weight"
 	})));
 	auto x=bom_data(db,subsystem);
 	std::function<void(unsigned,BOM_item)> f;
@@ -594,6 +601,7 @@ string bom(DB db,optional<Subsystem_id> subsystem){
 		ss<<td(as_string(b.qty))<<td(as_string(b.actual_cost));
 		ss<<td(as_string(b.category));
 		ss<<td(as_string(b.official_cost));
+		ss<<td(as_string(b.weight));
 		ss<<"</tr>";
 		//mapv(f,b.children);
 		for(auto x:b.children){

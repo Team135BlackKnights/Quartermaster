@@ -77,6 +77,12 @@ std::ostream& operator<<(std::ostream& o,Wrap<Sub,Data> const& a){
 }
 
 template<typename Sub,typename Data>
+Wrap<Sub,Data>& operator+=(Wrap<Sub,Data>& a,Wrap<Sub,Data> const& b){
+	a.data+=b.data;
+	return a;
+}
+
+template<typename Sub,typename Data>
 Sub rand(const Wrap<Sub,Data>*){
 	return Sub{rand((Data*)0)};
 }
