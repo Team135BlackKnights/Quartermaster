@@ -86,6 +86,24 @@ std::vector<std::pair<A,B>> zip(std::vector<A> const& a,std::vector<B> const& b)
 	return r;
 }
 
+template<typename A,typename B,typename C>
+std::vector<std::tuple<A,B,C>> zip(std::vector<A> const& a,std::vector<B> const& b,std::vector<C> const& c){
+	std::vector<std::tuple<A,B,C>> r;
+	auto a_at=begin(a);
+	auto b_at=begin(b);
+	auto c_at=begin(c);
+	auto a_end=end(a);
+	auto b_end=end(b);
+	auto c_end=end(c);
+	while(a_at!=a_end && b_at!=b_end && c_at!=c_end){
+		r|=std::make_tuple(*a_at,*b_at,*c_at);
+		a_at++;
+		b_at++;
+		c_at++;
+	}
+	return r;
+}
+
 template<typename T>
 std::ostream& operator<<(std::ostream& o,std::optional<T> const& a){
 	if(a) return o<<*a;

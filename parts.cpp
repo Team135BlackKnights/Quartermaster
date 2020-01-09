@@ -19,6 +19,15 @@
 using namespace std;
 
 template<typename T>
+vector<pair<T,T>> adjacent_pairs(vector<T> const& a){
+	vector<pair<T,T>> r;
+	for(size_t i=1;i<a.size();i++){
+		r|=make_pair(a[i-1],a[i]);
+	}
+	return r;
+}
+
+template<typename T>
 vector<T> operator|(vector<T> a,T b){
 	a|=b;
 	return a;
@@ -316,6 +325,55 @@ std::string show_current_parts(DB db,Request const& page){
 
 HISTORY_TABLE(part,PART_INFO_ROW)
 
+string history_sum(DB db){
+	stringstream o;
+	auto q=qm<\
+                PART_INFO_ROW(A_COMMA)\
+                Dummy\
+        >(\
+                db,\
+                "SELECT "\
+                PART_INFO_ROW(B_STR_COMMA)\
+                "0 FROM part_info ORDER BY id"\
+        );\
+        vector<Label> labels;\
+        PART_INFO_ROW(LABEL_B)
+
+	//make a table of changes
+	o<<h2("Change table");
+	for(auto [a,b]:adjacent_pairs(q)){
+		o<<"<p>";
+		vector<string> as;
+		std::apply(
+			[&](auto&&... x){
+				( ( (as|=as_string(x)) , ... ));
+			},
+			a
+		);
+
+		vector<string> bs;
+		std::apply(
+			[&](auto&&... x){
+				( ( (bs|=as_string(x)) , ... ));
+			},
+			b
+		);
+
+		vector<string> names;
+		#define X(A,B) names|=""#B;
+		PART_INFO_ROW(X)
+		#undef X
+
+		for(auto [name,a1,b1]:zip(names,as,bs)){
+			if(a1!=b1){
+				o<<name<<": "<<a1<<" -> "<<b1<<"<br>";
+			}
+		}
+		o<<"</p>";
+	}
+	return o.str();
+}
+
 void inner(ostream& o,Parts const& a,DB db){
 	make_page(
 		o,
@@ -323,6 +381,7 @@ void inner(ostream& o,Parts const& a,DB db){
 		link(Part_new{},"New part")
 		+show_current_parts(db,a)+
 		history_part(db,a)//show_table(db,a,"part_info","History")
+		//+history_sum(db)
 	);
 }
 
