@@ -357,7 +357,7 @@ ENUM_DEFS(Bom_category,BOM_CATEGORY_OPTIONS)
 using Decimal=decimal::decimal32;
 
 string to_db_type(const Decimal*){
-	return "decimal(8,2)";
+	return "decimal(8,3)";
 }
 
 std::ostream& operator<<(std::ostream& o,Decimal const& a){
@@ -378,23 +378,25 @@ Decimal parse(const Decimal*,string const& s){
 		}();
 		int frac;
 		if(sp[1].size()==1){
-			frac=stoi(sp[1])*10;
+			frac=stoi(sp[1])*100;
 		}else if(sp[1].size()==2){
+			frac=stoi(sp[1])*10;
+		}else if(sp[1].size()==3){
 			frac=stoi(sp[1]);
 		}else{
 			/*PRINT(s);
 			PRINT(sp[1]);
 			nyi*/
-			throw "Max of 2 decimal places";
+			throw "Max of 3 decimal places";
 		}
-		return std::decimal::make_decimal32(whole*100+frac,-2);
+		return std::decimal::make_decimal32(whole*1000+frac,-3);
 	}
 	throw "Not a decimal";
 }
 
 Input show_input(DB db,string const& name,Decimal value){
 	auto x=show_input(db,name,as_string(value));
-	x.notes="Max 2 decimal places";
+	x.notes="Max 3 decimal places";
 	return x;
 }
 
