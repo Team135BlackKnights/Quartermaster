@@ -740,9 +740,10 @@ int tables(DB db){
 	return 0;
 }
 
-vector<string> parse_enum(string s){
-	assert(s.substr(0,5)=="enum(");
-	assert(s[s.size()-1]==')');
+optional<vector<string>> parse_enum(string s){
+	if(s.substr(0,5)!="enum(") return std::nullopt;
+	if(s[s.size()-1]!=')') return std::nullopt;
+
 	auto middle=s.substr(5,s.size()-5-1);
 	auto sp=split(',',middle);
 
@@ -754,6 +755,12 @@ vector<string> parse_enum(string s){
 	};
 
 	return mapf(parse_item,sp);
+}
+
+pair<int,int> parse_decimal(string s){
+	if(s=="decimal(8,2)") return make_pair(8,2);
+	if(s=="decimal(8,3)") return make_pair(8,3);
+	nyi
 }
 
 void alter_column(DB db,Table_name table,pair<string,Column_type> c1,pair<string,Column_type> c2){
@@ -772,13 +779,26 @@ void alter_column(DB db,Table_name table,pair<string,Column_type> c1,pair<string
 
 	auto e1=parse_enum(t1.first);
 	auto e2=parse_enum(t2.first);
-	auto missing=to_set(e1)-to_set(e2);
-	if(missing.size()){
-		cout<<"Does not cover all previous cases";
-		nyi
+
+	if(e1 && e2){
+		auto missing=to_set(*e1)-to_set(*e2);
+		if(missing.size()){
+			cout<<"Does not cover all previous cases";
+			nyi
+		}
+
+		run_cmd(db,"ALTER TABLE "+table+" MODIFY "+name1+" "+t2.first);
+		return;
 	}
 
-	run_cmd(db,"ALTER TABLE "+table+" MODIFY "+name1+" "+t2.first);
+	auto d1=parse_decimal(t1.first);
+	auto d2=parse_decimal(t2.first);
+	if(d2.first>=d1.first && d2.second>=d1.second){
+		run_cmd(db,"ALTER TABLE "+table+" MODIFY "+name1+" "+t2.first);
+		return;
+	}
+
+	nyi
 }
 
 vector<string> alter_table(DB db,Table_name table_name,vector<pair<string,Column_type>> after){
