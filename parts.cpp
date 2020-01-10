@@ -490,6 +490,68 @@ void inner(ostream& o,Machine_page const& a,DB db){
 }
 
 void inner(ostream& o,State const& a,DB db){
+	auto data=qm<
+		Subsystem_id,Part_id,
+		std::optional<Material>,
+		unsigned,
+		std::optional<string>,
+		std::optional<string>,
+		std::optional<string>
+	>(
+		db,
+		"SELECT subsystem,part_id,"
+		"material,qty, "
+		"length,width,thickness "
+		"FROM part_info "
+		"WHERE "
+			"valid "
+			"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
+			"AND part_state="+escape(a.state)+" "
+		"ORDER BY subsystem,part_id "
+	);
+	map<
+		std::optional<Material>,
+		map<
+			optional<string>,
+			unsigned
+		>
+	> by_material;
+
+	for(auto t:data){
+		auto m=get<2>(t);
+		auto qty=get<3>(t);
+		auto len=get<4>(t);
+		by_material[m][len]+=qty;
+	}
+
+	map<std::optional<Material>,string> material_totals;
+	for(auto [k,v]:by_material){
+		stringstream ss;
+		for(auto elem:v){
+			ss<<elem<<"<br>";
+		}
+		try{
+			auto t=mapf(
+				[](auto x){
+					if(!x.first) throw "no num";
+					return make_pair(stod(*x.first),x.second);
+				},
+				v
+			);
+			double total=0;
+			if(t.size()){
+				total-=.125;
+				for(auto [len,qty]:t){
+					total+=qty*(len+.125);
+				}
+			}
+			ss<<"Total length needed:"<<total;
+		}catch(...){
+			ss<<"Could not create total";
+		}
+		material_totals[k]=ss.str();
+	}
+
 	make_page(
 		o,
 		as_string(a.state),
@@ -501,25 +563,19 @@ void inner(ostream& o,State const& a,DB db){
 				"Material","Qty",
 				"Length","Width","Thickness"
 			},
-			qm<
-				Subsystem_id,Part_id,
-				std::optional<Material>,
-				unsigned,
-				std::optional<string>,
-				std::optional<string>,
-				std::optional<string>
-			>(
-				db,
-				"SELECT subsystem,part_id,"
-				"material,qty, "
-				"length,width,thickness "
-				"FROM part_info "
-				"WHERE "
-					"valid "
-					"AND id IN (SELECT MAX(id) FROM part_info GROUP BY part_id) "
-					"AND part_state="+escape(a.state)+" "
-				"ORDER BY subsystem,part_id "
-			)
+			data
+		)+
+		tag("table border",
+			tr(th("Material")+th("Qty"))+
+			join(mapf(
+				[](auto p){
+					return tr(
+						td(as_string(p.first))+
+						td(p.second)
+					);
+				},
+				material_totals
+			))
 		)
 	);
 }

@@ -273,6 +273,11 @@ bool operator!=(Suggest<T> const& a,Suggest<T> const& b){
 }
 
 template<typename T>
+bool operator<(Suggest<T> const& a,Suggest<T> const& b){
+	return a.s<b.s;
+}
+
+template<typename T>
 std::ostream& operator<<(std::ostream& o,Suggest<T> const& a){
 	return o<<a.s;
 }
