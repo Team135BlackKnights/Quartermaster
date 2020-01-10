@@ -496,10 +496,17 @@ void inner(ostream& o,State const& a,DB db){
 		as_table(
 			db,
 			a,
-			vector<Label>{"Subsystem","Part"},
-			qm<Subsystem_id,Part_id>(
+			vector<Label>{"Subsystem","Part","Length","Width","Thickness","Material","Qty"},
+			qm<
+				Subsystem_id,Part_id,
+				std::optional<string>,
+				std::optional<string>,
+				std::optional<string>,
+				std::optional<Material>,
+				unsigned
+			>(
 				db,
-				"SELECT subsystem,part_id "
+				"SELECT subsystem,part_id,length,width,thickness,material,qty "
 				"FROM part_info "
 				"WHERE "
 					"valid "
