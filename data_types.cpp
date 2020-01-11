@@ -101,8 +101,8 @@ Input drop_down(string const& name,Value const& current,vector<pair<Value,Displa
 	ss<<"<select name=\""<<name<<"\">";
 	for(auto elem:v){
 		ss<<"<option value="<<escape(elem.first)<<"";
-		if(elem.first==current) ss<<"selected=selected";
-		ss<<">"<<elem.second<<"</option><br>";
+		if(elem.first==current) ss<<" selected=selected";
+		ss<<">"<<elem.second<<"</option><br>\n";
 	}
 	ss<<"</select>";
 	return Input{name,ss.str(),""};

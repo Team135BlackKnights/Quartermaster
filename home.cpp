@@ -645,7 +645,7 @@ void inner(ostream& o,Home const& a,DB db){
 }
 
 std::string pretty_td(DB,Part_checkbox const& a){
-        return td("<input type=\"checkbox\" name=\"part_checkbox\" value=\""+as_string(a)+"\">");
+        return td("<input type=\"checkbox\" name=\"part_checkbox\" value=\""+escape(a)+"\">");
 }
 
 std::string pretty_td(DB,Supplier const& a){
