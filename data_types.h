@@ -82,6 +82,16 @@ Wrap<Sub,Data>& operator+=(Wrap<Sub,Data>& a,Wrap<Sub,Data> const& b){
 	return a;
 }
 
+/*template<typename Sub,typename Data,typename T>
+auto operator>(Wrap<Sub,Data> const& a,T const& t){
+	return a.data>t;
+}*/
+
+template<typename A,typename Sub,typename Data>
+auto operator*(A const& a,Wrap<Sub,Data> const& b){
+	return a*b.data;
+}
+
 template<typename Sub,typename Data>
 Sub rand(const Wrap<Sub,Data>*){
 	return Sub{rand((Data*)0)};

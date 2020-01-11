@@ -14,6 +14,7 @@
 	X(Assembly_state,state)\
 	X(std::optional<DNI>,dni)\
 	X(Priority,priority)\
+	X(std::optional<Weight>,weight_override)
 	
 struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)

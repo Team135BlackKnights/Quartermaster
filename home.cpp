@@ -466,9 +466,9 @@ struct BOM_item{
 };
 
 BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
-	auto asms=qm<optional<Subsystem_id>,Subsystem_id,string,Part_number,optional<bool>>(
+	auto asms=qm<optional<Subsystem_id>,Subsystem_id,string,Part_number,optional<bool>,optional<Weight>>(
 		db,
-		"SELECT parent,subsystem_id,name,part_number,dni "
+		"SELECT parent,subsystem_id,name,part_number,dni,weight_override "
 		"FROM subsystem_info "
 		"WHERE "
 			"id IN (SELECT MAX(id) FROM subsystem_info GROUP BY subsystem_id) "
@@ -476,11 +476,11 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 	);
 
 	map<optional<Subsystem_id>,vector<Subsystem_id>> asm_by_parent;
-	using Asm_info=tuple<string,Part_number,optional<bool>>;
+	using Asm_info=tuple<string,Part_number,optional<bool>,optional<Weight>>;
 	map<Subsystem_id,Asm_info> asm_by_id;
 	for(auto elem:asms){
 		asm_by_parent[get<0>(elem)]|=get<1>(elem);
-		asm_by_id[get<1>(elem)]=make_tuple(get<2>(elem),get<3>(elem),get<4>(elem));
+		asm_by_id[get<1>(elem)]=make_tuple(get<2>(elem),get<3>(elem),get<4>(elem),get<5>(elem));
 	}
 
 	auto parts=qm<Subsystem_id,string,string,string,unsigned,bool,Decimal,Bom_exemption,Decimal,Weight>(
@@ -499,7 +499,7 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 			if(dni) return Bom_category::DNI;
 			switch(bom_exemption){
 				case Bom_exemption::none:
-					if(price/qty<5){
+					if(price<5){
 						return Bom_category::SUB_5D;
 					}
 					return Bom_category::STANDARD;
@@ -515,7 +515,7 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 				return bom_cost_override;
 			}
 			if(category!=Bom_category::STANDARD) return 0;
-			return price;
+			return qty*price;
 		}();
 		parts_by_parent[subsystem]|=BOM_item{
 			name,
@@ -525,7 +525,7 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 			price,
 			category,
 			official_cost,
-			weight
+			qty*weight
 		};
 	}
 
@@ -534,11 +534,13 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 	f=[&](optional<Subsystem_id> a)->BOM_item{
 		BOM_item r;
 		bool dni;
+		optional<Weight> weight_override;
 		if(a){
 			auto x=asm_by_id[*a];
 			r.name=get<0>(x);
 			r.part_number=get<1>(x);
 			dni=get<2>(x)?*get<2>(x):0;
+			weight_override=get<3>(x);
 		}else{
 			r.name="Root";
 			dni=0;
@@ -567,10 +569,15 @@ BOM_item bom_data(DB db,optional<Subsystem_id> subsystem){
 			r.qty=1;
 			r.category=Bom_category::STANDARD;
 			r.official_cost=sum(mapf([](auto x){ return x.official_cost; },r.children));
-			r.weight=sum(mapf(
-				[](auto x){ return x.weight; },
-				r.children
-			));
+			r.weight=[=](){
+				if(weight_override && weight_override>Weight{0}){
+					return *weight_override;
+				}
+				return sum(mapf(
+					[](auto x){ return x.weight; },
+					r.children
+				));
+			}();
 		}
 		return r;
 	};
