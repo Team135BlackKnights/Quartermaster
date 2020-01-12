@@ -36,7 +36,7 @@ std::string pretty_td(DB,Arrived_button a){
 		stringstream ss;
 		ss<<"<form>";
 		ss<<"<input type=\"hidden\" name=\"p\" value=\"Arrived\">";
-		ss<<"<input type=\"hidden\" name=\"part\" value=\""<<as_string(a)<<"\">";
+		ss<<"<input type=\"hidden\" name=\"part\" value=\""<<escape(a)<<"\">";
 		ss<<"<input type=\"submit\" value=\"Arrived\">";
 		ss<<"</form>";
 		return ss.str();
