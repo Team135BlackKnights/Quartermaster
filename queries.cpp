@@ -390,6 +390,8 @@ DEF_OPTION(Subsystem_duplicate,SUBSYSTEM_DUPLICATE_ITEMS)
 DEF_OPTION(State_change,STATE_CHANGE_ITEMS)
 DEF_OPTION(Chart,CHART_ITEMS)
 DEF_OPTION(Chart_image,CHART_ITEMS)
+DEF_OPTION(Batch_entry,BATCH_ENTRY_ITEMS)
+DEF_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';
@@ -481,3 +483,10 @@ string link(Request const& req,string const& body){
 	return ss.str();
 }
 
+std::ostream& operator<<(std::ostream& o,Entry const& a){
+	o<<"Entry( ";
+	#define X(A,B) o<<""#B<<":"<<a.B<<" ";
+	ENTRY_ITEMS(X)
+	#undef X
+	return o<<")";
+}

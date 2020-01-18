@@ -287,14 +287,46 @@ DECL_OPTION(State_change,STATE_CHANGE_ITEMS)
 DECL_OPTION(Chart,CHART_ITEMS)
 DECL_OPTION(Chart_image,CHART_ITEMS)
 
+#define BATCH_ENTRY_ITEMS(X)
+DECL_OPTION(Batch_entry,BATCH_ENTRY_ITEMS)
+
+#define ENTRY_ITEMS(X)\
+	X(Subsystem_id,subsystem)\
+	X(std::string,name)\
+	X(unsigned,qty)
+struct Entry{
+	ENTRY_ITEMS(INST)
+};
+std::ostream& operator<<(std::ostream&,Entry const&);
+
+#define BATCH_ENTRY_BACKEND_ITEMS(X)\
+	X(Subsystem_id,subsystem0)\
+	X(std::string,name0)\
+	X(unsigned,qty0)\
+	X(Subsystem_id,subsystem1)\
+	X(std::string,name1)\
+	X(unsigned,qty1)\
+	X(Subsystem_id,subsystem2)\
+	X(std::string,name2)\
+	X(unsigned,qty2)\
+	X(Subsystem_id,subsystem3)\
+	X(std::string,name3)\
+	X(unsigned,qty3)\
+	X(Subsystem_id,subsystem4)\
+	X(std::string,name4)\
+	X(unsigned,qty4)\
+
+DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
+
 #define BASIC_PAGES(X)\
 	X(Home)\
 	X(Subsystems)\
 	X(Parts)\
+	X(Batch_entry)\
 	X(Calendar)\
 	X(Machines)\
 	X(Orders)\
-	X(Extra)
+	X(Extra)\
 	
 #define PAGES(X)\
 	BASIC_PAGES(X)\
@@ -320,7 +352,8 @@ DECL_OPTION(Chart_image,CHART_ITEMS)
 	X(State_change)\
 	X(Chart)\
 	X(Chart_image)\
-
+	X(Batch_entry_backend)
+	
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)

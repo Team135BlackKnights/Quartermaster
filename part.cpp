@@ -351,3 +351,74 @@ void inner(std::ostream& o,Part_duplicate const& a,DB db){
 		}())
 	);
 }
+
+void inner(std::ostream& o,Batch_entry const& a,DB db){
+	make_page(
+		o,
+		"Batch part entry",
+		[=](){
+			stringstream o;
+			o<<"<form>";
+			o<<"<input type=\"hidden\" name=\"p\" value=\"Batch_entry_backend\">\n";
+			o<<"<table>";
+			o<<tr(th("Subsystem")+th("Part name")+th("Qty"));
+			for(auto i:range(5)){
+				vector<Input> inputs{
+					show_input(db,"subsystem"+as_string(i),Subsystem_id{}),
+					show_input(db,"name"+as_string(i),string{}),
+					show_input(db,"qty"+as_string(i),unsigned(0))
+				};
+				o<<input_table(inputs)<<"<p></p>";
+			}
+			o<<"</table>";
+			o<<"<input type=\"submit\">";
+			o<<"</form>";
+			return o.str();
+		}()
+	);
+}
+
+void inner(std::ostream& o,Batch_entry_backend const& a,DB db){
+	vector<Entry> data;
+	#define PARSE(N) if(a.name##N.size()){\
+		Entry e;\
+		e.subsystem=a.subsystem##N;\
+		e.name=a.name##N;\
+		e.qty=a.qty##N;\
+		data|=e;\
+	}
+	PARSE(0)
+	PARSE(1)
+	PARSE(2)
+	PARSE(3)
+	PARSE(4)
+
+	for(auto entry:data){
+		auto id=new_item(db,"part");
+		auto q="INSERT INTO part_info ("
+			"part_id,"
+			"edit_user,"
+			"edit_date,"
+			"valid,"
+			"subsystem,"
+			"name,"
+			"qty "
+			") VALUES ("
+			+escape(id)+","
+			+escape(current_user())+","
+			"now(),"
+			"1,"
+			+escape(entry.subsystem)+","
+			+escape(entry.name)+","
+			+escape(entry.qty)
+			+")";
+		run_cmd(db,q);
+	}
+
+	Batch_entry page;
+	make_page(
+		o,
+		"Batch entry backend",
+		"Not impl:"+as_string(a)+"<p>"+as_string(data.size())+" "+as_string(data) //redirect_to(page)
+	);
+}

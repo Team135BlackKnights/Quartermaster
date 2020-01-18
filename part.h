@@ -7,6 +7,9 @@ void inner(std::ostream&,Part_new const&,DB);
 void inner(std::ostream&,Part_editor const&,DB);
 void inner(std::ostream&,Part_edit const&,DB);
 void inner(std::ostream&,Part_duplicate const&,DB);
+void inner(std::ostream&,Batch_entry const&,DB);
+void inner(std::ostream&,Batch_entry_backend const&,DB);
+
 Part_number_local next_part_number(DB,Subsystem_id);
 std::optional<Part_data> part_data(DB,Part_id);
 void insert_part_data(DB,Part_id,Part_data const&);

@@ -713,3 +713,4 @@ std::ostream& operator<<(std::ostream& o,Meeting_id const& a){
 std::ostream& operator<<(std::ostream& o,Subsystem_id const& a){
 	return o<<"Subsystem_id("<<a.data<<")";
 }
+
