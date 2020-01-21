@@ -15,8 +15,12 @@ set<T> rand(set<T> const*){
 
 template<typename T>
 set<T> parse(set<T> const*,string const& s){
-	PRINT(s);
-	nyi
+	if(s.empty()) return {};
+	auto sp=split(',',s);
+	return to_set(mapf(
+		[](auto x){ return parse((T*)0,x); },
+		sp
+	));
 }
 
 std::ostream& operator<<(std::ostream& o,Part_data const& a){
@@ -277,6 +281,12 @@ string get_esc(Date const& date){
 template<typename T>
 string get_esc(T t){
 	return as_string(t);
+}
+
+template<typename T>
+string get_esc(std::set<T> const& a){
+	//just comma seperate
+	return join(",",MAP(get_esc,a));
 }
 
 template<typename T>

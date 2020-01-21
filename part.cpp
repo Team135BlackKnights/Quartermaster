@@ -291,7 +291,8 @@ optional<Part_data> part_data(DB db,Part_id part){
 		return std::nullopt;
 	}
 	
-	Part_data data;
+	//explicitly initialize to avoid undefined data in null fields.
+	Part_data data{};
 	data.valid=1;
 	{
 		auto row=q[0];

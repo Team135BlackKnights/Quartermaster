@@ -2,6 +2,7 @@
 #include<algorithm>
 #include<string.h>
 #include<functional>
+#include<fstream>
 #include "util.h"
 #include "data_types.h"
 #include "auth.h"
@@ -744,6 +745,7 @@ struct Args{
 	bool alter_tables=0;
 	bool plan=0;
 	bool progress=0;
+	optional<string> query_file;
 };
 
 void help(){
@@ -772,6 +774,8 @@ Args parse_args(int argc,char **argv){
 			r.plan=1;
 		}else if(s=="--progress"){
 			r.progress=1;
+		}else if(s=="--query_file"){
+			r.query_file=argv[i++];
 		}else{
 			cerr<<"Unexpected argument:"<<argv[i]<<"\n";
 			help();
@@ -925,6 +929,19 @@ int alter_tables(DB db){
 	return 0;
 }
 
+string slurp(string const& path){
+	//Read the whole file into a string.
+	//Only use this on small files
+	stringstream ss;
+	ifstream f(path);
+	while(f.good()){
+		string s;
+		getline(f,s);
+		ss<<s;
+	}
+	return ss.str();
+}
+
 int main1(int argc,char **argv,char **envp){
 	auto args=parse_args(argc,argv);
 	if(args.help){
@@ -965,7 +982,10 @@ int main1(int argc,char **argv,char **envp){
 		progress(db);
 		return 0;
 	}
-
+	if(args.query_file){
+		run(cout,parse_query(slurp(*args.query_file)),db);
+		return 0;
+	}
 	/*auto g1=getenv("HTTP_REFERER");
 	auto p=parse_referer(g1);
 	cout<<"ref from:"<<p<<"\n";*/
@@ -977,6 +997,7 @@ int main1(int argc,char **argv,char **envp){
 		run(cout,parse_query(g),db);
 		return 0;
 	}
+
 	auto s=check_part_numbers(db);
 	//PRINT(s);
 	//nyi

@@ -139,7 +139,7 @@ void table_inner(std::ostream& o,DB db,Request const& page,std::vector<Label> co
 		std::sort(
 			begin(vv),
 			end(vv),
-			[index,desc](auto e1,auto e2){
+			[index,desc](auto const& e1,auto const& e2){
 				if(desc){
 					return e1[*index]>e2[*index];
 				}
