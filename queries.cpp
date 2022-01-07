@@ -426,6 +426,7 @@ DEF_OPTION(Chart,CHART_ITEMS)
 DEF_OPTION(Chart_image,CHART_ITEMS)
 DEF_OPTION(Batch_entry,BATCH_ENTRY_ITEMS)
 DEF_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
+DEF_OPTION(New_user,NEW_USER_ITEMS)
 
 int hex_digit(char c){
 	if(c>='0' && c<='9') return c-'0';

@@ -628,6 +628,15 @@ extern char **environ;
 void inner(ostream& o,Extra const&,DB db){
 	stringstream ss;
 
+	ss<<"<form>";
+	ss<<"<input type=\"hidden\" name=\"p\" value=\"New_user\">\n";
+	ss<<"New User name:\n";
+	ss<<"<input type=\"\" name=\"user\"><br>\n";
+	ss<<"Password:\n";
+	ss<<"<input type=\"password\" name=\"pass\"><br>\n";
+	ss<<"<input type=submit>\n";
+	ss<<"</form>";
+
 	ss<<export_links();
 
 	ss<<user_links(db);
@@ -647,6 +656,52 @@ void inner(ostream& o,Extra const&,DB db){
 		"Extra info",
 		ss.str()
 	);
+}
+
+bool valid_username(string const& s){
+	if(s.empty()) return 0;
+	if(!isalpha(s[0])) return 0;
+	for(auto c:s){
+		if( !(isalpha(c) || isdigit(c) || c=='_') ){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+void inner(ostream& o,New_user const& a,DB){
+	o<<"Content-type: text/html\n\n";
+
+	o<<"Going to create user:"<<a.user<<"\n";
+	if(!valid_username(a.user)){
+		o<<"Invalid username\n";
+		return;
+	}
+	if(!valid_username(a.pass)){
+		//This is unnecessarily restrictive; could allow more chars later
+		//Or just use the "-i" option to htpasswd
+		o<<"Invalid password\n";
+		return;
+	}
+
+	{
+		set<string> admins{"anthony","nicks","eric","jeff"};
+		auto current=current_user();
+		if(!admins.count(current)){
+			o<<"Sorry - current user ("<<current<<") is not an admin.\n";
+			o<<"Current admins are:"<<admins<<"\n";
+			return;
+		}
+	}
+
+	stringstream ss;
+	ss<<"htpasswd -b /home/ecxinventory/inventory.wilsonvillerobotics.com/parts/.htpasswd "<<a.user<<" "<<a.pass;
+	int r=system(ss.str().c_str());
+	if(r){
+		o<<"User creation failed:"<<r<<"\n";
+		return;
+	}
+	o<<"Success\n";
 }
 
 void inner(ostream& o,By_supplier const& a,DB db){

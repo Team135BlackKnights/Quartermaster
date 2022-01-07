@@ -263,6 +263,11 @@ DECL_OPTION(CSV_export,CSV_EXPORT_ITEMS)
 #define EXTRA_ITEMS(X)
 DECL_OPTION(Extra,EXTRA_ITEMS)
 
+#define NEW_USER_ITEMS(X)\
+	X(std::string,user)\
+	X(std::string,pass)
+DECL_OPTION(New_user,NEW_USER_ITEMS)
+
 #define ORDER_EDIT_ITEMS(X)\
 	X(Date,arrival_date)\
 	X(std::vector<Part_id>,part_checkbox)
@@ -363,8 +368,9 @@ DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 	X(State_change)\
 	X(Chart)\
 	X(Chart_image)\
-	X(Batch_entry_backend)
-	
+	X(Batch_entry_backend)\
+	X(New_user)
+
 using Request=std::variant<
 	#define X(A) A,
 	PAGES(X)
