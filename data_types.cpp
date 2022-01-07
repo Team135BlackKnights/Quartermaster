@@ -602,7 +602,7 @@ Part_number_local::Part_number_local(Subsystem_prefix a,Three_digit b):
 
 std::string Part_number_local::get()const{
 	stringstream ss;
-	ss<<subsystem_prefix<<num<<"-1425-2020";
+	ss<<subsystem_prefix<<num<<"-1425-2022";
 	return ss.str();
 }
 

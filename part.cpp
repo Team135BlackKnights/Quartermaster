@@ -62,7 +62,7 @@ Part_number_local next_part_number(DB db,Subsystem_id subsystem){
 	auto from_table=[&](string table)->optional<Part_number_local>{
 		auto q=qm<optional<Part_number>>(
 			db,
-			"SELECT MAX(part_number) FROM "+table+" WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2020'"
+			"SELECT MAX(part_number) FROM "+table+" WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2022'"
 		);
 		assert(q.size()==1);
 		auto found=get<0>(q[0]);
