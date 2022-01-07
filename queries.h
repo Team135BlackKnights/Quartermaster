@@ -102,7 +102,18 @@ struct Meeting_data{
 	X(Datetime,edit_date)\
 	MEETING_DATA(X)
 
-using Column_type=std::pair<std::string,bool>; //type and primary key
+struct Data_type{
+	std::string s;
+
+	Data_type(std::string const&);
+	operator std::string()const;
+};
+
+bool operator==(Data_type const&,Data_type const&);
+std::ostream& operator<<(std::ostream&,Data_type const&);
+std::string operator+(std::string const&,Data_type const&);
+
+using Column_type=std::pair<Data_type,bool>; //type and primary key
 using Table_type=std::vector<std::pair<std::string,Column_type>>;
 
 Table_type read(DB db,std::string const& name);

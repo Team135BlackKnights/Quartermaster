@@ -23,6 +23,30 @@ set<T> parse(set<T> const*,string const& s){
 	));
 }
 
+Data_type::Data_type(std::string const& a):s(a){}
+
+Data_type::operator std::string()const{
+	return s;
+}
+
+std::string operator+(std::string const& a,Data_type const& b){
+	stringstream ss;
+	ss<<a<<b;
+	return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& o,Data_type const& a){
+	return o<<a.s;
+}
+
+bool operator==(Data_type const& a,Data_type const& b){
+	return a.s==b.s || 
+		(a.s=="int"&& b.s=="int(11)") ||
+		(a.s=="int(11)" && b.s=="int") ||
+		(a.s=="int unsigned" && b.s=="int(11) unsigned") ||
+		(a.s=="int(11) unsigned" && b.s=="int unsigned");
+}
+
 std::ostream& operator<<(std::ostream& o,Part_data const& a){
 	o<<"Part_data(\n";
 	#define X(A,B) o<<"\t"#B<<":"<<a.B<<"\n";
@@ -43,7 +67,7 @@ Table_type read(DB db,string const& name){
 		auto type=*elem[1];
 		auto primary=*elem[3];
 		//PRINT(primary);
-		r|=make_pair(name,make_pair(type,primary=="PRI"));
+		r|=make_pair(name,Column_type(type,primary=="PRI"));
 	}
 	return r;
 }
