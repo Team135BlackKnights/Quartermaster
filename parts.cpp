@@ -670,7 +670,8 @@ bool valid_username(string const& s){
 }
 
 void inner(ostream& o,New_user const& a,DB){
-	o<<"Content-type: text/html\n\n";
+	o<<"Content-type: text/html\n";
+	o<<"Expires: 0\n\n";
 
 	o<<"Going to create user:"<<a.user<<"\n";
 	if(!valid_username(a.user)){

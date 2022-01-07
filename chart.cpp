@@ -83,7 +83,8 @@ ostreamfd& operator<<(ostreamfd& a,T const& t){
 }*/
 
 void run(DB db){
-	cout<<"Content-type: image/png\n\n";
+	cout<<"Content-type: image/png\n";
+	cout<<"Expires: 0\n\n";
 	cout.flush();
 	auto fds=pipe();
 	pid_t pid=fork();

@@ -19,7 +19,8 @@ string nav(){
 }
 
 void make_page(std::ostream& o,string const& heading,string const& main_body){
-	o<<"Content-type: text/html\n\n";
+	o<<"Content-type: text/html\n";
+	o<<"Expires: 0\n\n";
 
 	string name=heading+" - "+title_end();
 	o<<html(

@@ -44,7 +44,9 @@ string as_csv(DB db,string table_name){
 }
 
 void inner(ostream& o,CSV_export const& a,DB db){
-	o<<"Content-type: text/csv\n\n";
+	o<<"Content-type: text/csv\n";
+	o<<"Expires: 0\n\n";
+
 	switch(a.export_item){
 		case Export_item::SUBSYSTEM:
 			o<<as_csv(db,"subsystem");
