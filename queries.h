@@ -210,6 +210,10 @@ DECL_OPTION(Parts,PARTS_ITEMS)
 	X(std::optional<Subsystem_id>,subsystem)
 DECL_OPTION(Part_new,PART_NEW_ITEMS)
 
+#define PART_NEW_DATA_ITEMS(X)\
+	PART_DATA(X)
+DECL_OPTION(Part_new_data,PART_NEW_DATA_ITEMS)
+
 #define PART_EDITOR_ITEMS(X)\
 	X(Part_id,id)\
 
@@ -360,6 +364,7 @@ DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 	X(Subsystem_new)\
 	X(Subsystem_new_data)\
 	X(Part_new)\
+	X(Part_new_data)\
 	X(Meeting_new)\
 	X(Subsystem_editor)\
 	X(Subsystem_edit)\

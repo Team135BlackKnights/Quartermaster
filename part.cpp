@@ -8,10 +8,87 @@
 using namespace std;
 
 void inner(std::ostream& o,Part_new const& a,DB db){
-	//inner_new<Subsystem_editor>(o,db,"subsystem");
+	vector<string> data_cols{
+		#define X(A,B) ""#B,
+		PART_DATA(X)
+		#undef X
+	};
+	string area_lower="part";
+	string area_cap="Part";
+	Part_data current{};
+	current.valid=1;
+	if(a.subsystem) current.subsystem=*a.subsystem;
+	vector<string> all_cols=vector<string>{"edit_date","edit_user","id",area_lower+"_id"}+data_cols;
+	make_page(
+		o,
+		"New part",
+		string()+"<form>"
+		"<input type=\"hidden\" name=\"p\" value=\"Part_new_data\">"
+		//"<input type=\"hidden\" name=\""+area_lower+"_id\" value=\""+escape(a.id)+"\">"+
+		//after_done()+
+		+input_table([=](){
+			vector<Input> r;
+			/*#define X(A,B) \
+				if(should_show(current.part_state,""#B)) \
+					r|=show_input(db,""#B,current.B);
+			PART_DATA(X)
+			#undef X*/
+			#define X(A,B) r|=show_input(db,""#B,current.B);
+			PART_DATA(X)
+			#undef X
+			return r;
+		}())+
+		"<br><input type=\"submit\">"+
+		"</form>"
+		/*+link(
+			[a](){
+				Part_duplicate r;
+				r.part=a.id;
+				return r;
+			}(),
+			"Duplicate"
+		)
+		+completion_est(db,a.id)
+		+h2("History")
+		+make_table(
+			a,
+			all_cols,
+			query(db,"SELECT "+join(",",all_cols)+" FROM "+area_lower+"_info WHERE "+area_lower+"_id="+escape(a.id))
+		)
+		+viz_func()*/
+	);
+}
+
+void inner(std::ostream& o,Part_new_data const& a,DB db){
 	auto id=new_item(db,"part");
 
-	if(a.subsystem){
+	string area_lower="part";
+	string area_cap="Part";
+
+	vector<pair<string,string>> v;
+	v|=pair<string,string>("edit_date","now()");
+	v|=pair<string,string>("edit_user",escape(current_user()));
+	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.B); else v|=pair<string,string>(""#B,escape(a.B));
+	PART_NEW_DATA_ITEMS(X)
+	#undef X
+	v|=pair<string,string>("part_id",escape(id));
+	auto q="INSERT INTO "+area_lower+"_info ("
+		+join(",",firsts(v))
+		+") VALUES ("
+		+join(",",seconds(v))
+		+")";
+	run_cmd(db,q);
+	make_page(
+		o,
+		area_cap+" edit",
+		redirect_to([=]()->URL{
+			Part_editor page;
+			page.id=Part_id{id};
+			return URL{to_query(page)};
+		}())
+	);
+
+/*	if(a.subsystem){
 		auto q="INSERT INTO part_info ("
 			"part_id,"
 			"edit_user,"
@@ -26,7 +103,7 @@ void inner(std::ostream& o,Part_new const& a,DB db){
 			+escape(a.subsystem)
 			+")";
 		run_cmd(db,q);
-	}
+	}*/
 	Part_editor page;
 	page.id={id};
 	make_page(
@@ -34,7 +111,6 @@ void inner(std::ostream& o,Part_new const& a,DB db){
 		"New part",
 		redirect_to(page)
 	);
-	//return inner_new<Part_editor>(o,db,"part");
 }
 
 Subsystem_prefix get_prefix(DB db,Subsystem_id subsystem){
