@@ -424,7 +424,6 @@ string link(Subsystem_id a,string s){
 }
 
 string path(DB db,Subsystem_id const& a){
-	PRINT(a);
 	auto q=qm<string,optional<Subsystem_id>>(
 		db,
 		"SELECT name,parent "
@@ -587,7 +586,7 @@ Part_number_local::Part_number_local(std::string const& a){
 	num=stoi(n);
 
 	auto suffix=a.substr(5,100);
-	if(suffix!="-1425-2020"){
+	if(suffix!="-1425-2020" && suffix!="-1425-2021" && suffix!="-1425-2022"){
 		throw "Part_number_local: wrong suffix";
 	}
 }
