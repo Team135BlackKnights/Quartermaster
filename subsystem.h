@@ -4,6 +4,7 @@
 #include "queries.h"
 
 void inner(std::ostream&,Subsystem_new const&,DB);
+void inner(std::ostream&,Subsystem_new_data const&,DB);
 void inner(std::ostream&,Subsystem_edit const&,DB);
 void inner(std::ostream&,Subsystem_editor const&,DB);
 void inner(std::ostream&,Subsystem_duplicate const&,DB);

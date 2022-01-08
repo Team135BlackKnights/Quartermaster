@@ -20,6 +20,12 @@ struct Subsystem_data{
 	SUBSYSTEM_DATA(INST)
 };
 
+Subsystem_data rand(Subsystem_data const*);
+std::ostream& operator<<(std::ostream&,Subsystem_data const&);
+std::string to_query(Subsystem_data const&);
+void diff(Subsystem_data const&,Subsystem_data const&);
+bool operator==(Subsystem_data const&,Subsystem_data const&);
+
 #define SUBSYSTEM_ROW(X)\
 	X(Subsystem_id,id)\
 
@@ -176,6 +182,11 @@ DECL_OPTION(Subsystems,SUBSYSTEMS_ITEMS)
 #define SUBSYSTEM_NEW_ITEMS(X)\
 	X(std::optional<Subsystem_id>,parent)
 DECL_OPTION(Subsystem_new,SUBSYSTEM_NEW_ITEMS)
+
+#define SUBSYSTEM_NEW_DATA_ITEMS(X)\
+	SUBSYSTEM_DATA(X)
+
+DECL_OPTION(Subsystem_new_data,SUBSYSTEM_NEW_DATA_ITEMS)
 
 #define SUBSYSTEM_EDITOR_ITEMS(X)\
 	X(Subsystem_id,id)\
@@ -347,6 +358,7 @@ DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 #define PAGES(X)\
 	BASIC_PAGES(X)\
 	X(Subsystem_new)\
+	X(Subsystem_new_data)\
 	X(Part_new)\
 	X(Meeting_new)\
 	X(Subsystem_editor)\

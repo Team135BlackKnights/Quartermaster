@@ -33,7 +33,39 @@ Id new_item(DB db,Table_name const& table){
 }
 
 void inner(ostream& o,Subsystem_new const& a,DB db){
-	auto id=new_item(db,"subsystem");
+	vector<string> info_col_names;
+	#define X(A,B) info_col_names|=""#B;
+	SUBSYSTEM_INFO_ROW(X)
+	#undef X
+
+	Subsystem_data current{};
+	current.valid=1;
+	if(a.parent){
+		current.parent=a.parent;
+	}
+	make_page(
+		o,
+		[&]()->string{
+			if(a.parent){
+				return "New child subsystem of "+subsystem_name(db,*a.parent);
+			}
+			return "New Subsystem";
+		}(),
+		string()+"<form>"
+		"<input type=\"hidden\" name=\"p\" value=\"Subsystem_new_data\">"
+		//"<input type=\"hidden\" name=\"subsystem_id\" value=\""+escape(a.id)+"\">"+
+		//+after_done()
+		+input_table([=](){
+			vector<Input> r;
+			#define X(A,B) r|=show_input(db,""#B,current.B);
+			SUBSYSTEM_DATA(X)
+			#undef X
+			return r;
+		}())+
+		"<br><input type=\"submit\">"+
+		"</form>"
+	);
+	/*auto id=new_item(db,"subsystem");
 
 	if(a.parent){
 		auto q="INSERT INTO subsystem_info ("
@@ -57,6 +89,51 @@ void inner(ostream& o,Subsystem_new const& a,DB db){
 		o,
 		"New subsystem",
 		redirect_to(page)
+	);*/
+}
+
+void inner(ostream& o,Subsystem_new_data const& a,DB db){
+	auto id=Subsystem_id{new_item(db,"subsystem")};
+	if(a.parent){
+		auto q="INSERT INTO subsystem_info ("
+			"subsystem_id,"
+			"edit_user,"
+			"edit_date,"
+			"valid,"
+			"parent "
+			") VALUES ("
+			+escape(id)+","
+			+escape(current_user())+","
+			"now(),"
+			"1,"
+			+escape(a.parent)
+			+")";
+		run_cmd(db,q);
+	}
+	//Subsystem_editor page;
+	//page.id={id};
+	/*make_page(
+		o,
+		"New subsystem",
+		redirect_to(page)
+	);*/
+	vector<pair<string,string>> v;
+	v|=pair<string,string>("edit_date","now()");
+	v|=pair<string,string>("edit_user",escape(current_user()));
+	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.parent,a.B); else v|=pair<string,string>(""#B,escape(a.B));
+	SUBSYSTEM_NEW_DATA_ITEMS(X)
+	#undef X
+	v|=pair<string,string>{"subsystem_id",escape(id)};
+	insert(db,"subsystem_info",v);
+	make_page(
+		o,
+		"Subsystem edit",
+		redirect_to([=]()->URL{
+			//if(a.after) return *a.after;
+			Subsystem_editor page;
+			page.id=id;//Subsystem_id{a.subsystem_id};
+			return URL{to_query(page)};
+		}())
 	);
 }
 
