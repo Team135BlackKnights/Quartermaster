@@ -10,6 +10,7 @@
 #include<vector>
 #include<iostream>
 #include<memory>
+#include<optional>
 
 #define nyi { std::cout<<"NYI "<<__FILE__<<":"<<__LINE__<<"\n"; exit(44); }
 #define PRINT(X) { std::cout<<""#X<<":"<<(X)<<"\n"; }
