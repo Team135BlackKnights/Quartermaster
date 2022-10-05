@@ -836,6 +836,10 @@ pair<int,int> parse_decimal(string s){
 	nyi
 }
 
+string join(string a,set<string> b){
+	return join(a,to_vec(b));
+}
+
 void alter_column(DB db,Table_name table,pair<string,Column_type> c1,pair<string,Column_type> c2){
 	auto name1=c1.first;
 	auto name2=c2.first;
@@ -854,10 +858,49 @@ void alter_column(DB db,Table_name table,pair<string,Column_type> c1,pair<string
 	auto e2=parse_enum(t2.first);
 
 	if(e1 && e2){
-		auto missing=to_set(*e1)-to_set(*e2);
-		if(missing.size()){
-			cout<<"Does not cover all previous cases";
+		auto old_set=to_set(*e1);
+		auto new_set=to_set(*e2);
+		auto missing=old_set-new_set;
+
+		set<string> still_missing;
+		map<string,string> to_substitute;
+		for(auto elem:missing){
+			
+			static const map<string,string> substitutions{
+				{"shapeoko","omio"},
+				{"cube_pro","stratasys"},
+				{"makerbot","print_farm_pla"},
+				{"print_farm","print_farm_pla"},
+				{"find","by_hand"}
+			};
+
+			auto f=substitutions.find(elem);
+			if(f==substitutions.end() || !new_set.count(f->second)){
+				still_missing|=elem;
+			}else{
+				to_substitute[elem]=f->second;
+			}
+		}
+
+		if(still_missing.size()){
+			cout<<"Does not cover all previous cases.\n";
+			PRINT(still_missing);
 			nyi
+		}
+
+		//TODO: Make it so that we alter to have all the options, then update the values
+		//then go to new options only.
+		if(to_substitute.size()){
+			run_cmd(
+				db,
+				"ALTER TABLE "+table+" MODIFY "+name1+" enum("+join(
+					",",
+					MAP(escape,old_set|new_set)
+				)+")"
+			);
+			for(auto [old,next]:to_substitute){
+				run_cmd(db,"UPDATE "+table+" SET "+name1+"="+escape(next)+" WHERE "+name1+"="+escape(old));
+			}
 		}
 
 		run_cmd(db,"ALTER TABLE "+table+" MODIFY "+name1+" "+t2.first);

@@ -182,6 +182,17 @@ std::set<T> operator-(std::set<T> a,std::set<T> const& b){
 	return a;
 }
 
+template<typename T>
+std::set<T> operator&(std::set<T> a,std::set<T> b){
+	std::set<T> r;
+	for(auto elem:a){
+		if(b.count(elem)){
+			r|=elem;
+		}
+	}
+	return r;
+}
+
 template<typename K,typename V>
 void diff(std::map<K,V> const& a,std::map<K,V> const& b){
 	auto ka=keys(a);
@@ -189,11 +200,10 @@ void diff(std::map<K,V> const& a,std::map<K,V> const& b){
 	if(ka!=kb){
 		PRINT(ka-kb);
 		PRINT(kb-ka);
-		nyi
 	}
-	for(auto k:ka){
-		auto va=a[k];
-		auto vb=b[k];
+	for(auto k:ka&kb){
+		auto va=a.find(k)->second;
+		auto vb=b.find(k)->second;
 		if(va!=vb){
 			PRINT(k);
 			PRINT(va);
@@ -437,6 +447,15 @@ std::vector<T> flatten(std::vector<std::vector<T>> const& a){
 template<typename T>
 std::string join(std::vector<T> const& v){
 	return join("",v);
+}
+
+template<typename A,typename B>
+std::map<A,B> to_map(std::vector<std::pair<A,B>> const& v){
+	std::map<A,B> r;
+	for(auto p:v){
+		r.insert(p);
+	}
+	return r;
 }
 
 template<typename A,typename B>

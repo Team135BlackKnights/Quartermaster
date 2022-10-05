@@ -204,14 +204,16 @@ NO_ADD(Part_id)
 	X(none)\
 	X(by_hand)\
 	X(velox)\
-	X(shapeoko)\
+	X(omio)\
 	X(mill)\
 	X(lathe)\
-	X(cube_pro)\
-	X(makerbot)\
+	X(stratasys)\
+	X(print_farm_pla)\
+	X(print_farm_abs)\
+	X(print_farm_cf_nylon)\
 	X(markforged)\
 	X(laser)\
-	X(find)
+	X(cnc_mill)\
 
 #define COMMA(A) A,
 

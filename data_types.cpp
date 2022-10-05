@@ -210,9 +210,17 @@ Input show_input(DB db,string const& name,URL const& value){
 	return r;
 }
 
-#define E_PRINT(A) if(a==T::A) return o<<""#A;
+string print_nicer(string s){
+	//this exists to be able to rename "_3d_print" to "3d_print"
+	if(!s.empty() && s[0]=='_'){
+		return s.substr(1,s.size());
+	}
+	return s;
+}
+
+#define E_PRINT(A) if(a==T::A) return o<<print_nicer(""#A);
 #define E_LIST(A) v|=T::A;
-#define E_PARSE(A) if(s==""#A) return T::A;
+#define E_PARSE(A) if(s==""#A || ("_"+s)==""#A) return T::A;
 #define E_ESCAPED(A) values|=string{"'"#A "'"};
 
 #define ENUM_INPUT(NAME,OPTIONS)\
