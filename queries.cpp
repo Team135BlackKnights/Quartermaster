@@ -81,7 +81,7 @@ void check_table(DB db,Table_name const& name,Table_type const& type){
 		PRINT(r);
 		PRINT(type);
 		cout<<"Diff:\n";
-		diff(r,type);
+		diff(to_map(r),to_map(type));
 	}
 	assert(r==type);
 }

@@ -11,7 +11,7 @@ from datetime import date
 
 def print_lines(x):
     for elem in x:
-        print elem
+        print(elem)
 
 
 def plot(output,title,xlabel,ylabel,y,x,labels):
