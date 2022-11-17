@@ -245,7 +245,17 @@ string print_nicer(string s){
 		OPTIONS(E_PARSE)\
 		throw std::invalid_argument{""#NAME+string()+": "+s};\
 	}\
-	string escape(T const& a){ return "'"+as_string(a)+"'"; }\
+	string escape(T const& a){\
+		std::stringstream ss;\
+		ss<<"'";\
+		auto s=as_string(a);\
+		if(isdigit(s[0])){\
+			ss<<"_";\
+		}\
+		ss<<s;\
+		ss<<"'";\
+		return ss.str();\
+	}\
 	\
 	string to_db_type(const T*){\
 		vector<string> values;\
