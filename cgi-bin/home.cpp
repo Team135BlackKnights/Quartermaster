@@ -5,7 +5,7 @@
 
 using namespace std;
 
-string title_end(){ return "1425 Parts System"; }
+string title_end(){ return "135 Parts System"; }
 
 string nav(){
 	return ""

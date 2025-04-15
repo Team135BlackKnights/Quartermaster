@@ -7,8 +7,8 @@ services:
       - "8080:80"
     depends_on:
       - db
-    volumes:
-      - ./cgi-bin:/usr/lib/cgi-bin
+    #volumes:
+    #  - ./cgi-bin:/usr/lib/cgi-bin
 
   db:
     image: mysql:5.7
