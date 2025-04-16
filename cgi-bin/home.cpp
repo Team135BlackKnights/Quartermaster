@@ -25,10 +25,36 @@ void make_page(std::ostream& o,string const& heading,string const& main_body){
 	string name=heading+" - "+title_end();
 	o<<html(
 		head(
-			title(name)
-			/*+"<style>"
-			"body{ background: grey; }"
-			"</style>"*/
+			title(name)+
+			"<style>"
+			"body { font-family: sans-serif; background: #f4f4f4; color: #333; padding: 20px; }"
+			"h1 { color: #222; border-bottom: 2px solid #999; padding-bottom: 10px; }"
+			"table { border-collapse: collapse; width: 100%; margin: 20px 0; }"
+			"th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }"
+			"th { background-color: #e0e0e0; }"
+			"a { color: #0645ad; text-decoration: none; }"
+			"a:hover { text-decoration: underline; }"
+			".nav { margin-bottom: 20px; }"
+			".legend { margin-top: 40px; }"
+			".highlight { font-weight: bold; }"
+			"table.styled {"
+			"	border-collapse: collapse;"
+			"	width: 100%;"
+			"	margin-top: 1em;"
+			"}"
+			"table.styled th,"
+			"table.styled td {"
+			"	border: 1px solid #ccc;"
+			"	padding: 0.5em;"
+			"	text-align: left;"
+			"}"
+			"table.styled th {"
+			"	background: #f5f5f5;"
+			"}"
+			"table.styled tr:hover {"
+			"	background: #f0f0f0;"
+			"}"
+			"</style>"
 		)+
 		body(
 			h1(heading)+nav()+main_body
@@ -169,8 +195,8 @@ void sortable_labels(ostream& o,Request const& page,vector<Label> const& labels)
 		auto p3=page;
 		std::visit([&](auto &x){ x.sort_by=label.text; x.sort_order="desc"; }, p3);
 		o<<label<<" ";
-		o<<link(p2,"/\\");
-		o<<" "<<link(p3,"\\/");
+		o << link(p2, "<i class=\"fas fa-sort-up\"></i>"); // asc
+		o << " " << link(p3, "<i class=\"fas fa-sort-down\"></i>"); // desc
 		o<<"</th>";
 	}
 	o<<"</tr>";

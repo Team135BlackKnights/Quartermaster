@@ -12,9 +12,15 @@ RUN apt-get update && apt-get install -y \
     graphviz \
     mysql-client \
     && rm -rf /var/lib/apt/lists/*
+#Install Python3, set python3 as default
+RUN apt-get update && apt-get install -y python3 python3-pip
+RUN ln -s /usr/bin/python3 /usr/bin/python
+#Install Pytnon dependencies
+#Update pip
+RUN pip3 install --upgrade pip
+RUN pip3 install matplotlib numpy
 
-# Enable CGI
-#no d?
+
 RUN mkdir -p /var/www/html/cgi-bin
 
 # Working directory

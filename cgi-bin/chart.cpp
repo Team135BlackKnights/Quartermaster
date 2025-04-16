@@ -39,39 +39,47 @@ void close_or_die(int fd){
 
 //struct ostreamfd:std::ostream,std::streambuf{
 //struct ostreamfd:std::basic_streambuf<char>{
-struct ostreamfd:std::streambuf{
-	int fd;
+struct ostreamfd : std::streambuf {
+    int fd;
 
-	public:
-	explicit ostreamfd(int fd1):fd(fd1){
-		assert(fd!=-1);
-	}
+public:
+    explicit ostreamfd(int fd1) : fd(fd1) {
+        assert(fd != -1);
+    }
 
-	~ostreamfd(){
-		close_or_die(fd);
-	}
+    ~ostreamfd() {
+        close_or_die(fd);
+    }
 
-	int get()const{
-		return fd;
-	}
+    int get() const {
+        return fd;
+    }
 
-	int overflow(int c) override{
-		foo(c);
-		return 0;
-	}
+    // Implement overflow() to write a single character
+    int overflow(int c) override {
+        if (c != EOF) {
+            char ch = c;
+            ssize_t written = write(fd, &ch, 1);
+            if (written != 1) {
+                return EOF;
+            }
+        }
+        return c;
+    }
 
-	int sync()override nyi
+    // Implement sync() to flush the stream (if needed)
+    int sync() override {
+        // In this simple implementation, there's no internal buffering,
+        // so we can simply return 0 to indicate success.
+        return 0;
+    }
 
-	std::streamsize xsputn(const char* s,std::streamsize len)override{
-		return write(fd,s,len);
-	}
-
-	void foo(char c){
-		nyi
-	}
-	/*ostreamfd& put(char_type)override nyi
-	ostreamfd& write(const char_type*,std::streamsize)override nyi*/
+    // Write directly using write() for block output.
+    std::streamsize xsputn(const char* s, std::streamsize len) override {
+        return write(fd, s, len);
+    }
 };
+
 
 /*template<typename T>
 ostreamfd& operator<<(ostreamfd& a,T const& t){

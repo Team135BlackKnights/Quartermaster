@@ -115,7 +115,7 @@ def main():
         # just create some random data
         fnx = lambda : NP.random.randint(3, 10, 10)
         y = NP.row_stack((fnx(), fnx(), fnx()))   
-        x = map(lambda x: date.toordinal(date(2019,3,x)),range(2,12))
+        x = NP.array([date.toordinal(date(2019,3,x)) for x in range(2,12)])
         labels='abc'
         title='Demo title'
         xlabel='xlabel'
