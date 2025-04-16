@@ -300,6 +300,9 @@ DECL_OPTION(By_supplier,BY_SUPPLIER_ITEMS)
 	X(std::optional<Subsystem_id>,subsystem)
 DECL_OPTION(BOM,BOM_ITEMS)
 
+#define LOGOUT(X)
+DECL_OPTION(Logout, LOGOUT)
+
 #define PART_DUPLICATE_ITEMS(X)\
 	X(Part_id,part)
 DECL_OPTION(Part_duplicate,PART_DUPLICATE_ITEMS)
@@ -379,6 +382,7 @@ DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 	X(Order_edit)\
 	X(Arrived)\
 	X(By_supplier)\
+	X(Logout)\
 	X(BOM)\
 	X(Part_duplicate)\
 	X(Subsystem_duplicate)\

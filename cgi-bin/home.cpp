@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <functional>
 #include "export.h"
-
+#include "subsystem.h"
 using namespace std;
 
 string title_end() { return "135 Parts System"; }
@@ -45,6 +45,18 @@ string nav()
 .nav-toggle:checked + .nav-toggle-label + .nav-menu {
   display: block;
 }
+.logout-btn {
+  display: block;
+  padding: 10px;
+  text-decoration: none;
+  color: white;
+  background-color: red;
+  text-align: center;
+  margin-top: 10px;
+}
+.logout-btn:hover {
+  background-color: darkred;
+}
 </style>
 
 <input type="checkbox" id="nav-toggle" class="nav-toggle">
@@ -60,9 +72,19 @@ string nav()
 #define X(A) ss << link(A{}, #A) << "\n";
 	BASIC_PAGES(X)
 #undef X
-
+	//add logout (go to logout page)
+	ss << link(Logout{}, "Logout") << "\n";
 	ss << "</div>\n";
 	return ss.str();
+}
+void logout()
+{
+	unsetenv("REMOTE_USER"); // For basic authentication logout
+	unsetenv("HTTP_AUTHORIZATION"); // For basic authentication logout
+	cout << "Status: 401 Unauthorized\r\n";
+	cout << "WWW-Authenticate: Basic realm=\"Parts Logout\"\r\n";
+	cout << "Content-Type: text/html\r\n\r\n";
+	cout << "Location: /\n\n"; // This will trigger the redirect
 }
 void make_page(std::ostream &o, string const &heading, string const &main_body)
 {
@@ -75,7 +97,7 @@ void make_page(std::ostream &o, string const &heading, string const &main_body)
 
 			title(name) +
 			"<link rel=\"icon\" href=\"path/to/icon.png\">" +
-			"<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css\">"+
+			"<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css\">" +
 			"<style>"
 			"body { font-family: sans-serif; background: #f4f4f4; color: #333; padding: 20px; }"
 			"h1 { color: #222; border-bottom: 2px solid #999; padding-bottom: 10px; }"
@@ -794,12 +816,19 @@ void inner(ostream &o, BOM const &a, DB db)
 		subsystem_name(db, a.subsystem) + " BOM",
 		bom(db, a.subsystem));
 }
-
-void inner(ostream &o, Home const &a, DB db)
+void inner(ostream &o, Logout const &a, DB db)
 {
+	logout();
 	make_page(
 		o,
-		"Home",
+		"Logout","");
+}
+void inner(ostream &o, Home const &a, DB db)
+{
+	string user = current_user();
+	make_page(
+		o,
+		"Home - " + user,
 		// parts_by_state(db,a)+
 		part_tree(db) +
 			indent_part_tree(db) //+bom(db,std::nullopt)
