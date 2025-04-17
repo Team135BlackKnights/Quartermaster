@@ -10,10 +10,10 @@
 #include "subsystem.h"
 using namespace std;
 
-void inner(std::ostream& o,Chart const&,DB){
-	string user = current_user();
+void inner(std::ostream& o,Chart const&,DB db){
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	return make_page(
 		o,
@@ -139,9 +139,9 @@ void run(DB db){
 }
 
 void inner(std::ostream& o,Chart_image const&,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	run(db);
 }

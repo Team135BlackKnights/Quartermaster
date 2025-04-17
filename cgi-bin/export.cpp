@@ -44,9 +44,9 @@ string as_csv(DB db,string table_name){
 }
 
 void inner(ostream& o,CSV_export const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	o<<"Content-type: text/csv\n";
 	o<<"Expires: 0\n\n";

@@ -6,7 +6,7 @@ CXXFLAGS=-std=c++17 -Wall -Werror -g
 LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient -lssl -lcrypto -lcrypt
 DEPS:=auth.o data_types.o parts.o queries.o \
 	util.o export.o home.o subsystems.o subsystem.o part.o \
-	meeting.o order.o progress.o chart.o
+	login.o meeting.o order.o progress.o chart.o
 
 all: parts asm.png part.png
 

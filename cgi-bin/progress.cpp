@@ -215,9 +215,9 @@ string change_table(State_change const& a,DB db){
 }
 
 void inner(std::ostream& o,State_change const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,

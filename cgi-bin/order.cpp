@@ -80,9 +80,9 @@ string arrived(DB db,Request const& page){
 }
 
 void inner(ostream& o,Orders const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -94,9 +94,9 @@ void inner(ostream& o,Orders const& a,DB db){
 }
 
 void inner(std::ostream& o,Order_edit const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	if(as_string(a.arrival_date)==""){
 		make_page(
@@ -173,7 +173,7 @@ void inner(std::ostream& o,Order_edit const& a,DB db){
 		ss<<") VALUES ";
 		ss<<"(";
 		ss<<escape(part_id)<<",";
-		ss<<escape(current_user())<<",";
+		ss<<escape(current_user(db))<<",";
 		ss<<"now(),";
 		unsigned i=0;
 		#define X(A,B) {\
@@ -192,9 +192,9 @@ void inner(std::ostream& o,Order_edit const& a,DB db){
 }
 
 void inner(ostream& o,Arrived const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -256,7 +256,7 @@ void inner(ostream& o,Arrived const& a,DB db){
 		ss<<") VALUES ";
 		ss<<"(";
 		ss<<escape(part_id)<<",";
-		ss<<escape(current_user())<<",";
+		ss<<escape(current_user(db))<<",";
 		ss<<"now(),";
 		unsigned i=0;
 		#define X(A,B) {\

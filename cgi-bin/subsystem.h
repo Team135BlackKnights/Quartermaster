@@ -21,6 +21,6 @@ std::string redirect_to(T const& t){
 }
 
 Id new_item(DB,Table_name const&);
-std::string current_user();
+std::string current_user(DB);
 
 #endif

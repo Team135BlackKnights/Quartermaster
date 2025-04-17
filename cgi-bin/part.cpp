@@ -8,9 +8,9 @@
 using namespace std;
 
 void inner(std::ostream& o,Part_new const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
@@ -64,9 +64,9 @@ void inner(std::ostream& o,Part_new const& a,DB db){
 }
 
 void inner(std::ostream& o,Part_new_data const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	auto id=new_item(db,"part");
 
@@ -75,7 +75,7 @@ void inner(std::ostream& o,Part_new_data const& a,DB db){
 
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
-	v|=pair<string,string>("edit_user",escape(current_user()));
+	v|=pair<string,string>("edit_user",escape(current_user(db)));
 	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.B); else v|=pair<string,string>(""#B,escape(a.B));
 	PART_NEW_DATA_ITEMS(X)
 	#undef X
@@ -105,7 +105,7 @@ void inner(std::ostream& o,Part_new_data const& a,DB db){
 			"subsystem"
 			") VALUES ("
 			+escape(id)+","
-			+escape(current_user())+","
+			+escape(current_user(db))+","
 			"now(),"
 			"1,"
 			+escape(a.subsystem)
@@ -146,7 +146,7 @@ Part_number_local next_part_number(DB db,Subsystem_id subsystem){
 	auto from_table=[&](string table)->optional<Part_number_local>{
 		auto q=qm<optional<Part_number>>(
 			db,
-			"SELECT MAX(part_number) FROM "+table+" WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2022'"
+			"SELECT MAX(part_number) FROM "+table+" WHERE part_number REGEXP '"+as_string(prefix)+"[0-9][0-9][0-9]-1425-2025'"
 		);
 		assert(q.size()==1);
 		auto found=get<0>(q[0]);
@@ -251,9 +251,9 @@ string after_done(){
 }
 
 void inner(ostream& o,Part_editor const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
@@ -335,16 +335,16 @@ string redirect_to(URL const& url){
 }
 
 void inner(std::ostream& o,Part_edit const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	string area_lower="part";
 	string area_cap="Part";
 
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
-	v|=pair<string,string>("edit_user",escape(current_user()));
+	v|=pair<string,string>("edit_user",escape(current_user(db)));
 	#define X(A,B) if(""#B==string("part_number")) v|=part_entry(db,a.subsystem,a.B); else v|=pair<string,string>(""#B,escape(a.B));
 	PART_EDIT_DATA_ITEMS(X)
 	#undef X
@@ -402,7 +402,7 @@ void insert_part_data(DB db,Part_id part_id,Part_data const& data){
 		[=](){
 			vector<pair<string,string>> items;
 			items|=pair<string,string>("part_id",escape(part_id));
-			items|=pair<string,string>("edit_user",escape(current_user()));
+			items|=pair<string,string>("edit_user",escape(current_user(db)));
 			items|=pair<string,string>("edit_date","now()");
 			#define X(A,B) items|=pair<string,string>(""#B,escape(data.B));
 			PART_DATA(X)
@@ -421,9 +421,9 @@ void insert_part_data(DB db,Part_id part_id,Part_data const& data){
 }
 
 void inner(std::ostream& o,Part_duplicate const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	auto data=part_data(db,a.part);
 	if(!data){
@@ -450,9 +450,9 @@ void inner(std::ostream& o,Part_duplicate const& a,DB db){
 }
 
 void inner(std::ostream& o,Batch_entry const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -480,9 +480,9 @@ void inner(std::ostream& o,Batch_entry const& a,DB db){
 }
 
 void inner(std::ostream& o,Batch_entry_backend const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	vector<Entry> data;
 	#define PARSE(N) if(a.name##N.size()){\
@@ -510,7 +510,7 @@ void inner(std::ostream& o,Batch_entry_backend const& a,DB db){
 			"qty "
 			") VALUES ("
 			+escape(id)+","
-			+escape(current_user())+","
+			+escape(current_user(db))+","
 			"now(),"
 			"1,"
 			+escape(entry.subsystem)+","

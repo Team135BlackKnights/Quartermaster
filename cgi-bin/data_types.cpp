@@ -604,7 +604,7 @@ Part_number_local::Part_number_local(std::string const& a){
 	num=stoi(n);
 
 	auto suffix=a.substr(5,100);
-	if(suffix!="-1425-2020" && suffix!="-1425-2021" && suffix!="-1425-2022"){
+	if(suffix!="-1425-2026" && suffix!="-1425-2025" && suffix!="-1425-2024"){
 		throw "Part_number_local: wrong suffix";
 	}
 }
@@ -619,7 +619,7 @@ Part_number_local::Part_number_local(Subsystem_prefix a,Three_digit b):
 
 std::string Part_number_local::get()const{
 	stringstream ss;
-	ss<<subsystem_prefix<<num<<"-1425-2022";
+	ss<<subsystem_prefix<<num<<"-1425-2025";
 	return ss.str();
 }
 

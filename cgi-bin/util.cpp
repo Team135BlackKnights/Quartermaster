@@ -97,28 +97,34 @@ void run_cmd(DB db,std::string const& cmd){
 	}
 }
 
-std::vector<std::vector<std::optional<std::string>>> query(DB db,std::string const& query){
-	//this is obviously not the fastest way to do this.
-	run_cmd(db,query);
-	MYSQL_RES *result=mysql_store_result(db);
-	if(result==NULL)nyi
-	int fields=mysql_num_fields(result);
-	//PRINT(fields);
+std::vector<std::vector<std::optional<std::string>>> query(DB db, const std::string& q) {
+	if (mysql_query(db, q.c_str())) {
+		std::cerr << "MySQL error: " << mysql_error(db) << "\n";
+		std::cerr << "Query was: " << q << "\n";
+		throw std::runtime_error("MySQL query failed.");
+	}
+
+	MYSQL_RES* result = mysql_store_result(db);
+	if (!result) {
+		if (mysql_field_count(db) == 0)
+			return {}; // OK: no result expected (e.g., INSERT)
+		else
+			throw std::runtime_error("Query expected result but got none.");
+	}
+
+	int fields = mysql_num_fields(result);
 	MYSQL_ROW row;
 	std::vector<std::vector<std::optional<std::string>>> r;
-	while((row=mysql_fetch_row(result))){
+
+	while ((row = mysql_fetch_row(result))) {
 		std::vector<std::optional<std::string>> this_row;
-		for(auto i:range(fields)){
-			if(row[i]){
-				//cout<<i<<": \""<<row[i]<<"\"\n";
-				//cout<<"after\n";
-				this_row|=std::optional{std::string(row[i])};
-			}else{
-				this_row|=std::optional<std::string>{std::nullopt};
-				//cout<<"NULL!\n";
-			}
+		for (int i = 0; i < fields; ++i) {
+			if (row[i])
+				this_row.push_back(std::string(row[i]));
+			else
+				this_row.push_back(std::nullopt);
 		}
-		r|=this_row;
+		r.push_back(std::move(this_row));
 	}
 	mysql_free_result(result);
 	return r;

@@ -89,9 +89,9 @@ std::string input_table(vector<Input> const& a){
 }
 
 void inner(ostream& o,Meeting_editor const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
@@ -144,9 +144,9 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 }
 
 void inner(ostream& o,Meeting_new const&,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	return inner_new<Meeting_editor>(o,db,"meeting");
 }
@@ -207,9 +207,9 @@ string to_do(DB db,Request const& page){
 HISTORY_TABLE(meeting,MEETING_INFO_ROW)
 
 void inner(std::ostream& o,Calendar const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -691,16 +691,16 @@ void make_plan(DB db){
 }
 
 void inner(ostream& o,Meeting_edit const& a,DB db){
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	string area_lower="meeting";
 	string area_cap="Meeting";
 
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
-	v|=pair<string,string>("edit_user",escape(current_user()));
+	v|=pair<string,string>("edit_user",escape(current_user(db)));
 	#define X(A,B) v|=pair<string,string>(""#B,escape(a.B));
 	MEETING_EDIT_DATA_ITEMS(X)
 	#undef X

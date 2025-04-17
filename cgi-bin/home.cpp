@@ -813,9 +813,9 @@ string parts_by_state(DB db, Request const &page)
 
 void inner(ostream &o, BOM const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -824,9 +824,9 @@ void inner(ostream &o, BOM const &a, DB db)
 }
 void inner(ostream &o, Logout const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	logout(o,db);
 	make_page(
@@ -835,10 +835,10 @@ void inner(ostream &o, Logout const &a, DB db)
 }
 void inner(ostream &o, Home const &a, DB db)
 {
-	string user = current_user();
-	if (user == "no_user") {
-		cout << "Location: /cgi-bin/login.cgi\n\n";
-	}
+	string user = current_user(db);
+	//if (user == "no_user") {
+	//	cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
+	//}
 	make_page(
 		o,
 		"Home - " + user,

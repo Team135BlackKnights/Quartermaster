@@ -6,7 +6,6 @@
 #include "util.h"
 #include "data_types.h"
 #include "auth.h"
-#include "queries.h"
 #include "export.h"
 #include "home.h"
 #include "subsystems.h"
@@ -430,10 +429,10 @@ string history_sum(DB db)
 
 void inner(ostream &o, Parts const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -446,10 +445,10 @@ void inner(ostream &o, Parts const &a, DB db)
 
 void inner(std::ostream &o, Error const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -483,10 +482,10 @@ string show_table_user(DB db, Request const &page, Table_name const &name, User 
 
 void inner(std::ostream &o, By_user const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	vector<string> tables{"subsystem_info", "part_info", "meeting_info"};
 	string links;
@@ -534,10 +533,10 @@ vector<Machine> machines()
 
 void inner(std::ostream &o, Machines const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -556,10 +555,10 @@ string show_input(DB,std::string const& name,Part_checkbox const& a){
 
 void inner(ostream &o, Machine_page const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -569,10 +568,10 @@ void inner(ostream &o, Machine_page const &a, DB db)
 
 void inner(ostream &o, State const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	auto data = qm<
 		Subsystem_id, Part_id,
@@ -719,10 +718,11 @@ extern char **environ;
 
 void inner(ostream &o, Extra const &, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+
+		//cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	stringstream ss;
 
@@ -772,12 +772,12 @@ bool valid_username(string const &s)
 	return 1;
 }
 
-void inner(ostream &o, New_user const &a, DB)
+void inner(ostream &o, New_user const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	o << "Content-type: text/html\n";
 	o << "Expires: 0\n\n";
@@ -798,23 +798,13 @@ void inner(ostream &o, New_user const &a, DB)
 
 	{
 		set<string> admins{"localhost", "Grant", "Marsh", "Shelhart", "admin"};
-		auto current = current_user();
+		auto current = current_user(db);
 		if (!admins.count(current))
 		{
 			o << "Sorry - current user (" << current << ") is not an admin.\n";
 			o << "Current admins are:" << admins << "\n";
 			return;
 		}
-	}
-	// Connect to DB
-	DB db = mysql_init(NULL);
-	assert(db);
-
-	auto creds = auth();
-	if (!mysql_real_connect(db, creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), creds.db.c_str(), 0, NULL, 0))
-	{
-		o << "Database connection failed: " << mysql_error(db) << "\n";
-		return;
 	}
 
 	// Hash password (using crypt with SHA-512 salt prefix)
@@ -876,10 +866,10 @@ void inner(ostream &o, New_user const &a, DB)
 
 void inner(ostream &o, By_supplier const &a, DB db)
 {
-	string user = current_user();
+	string user = current_user(db);
 	if (user == "no_user")
 	{
-		cout << "Location: /cgi-bin/login.cgi\n\n";
+		cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n";
 	}
 	make_page(
 		o,
@@ -903,7 +893,7 @@ void inner(ostream &o, By_supplier const &a, DB db)
 #define EMPTY_PAGE(X)                                   \
 	void inner(ostream &o, X const &x, DB db)           \
 	{                                                   \
-		string user = current_user();                   \
+		string user = current_user(db);                   \
 		if (user == "no_user")                          \
 		{                                               \
 			cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n"; \
