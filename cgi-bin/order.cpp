@@ -80,6 +80,10 @@ string arrived(DB db,Request const& page){
 }
 
 void inner(ostream& o,Orders const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Orders",
@@ -90,6 +94,10 @@ void inner(ostream& o,Orders const& a,DB db){
 }
 
 void inner(std::ostream& o,Order_edit const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	if(as_string(a.arrival_date)==""){
 		make_page(
 			o,
@@ -184,6 +192,10 @@ void inner(std::ostream& o,Order_edit const& a,DB db){
 }
 
 void inner(ostream& o,Arrived const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Arrived",

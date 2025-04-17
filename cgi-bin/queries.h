@@ -282,7 +282,7 @@ DECL_OPTION(Extra,EXTRA_ITEMS)
 	X(std::string,user)\
 	X(std::string,pass)
 DECL_OPTION(New_user,NEW_USER_ITEMS)
-
+DECL_OPTION(Login,NEW_USER_ITEMS)
 #define ORDER_EDIT_ITEMS(X)\
 	X(Date,arrival_date)\
 	X(std::vector<Part_id>,part_checkbox)
@@ -360,7 +360,8 @@ DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 	X(Calendar)\
 	X(Machines)\
 	X(Orders)\
-	X(Extra)\
+	X(Extra)
+
 	
 #define PAGES(X)\
 	BASIC_PAGES(X)\
@@ -390,6 +391,7 @@ DECL_OPTION(Batch_entry_backend,BATCH_ENTRY_BACKEND_ITEMS)
 	X(Chart)\
 	X(Chart_image)\
 	X(Batch_entry_backend)\
+	X(Login)\
 	X(New_user)
 
 using Request=std::variant<

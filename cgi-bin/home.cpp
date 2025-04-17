@@ -3,6 +3,7 @@
 #include <functional>
 #include "export.h"
 #include "subsystem.h"
+#include "parts.h"
 using namespace std;
 
 string title_end() { return "135 Parts System"; }
@@ -77,14 +78,15 @@ string nav()
 	ss << "</div>\n";
 	return ss.str();
 }
-void logout()
-{
-	unsetenv("REMOTE_USER"); // For basic authentication logout
-	unsetenv("HTTP_AUTHORIZATION"); // For basic authentication logout
-	cout << "Status: 401 Unauthorized\r\n";
-	cout << "WWW-Authenticate: Basic realm=\"Parts Logout\"\r\n";
-	cout << "Content-Type: text/html\r\n\r\n";
-	cout << "Location: /\n\n"; // This will trigger the redirect
+void logout(ostream& o, DB db) {
+	//TODO: logout?
+	//string token = parse_cookie(getenv("HTTP_COOKIE"), "session_token");
+	//if (!token.empty()) {
+		//con.query("DELETE FROM sessions WHERE session_token = '" + escape(con, token) + "'");
+	//}
+
+	o << "Set-Cookie: session_token=; Path=/; Max-Age=0\r\n";
+	o << "Status: 302 Found\r\nLocation: /login.cgi\r\n\r\n";
 }
 void make_page(std::ostream &o, string const &heading, string const &main_body)
 {
@@ -811,6 +813,10 @@ string parts_by_state(DB db, Request const &page)
 
 void inner(ostream &o, BOM const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		subsystem_name(db, a.subsystem) + " BOM",
@@ -818,7 +824,11 @@ void inner(ostream &o, BOM const &a, DB db)
 }
 void inner(ostream &o, Logout const &a, DB db)
 {
-	logout();
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
+	logout(o,db);
 	make_page(
 		o,
 		"Logout","");
@@ -826,6 +836,9 @@ void inner(ostream &o, Logout const &a, DB db)
 void inner(ostream &o, Home const &a, DB db)
 {
 	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Home - " + user,

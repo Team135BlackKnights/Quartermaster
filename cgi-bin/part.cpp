@@ -8,6 +8,10 @@
 using namespace std;
 
 void inner(std::ostream& o,Part_new const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
 		PART_DATA(X)
@@ -60,6 +64,10 @@ void inner(std::ostream& o,Part_new const& a,DB db){
 }
 
 void inner(std::ostream& o,Part_new_data const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	auto id=new_item(db,"part");
 
 	string area_lower="part";
@@ -243,6 +251,10 @@ string after_done(){
 }
 
 void inner(ostream& o,Part_editor const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
 		PART_DATA(X)
@@ -323,6 +335,10 @@ string redirect_to(URL const& url){
 }
 
 void inner(std::ostream& o,Part_edit const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	string area_lower="part";
 	string area_cap="Part";
 
@@ -405,6 +421,10 @@ void insert_part_data(DB db,Part_id part_id,Part_data const& data){
 }
 
 void inner(std::ostream& o,Part_duplicate const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	auto data=part_data(db,a.part);
 	if(!data){
 		make_page(
@@ -430,6 +450,10 @@ void inner(std::ostream& o,Part_duplicate const& a,DB db){
 }
 
 void inner(std::ostream& o,Batch_entry const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Batch part entry",
@@ -456,6 +480,10 @@ void inner(std::ostream& o,Batch_entry const& a,DB db){
 }
 
 void inner(std::ostream& o,Batch_entry_backend const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<Entry> data;
 	#define PARSE(N) if(a.name##N.size()){\
 		Entry e;\

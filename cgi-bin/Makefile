@@ -3,8 +3,7 @@
 #which go away if g++ 9 is used.
 
 CXXFLAGS=-std=c++17 -Wall -Werror -g
-LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient
-
+LDFLAGS=`mysql_config --cflags --libs` -lmysqlclient -lssl -lcrypto -lcrypt
 DEPS:=auth.o data_types.o parts.o queries.o \
 	util.o export.o home.o subsystems.o subsystem.o part.o \
 	meeting.o order.o progress.o chart.o

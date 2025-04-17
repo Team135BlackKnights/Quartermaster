@@ -1,6 +1,6 @@
 #include "export.h"
 #include<string.h>
-
+#include "subsystem.h"
 using namespace std;
 
 string csv_escape(string s){
@@ -44,6 +44,10 @@ string as_csv(DB db,string table_name){
 }
 
 void inner(ostream& o,CSV_export const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	o<<"Content-type: text/csv\n";
 	o<<"Expires: 0\n\n";
 

@@ -1,4 +1,5 @@
 #include "subsystems.h"
+#include "subsystem.h"
 #include "home.h"
 
 using namespace std;
@@ -163,6 +164,10 @@ string subsystem_machine_count(DB db,Request const& page){
 HISTORY_TABLE(subsystem,SUBSYSTEM_INFO_ROW)
 
 void inner(ostream& o,Subsystems const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	return make_page(
 		o,
 		"Subsystems",

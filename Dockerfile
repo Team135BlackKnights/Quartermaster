@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     make \
     libmysqlclient-dev \
+    libcrypt-dev \
     graphviz \
     mysql-client \
     python3 python3-pip \
@@ -50,16 +51,9 @@ RUN echo "ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/" >> /etc/apache2/apache2.conf 
     Require all granted\n\
 </Directory>" >> /etc/apache2/apache2.conf
 
-RUN htpasswd -b -c /usr/lib/cgi-bin/.htpasswd admin changeme
-RUN echo "AuthType Basic\n\
-AuthName \"Restricted Area\"\n\
-AuthUserFile /usr/lib/cgi-bin/.htpasswd\n\
-Require valid-user" > /usr/lib/cgi-bin/.htaccess
 
 # ✅ Redirect from `/` to `/cgi-bin/parts.cgi` using index.html
 RUN echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; URL=/cgi-bin/parts.cgi"></head></html>' > /var/www/html/index.html
-RUN chown www-data:www-data /usr/lib/cgi-bin/.htpasswd
-RUN chmod 664 /usr/lib/cgi-bin/.htpasswd
 # Expose port 80
 EXPOSE 80
 

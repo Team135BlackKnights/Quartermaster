@@ -14,9 +14,12 @@
 #include "part.h"
 #include "meeting.h"
 #include "order.h"
+#include "login.h"
+#include <unistd.h>   // for crypt()
+#include <crypt.h>    // if you're on GNU/Linux with glibc (may be required)
 #include "progress.h"
 #include "chart.h"
-
+#include <iomanip>
 using namespace std;
 
 template <typename T>
@@ -427,17 +430,27 @@ string history_sum(DB db)
 
 void inner(ostream &o, Parts const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Parts",
 		link(Part_new{}, "New part") + show_current_parts(db, a) +
 			history_part(db, a) // show_table(db,a,"part_info","History")
-		//+history_sum(db)
+								//+history_sum(db)
 	);
 }
 
 void inner(std::ostream &o, Error const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Error",
@@ -470,6 +483,11 @@ string show_table_user(DB db, Request const &page, Table_name const &name, User 
 
 void inner(std::ostream &o, By_user const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<string> tables{"subsystem_info", "part_info", "meeting_info"};
 	string links;
 	links += h2("Contents");
@@ -516,6 +534,11 @@ vector<Machine> machines()
 
 void inner(std::ostream &o, Machines const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Machines",
@@ -533,6 +556,11 @@ string show_input(DB,std::string const& name,Part_checkbox const& a){
 
 void inner(ostream &o, Machine_page const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		as_string(a.machine),
@@ -541,6 +569,11 @@ void inner(ostream &o, Machine_page const &a, DB db)
 
 void inner(ostream &o, State const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	auto data = qm<
 		Subsystem_id, Part_id,
 		std::optional<Material>,
@@ -686,6 +719,11 @@ extern char **environ;
 
 void inner(ostream &o, Extra const &, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	stringstream ss;
 
 	ss << "<form>";
@@ -734,8 +772,13 @@ bool valid_username(string const &s)
 	return 1;
 }
 
-void inner(ostream &o, New_user const &a, DB db)
+void inner(ostream &o, New_user const &a, DB)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	o << "Content-type: text/html\n";
 	o << "Expires: 0\n\n";
 
@@ -763,38 +806,81 @@ void inner(ostream &o, New_user const &a, DB db)
 			return;
 		}
 	}
+	// Connect to DB
 	DB db = mysql_init(NULL);
 	assert(db);
 
-	auto a = auth();
-	auto r1 = mysql_real_connect(
-		db,
-		a.host.c_str(),
-		a.user.c_str(),
-		a.pass.c_str(),
-		a.db.c_str(),
-		0, NULL, 0);
-
-	if (!r1)
+	auto creds = auth();
+	if (!mysql_real_connect(db, creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), creds.db.c_str(), 0, NULL, 0))
 	{
-		cout << "Connect fail:" << mysql_error(db) << "\n";
-		exit(1);
-	}
-	DB_connection con{db};
-	
-	stringstream ss;
-	ss << "htpasswd -b /usr/lib/cgi-bin/.htpasswd " << a.user << " " << a.pass;
-	int r = system(ss.str().c_str());
-	if (r)
-	{
-		o << "User creation failed:" << r << "\n";
+		o << "Database connection failed: " << mysql_error(db) << "\n";
 		return;
 	}
-	o << "Success\n";
+
+	// Hash password (using crypt with SHA-512 salt prefix)
+	string salt = "$6$salting$"; // For real use, generate a secure random salt
+	char *hashed_cstr = crypt(a.pass.c_str(), salt.c_str());
+	if (!hashed_cstr)
+	{
+		o << "Password hashing failed\n";
+		return;
+	}
+	string hashed = hashed_cstr;
+
+	// Insert into users table
+	string query = "INSERT INTO users (username, password_hash) VALUES (?, ?)";
+
+	MYSQL_STMT *stmt = mysql_stmt_init(db);
+	if (!stmt)
+	{
+		o << "Statement init failed\n";
+		return;
+	}
+
+	if (mysql_stmt_prepare(stmt, query.c_str(), query.size()))
+	{
+		o << "Prepare failed: " << mysql_stmt_error(stmt) << "\n";
+		return;
+	}
+
+	MYSQL_BIND bind[2] = {};
+	memset(bind, 0, sizeof(bind));
+
+	// Bind username
+	bind[0].buffer_type = MYSQL_TYPE_STRING;
+	bind[0].buffer = (void *)a.user.c_str();
+	bind[0].buffer_length = a.user.size();
+
+	// Bind password hash
+	bind[1].buffer_type = MYSQL_TYPE_STRING;
+	bind[1].buffer = (void *)hashed.c_str();
+	bind[1].buffer_length = hashed.size();
+
+	if (mysql_stmt_bind_param(stmt, bind))
+	{
+		o << "Bind failed: " << mysql_stmt_error(stmt) << "\n";
+		mysql_stmt_close(stmt);
+		return;
+	}
+
+	if (mysql_stmt_execute(stmt))
+	{
+		o << "Execution failed: " << mysql_stmt_error(stmt) << "\n";
+		mysql_stmt_close(stmt);
+		return;
+	}
+
+	mysql_stmt_close(stmt);
+	o << "User created successfully!\n";
 }
 
 void inner(ostream &o, By_supplier const &a, DB db)
 {
+	string user = current_user();
+	if (user == "no_user")
+	{
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		as_string(a.supplier) + " (Supplier)",
@@ -814,13 +900,18 @@ void inner(ostream &o, By_supplier const &a, DB db)
 										 " ORDER BY part_state")));
 }
 
-#define EMPTY_PAGE(X)                                \
-	void inner(ostream &o, X const &x, DB db)        \
-	{                                                \
-		make_page(                                   \
-			o,                                       \
-			"" #X,                                   \
-			as_string(x) + p("Under construction")); \
+#define EMPTY_PAGE(X)                                   \
+	void inner(ostream &o, X const &x, DB db)           \
+	{                                                   \
+		string user = current_user();                   \
+		if (user == "no_user")                          \
+		{                                               \
+			cout << "Location: /cgi-bin/parts.cgi?p=Login\n\n"; \
+		}                                               \
+		make_page(                                      \
+			o,                                          \
+			"" #X,                                      \
+			as_string(x) + p("Under construction"));    \
 	}
 // EMPTY_PAGE(Order_edit)
 #undef EMPTY_PAGE
@@ -883,15 +974,15 @@ optional<Request> parse_referer(const char *s)
 	return parse_query(at);
 }
 
-struct DB_connection
+/*struct DB_connection
 {
 	DB db;
-
+	DB_connection(DB db_) : db(db_){}
 	~DB_connection()
 	{
 		mysql_close(db);
 	}
-};
+};*/
 
 struct Args
 {

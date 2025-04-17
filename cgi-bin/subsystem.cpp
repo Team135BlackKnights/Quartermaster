@@ -3,22 +3,122 @@
 #include "subsystems.h"
 #include "part.h"
 #include "meeting.h"
-
+#include <ctime>
+#include <map>
+#include <cstdlib>
+#include "auth.h"
+#include "parts.h"
 using namespace std;
+inline std::string generate_session_id() {
+	std::string charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	std::string result;
+	for (int i = 0; i < 32; i++) {
+		result += charset[rand() % charset.size()];
+	}
+	return result;
+}
 
-string current_user(){
-	{
-		//In normal operation, this should always be set
-		char *s=getenv("REMOTE_USER");
-		if(s) return s;
+inline void save_session(MYSQL* db, const std::string& user, const std::string& session_id) {
+	string q = "REPLACE INTO sessions (session_id, username) VALUES (?, ?)";
+	auto stmt = mysql_stmt_init(db);
+	mysql_stmt_prepare(stmt, q.c_str(), q.size());
+
+	MYSQL_BIND bind[2] = {};
+	bind[0].buffer_type = MYSQL_TYPE_STRING;
+	bind[0].buffer = (void*)session_id.c_str();
+	bind[0].buffer_length = session_id.size();
+	bind[1].buffer_type = MYSQL_TYPE_STRING;
+	bind[1].buffer = (void*)user.c_str();
+	bind[1].buffer_length = user.size();
+	mysql_stmt_bind_param(stmt, bind);
+	mysql_stmt_execute(stmt);
+	mysql_stmt_close(stmt);
+}
+
+inline std::string get_user_by_session(MYSQL* db, const std::string& session_id) {
+	string q = "SELECT username FROM sessions WHERE session_id = ?";
+	auto stmt = mysql_stmt_init(db);
+	mysql_stmt_prepare(stmt, q.c_str(), q.size());
+
+	MYSQL_BIND bind[1] = {};
+	bind[0].buffer_type = MYSQL_TYPE_STRING;
+	bind[0].buffer = (void*)session_id.c_str();
+	bind[0].buffer_length = session_id.size();
+	mysql_stmt_bind_param(stmt, bind);
+	mysql_stmt_execute(stmt);
+
+	char user[256] = {};
+	MYSQL_BIND result[1] = {};
+	result[0].buffer_type = MYSQL_TYPE_STRING;
+	result[0].buffer = user;
+	result[0].buffer_length = sizeof(user);
+	mysql_stmt_bind_result(stmt, result);
+	mysql_stmt_store_result(stmt);
+
+	std::string result_user = "no_user";
+	if (mysql_stmt_fetch(stmt) == 0) {
+		result_user = user;
 	}
-	{
-		//When running on dev server w/o user auth enabled
-		char *s=getenv("SERVER_NAME");
-		if(s) return s;
+
+	mysql_stmt_close(stmt);
+	return result_user;
+}
+
+inline std::string get_cookie(const std::string& cookie_header, const std::string& key) {
+	auto pos = cookie_header.find(key + "=");
+	if (pos == std::string::npos) return "";
+	auto end = cookie_header.find(";", pos);
+	return cookie_header.substr(pos + key.size() + 1, end - pos - key.size() - 1);
+}
+map<string, string> parse_cookies() {
+	map<string, string> cookies;
+	const char* raw = getenv("HTTP_COOKIE");
+	if (!raw) return cookies;
+
+	string cookie_str(raw);
+	stringstream ss(cookie_str);
+	string pair;
+	while (getline(ss, pair, ';')) {
+		auto eq = pair.find('=');
+		if (eq != string::npos) {
+			string key = pair.substr(0, eq);
+			string value = pair.substr(eq + 1);
+			while (!key.empty() && key[0] == ' ') key.erase(0, 1); // trim left spaces
+			cookies[key] = value;
+		}
 	}
-	//When running directly from command line
-	return "no_user";
+	return cookies;
+}
+std::string current_user() {
+	const char* raw_cookie = getenv("HTTP_COOKIE");
+	if (!raw_cookie) return "no_user";
+
+	std::string session_token;
+	auto cookies = parse_cookies();
+	auto it = cookies.find("session_token");
+	if (it != cookies.end()) {
+		session_token = it->second;
+	}
+	if (session_token.empty()) return "no_user";
+
+	// Setup DB connection
+	DB db = mysql_init(NULL);
+	if (!db) return "no_user";
+
+	auto creds = auth();
+	if (!mysql_real_connect(db, creds.host.c_str(), creds.user.c_str(), creds.pass.c_str(), creds.db.c_str(), 0, NULL, 0)) {
+		mysql_close(db);
+		return "no_user";
+	}
+
+	// Escape session token
+	std::string query = "SELECT username FROM sessions WHERE session_id = '" + session_token + "'";
+	//Create Con
+	DB_connection con{db};
+	auto rows = con.query(query);
+	if (rows.empty()) return "no_user";
+
+	return rows[0]["username"];
 }
 
 Id new_item(DB db,Table_name const& table){
@@ -33,6 +133,10 @@ Id new_item(DB db,Table_name const& table){
 }
 
 void inner(ostream& o,Subsystem_new const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<string> info_col_names;
 	#define X(A,B) info_col_names|=""#B;
 	SUBSYSTEM_INFO_ROW(X)
@@ -93,6 +197,10 @@ void inner(ostream& o,Subsystem_new const& a,DB db){
 }
 
 void inner(ostream& o,Subsystem_new_data const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	auto id=Subsystem_id{new_item(db,"subsystem")};
 	if(a.parent){
 		auto q="INSERT INTO subsystem_info ("
@@ -198,6 +306,10 @@ Subsystem_data subsystem_data(DB db,Subsystem_id id){
 }
 
 void inner(ostream& o,Subsystem_editor const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<string> info_col_names;
 	#define X(A,B) info_col_names|=""#B;
 	SUBSYSTEM_INFO_ROW(X)
@@ -256,6 +368,10 @@ void inner(ostream& o,Subsystem_editor const& a,DB db){
 }
 
 void inner(ostream& o,Subsystem_edit const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<pair<string,string>> v;
 	v|=pair<string,string>("edit_date","now()");
 	v|=pair<string,string>("edit_user",escape(current_user()));
@@ -374,6 +490,10 @@ optional<Subsystem_id> get_parent(DB db,Subsystem_id id){
 }
 
 void inner(ostream& o,Subsystem_duplicate const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	//duplicate depth-first
 	//first, check that the given subsystem exists
 	//next, duplicate 

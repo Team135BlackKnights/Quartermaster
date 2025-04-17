@@ -89,6 +89,10 @@ std::string input_table(vector<Input> const& a){
 }
 
 void inner(ostream& o,Meeting_editor const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	vector<string> data_cols{
 		#define X(A,B) ""#B,
 		MEETING_DATA(X)
@@ -140,6 +144,10 @@ void inner(ostream& o,Meeting_editor const& a,DB db){
 }
 
 void inner(ostream& o,Meeting_new const&,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	return inner_new<Meeting_editor>(o,db,"meeting");
 }
 
@@ -199,6 +207,10 @@ string to_do(DB db,Request const& page){
 HISTORY_TABLE(meeting,MEETING_INFO_ROW)
 
 void inner(std::ostream& o,Calendar const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	make_page(
 		o,
 		"Calendar",
@@ -679,6 +691,10 @@ void make_plan(DB db){
 }
 
 void inner(ostream& o,Meeting_edit const& a,DB db){
+	string user = current_user();
+	if (user == "no_user") {
+		cout << "Location: /cgi-bin/login.cgi\n\n";
+	}
 	string area_lower="meeting";
 	string area_cap="Meeting";
 
